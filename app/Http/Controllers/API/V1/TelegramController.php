@@ -22,6 +22,7 @@ use App\Jobs\TelegramNotification;
 use Elegant\Sanitizer\Sanitizer;
 use RealRashid\SweetAlert\Facades\Alert;
 use Ixudra\Curl\Facades\Curl;
+use Inertia\Inertia;
 
 class TelegramController extends Controller
 {
@@ -226,6 +227,9 @@ class TelegramController extends Controller
         $collection  = (new Collection($data));
         $tmenu_part1 = 'Telegrame Chat ID';
 
-        return view('page.telegram.index', compact('collection','tmenu_part1'));
+        return Inertia::render('Telegram/Index', [
+            'messages'    => $collection->values()->all(),
+            'tmenu_part1' => $tmenu_part1,
+        ]);
     }
 }

@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\API\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Catalogue\ProductResource;
 use App\Models\Leads;
 use App\Models\Order;
 use App\Models\Product;
 use App\Services\OrderService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
 
 /**
  * Recording an outlet's orders from the web lead page. The mobile app has
@@ -35,7 +37,19 @@ class OrderController extends Controller
         $tmenu_part2 = $lead->business_name ?: $lead->name;
         $tmenu_part3 = 'Record Order';
 
-        return view('page.orders.create', compact('lead', 'products', 'tmenu_part1', 'tmenu_part2', 'tmenu_part3'));
+        return Inertia::render('Orders/Create', [
+            'lead'        => [
+                'id'            => $lead->id,
+                'name'          => $lead->name,
+                'business_name' => $lead->business_name,
+                'customer_id'   => $lead->customer_id,
+            ],
+            'products'    => ProductResource::collection($products)->resolve(),
+            'today'       => now()->toDateString(),
+            'tmenu_part1' => $tmenu_part1,
+            'tmenu_part2' => $tmenu_part2,
+            'tmenu_part3' => $tmenu_part3,
+        ]);
     }
 
     public function store(Request $request, $id)
@@ -89,6 +103,6 @@ class OrderController extends Controller
         $response['message'][0] = trans('translation.access_error_msg');
         $response['message'][1] = trans('translation.check_with_ur_superior');
 
-        return view('errors.custom-error', compact('response'));
+        return Inertia::render('Errors/CustomError', compact('response'));
     }
 }

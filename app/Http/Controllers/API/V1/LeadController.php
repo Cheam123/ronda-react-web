@@ -27,6 +27,14 @@ use App\Models\DocumentUpload;
 use App\Repositories\S3ClientRepo;
 use App\Jobs\RefreshOutletRecommendations;
 use App\Services\Recommendation\RecommendationService;
+use App\Http\Resources\Leads\DocumentResource;
+use App\Http\Resources\Leads\LeadListResource;
+use App\Http\Resources\Leads\LeadResource;
+use App\Http\Resources\Leads\OrderResource;
+use App\Http\Resources\Leads\VisitResource;
+use App\Http\Resources\Tasks\TaskSummaryResource;
+use App\Support\Options;
+use Inertia\Inertia;
 
 use Carbon\Carbon;
 use Throwable;
@@ -44,7 +52,7 @@ class LeadController extends Controller
             $response['title']      = trans('translation.access_error');
             $response['message'][0] = trans('translation.access_error_msg');
             $response['message'][1] = trans('translation.check_with_ur_superior');
-            return view('errors.custom-error', compact('response'));
+            return Inertia::render('Errors/CustomError', compact('response'));
         }
 
         $lead_detail = Leads::with('assignee','createdBy','tasks')->visibleTo(Auth::guard('web')->user());
@@ -100,14 +108,21 @@ class LeadController extends Controller
         $total = $lead_detail->count();
         $lead_detail = $lead_detail->orderBy('created_at','desc')
                                            ->sortable()
-                                           ->paginate(10);
+                                           ->paginate(10)
+                                           ->withQueryString();
 
         $ifeareas = IfeArea::get();
 
         $tmenu_part1 = trans('translation.customer');
         $tmenu_part2 = trans('translation.customer');
 
-        return view('page.leads.index', compact('ifeareas','states','cities','lead_detail','request','tmenu_part1','tmenu_part2'));
+        return Inertia::render('Leads/Index', [
+            'leads'       => $lead_detail->through(fn (Leads $lead) => LeadListResource::make($lead)->resolve()),
+            'ifeAreas'    => $this->areaOptions($ifeareas),
+            'filters'     => $request->only(['start', 'end', 'has_customerid', 'ifearea', 'lead_name', 'business_name', 'mobile', 'customer_id']),
+            'tmenu_part1' => $tmenu_part1,
+            'tmenu_part2' => $tmenu_part2,
+        ]);
     }
 
     public function view($id)
@@ -116,7 +131,7 @@ class LeadController extends Controller
             $response['title']      = trans('translation.access_error');
             $response['message'][0] = trans('translation.access_error_msg');
             $response['message'][1] = trans('translation.check_with_ur_superior');
-            return view('errors.custom-error', compact('response'));
+            return Inertia::render('Errors/CustomError', compact('response'));
         }
 
         $user           = Auth::guard('web')->user();
@@ -157,7 +172,19 @@ class LeadController extends Controller
         $tmenu_part2 = trans('translation.customer');
         $tmenu_part3 = trans('translation.view') . ' (' . trans('translation.id').':'.$customerDetail->id . ')';
 
-        return view('page.leads.view', compact('ifeareas','states','cities','customerDetail','recommendation','tmenu_part1','tmenu_part2','tmenu_part3'));
+        $customerDetail->loadMissing('tasks.lead', 'tasks.users.user', 'tasks.comments');
+
+        return Inertia::render('Leads/Show', $this->formOptions($ifeareas, $states, $cities) + [
+            'lead'           => LeadResource::make($customerDetail)->resolve(),
+            'documents'      => DocumentResource::collection($customerDetail->documentUploads)->resolve(),
+            'tasks'          => TaskSummaryResource::collection($customerDetail->tasks)->resolve(),
+            'visits'         => VisitResource::collection($customerDetail->visits)->resolve(),
+            'orders'         => OrderResource::collection($customerDetail->orders)->resolve(),
+            'recommendation' => $recommendation,
+            'tmenu_part1'    => $tmenu_part1,
+            'tmenu_part2'    => $tmenu_part2,
+            'tmenu_part3'    => $tmenu_part3,
+        ]);
     }
 
     public function create()
@@ -166,7 +193,7 @@ class LeadController extends Controller
             $response['title']      = trans('translation.access_error');
             $response['message'][0] = trans('translation.access_error_msg');
             $response['message'][1] = trans('translation.check_with_ur_superior');
-            return view('errors.custom-error', compact('response'));
+            return Inertia::render('Errors/CustomError', compact('response'));
         }
 
         $states      = States::all();
@@ -177,7 +204,12 @@ class LeadController extends Controller
         $tmenu_part2 = trans('translation.customer');
         $tmenu_part3 = trans('translation.create');
 
-        return view('page.leads.create', compact('ifeareas','states','cities','tmenu_part1','tmenu_part2','tmenu_part3'));
+        return Inertia::render('Leads/Create', $this->formOptions($ifeareas, $states, $cities) + [
+            'today'       => now()->toDateString(),
+            'tmenu_part1' => $tmenu_part1,
+            'tmenu_part2' => $tmenu_part2,
+            'tmenu_part3' => $tmenu_part3,
+        ]);
     }
 
     public function store(LeadRequest $request)
@@ -186,7 +218,7 @@ class LeadController extends Controller
             $response['title']      = trans('translation.access_error');
             $response['message'][0] = trans('translation.access_error_msg');
             $response['message'][1] = trans('translation.check_with_ur_superior');
-            return view('errors.custom-error', compact('response'));
+            return Inertia::render('Errors/CustomError', compact('response'));
         }
 
         $validatedData = $request->validated();
@@ -256,7 +288,7 @@ class LeadController extends Controller
             $response['title']      = trans('translation.access_error');
             $response['message'][0] = trans('translation.access_error_msg');
             $response['message'][1] = trans('translation.check_with_ur_superior');
-            return view('errors.custom-error', compact('response'));
+            return Inertia::render('Errors/CustomError', compact('response'));
         }
 
         $customerDetail = Leads::visibleTo(Auth::guard('web')->user())->findOrFail($id);
@@ -275,7 +307,14 @@ class LeadController extends Controller
         $tmenu_part2 = trans('translation.customer');
         $tmenu_part3 = trans('translation.edit') . ' (' . trans('translation.id').':'.$customerDetail->id . ')';
 
-        return view('page.leads.edit', compact('ifeareas','customerDetail', 'states', 'cities','tmenu_part1','tmenu_part2','tmenu_part3'));
+        return Inertia::render('Leads/Edit', $this->formOptions($ifeareas, $states, $cities) + [
+            'lead'        => LeadResource::make($customerDetail)->resolve(),
+            'documents'   => DocumentResource::collection($customerDetail->documentUploads()->with('uploadBy')->get())->resolve(),
+            'today'       => now()->toDateString(),
+            'tmenu_part1' => $tmenu_part1,
+            'tmenu_part2' => $tmenu_part2,
+            'tmenu_part3' => $tmenu_part3,
+        ]);
     }
     
     public function update(LeadRequest $request)
@@ -284,7 +323,7 @@ class LeadController extends Controller
             $response['title']      = trans('translation.access_error');
             $response['message'][0] = trans('translation.access_error_msg');
             $response['message'][1] = trans('translation.check_with_ur_superior');
-            return view('errors.custom-error', compact('response'));
+            return Inertia::render('Errors/CustomError', compact('response'));
         }
 
         $validatedData = $request->validated();
@@ -344,7 +383,7 @@ class LeadController extends Controller
             $response['title']      = trans('translation.access_error');
             $response['message'][0] = trans('translation.access_error_msg');
             $response['message'][1] = trans('translation.check_with_ur_superior');
-            return view('errors.custom-error', compact('response'));
+            return Inertia::render('Errors/CustomError', compact('response'));
         }
 
         $id    = $request->id;
@@ -397,6 +436,38 @@ class LeadController extends Controller
         }
        
         return redirect()->back();
+    }
+
+    /**
+     * Dropdown options for the lead form.
+     */
+    private function formOptions($ifeareas, $states, $cities): array
+    {
+        return [
+            'ifeAreas'           => $this->areaOptions($ifeareas),
+            'states'             => Options::fromCollection($states),
+            'cities'             => collect($cities)->map(fn ($city) => [
+                'value'    => $city->id,
+                'label'    => $city->name,
+                'state_id' => $city->state_id,
+            ])->values()->all(),
+            'sources'            => Options::fromMap(Helper::getLeadSourceListing()),
+            'businessCategories' => Options::fromMap(Helper::getBusinessCategoryListing()),
+            'sizeBands'          => Options::fromMap(Leads::SIZE_BANDS),
+            'segments'           => Options::fromMap(Leads::SEGMENTS),
+        ];
+    }
+
+    /**
+     * IFE areas as options, with their descriptions for the area listing.
+     */
+    private function areaOptions($ifeareas): array
+    {
+        return collect($ifeareas)->map(fn (IfeArea $area) => [
+            'value'       => $area->id,
+            'label'       => $area->area,
+            'description' => $area->description,
+        ])->values()->all();
     }
 
     /**

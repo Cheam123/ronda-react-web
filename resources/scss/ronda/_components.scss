@@ -156,3 +156,55 @@
     border-radius: 6px;
     box-shadow: 3px 3px 10px 3px rgb(183, 183, 183);
 }
+
+// "Why these?" note under suggested orders
+.recommendation-why {
+    background: #f3f6ff;
+    border-left: 3px solid #556ee6;
+    padding: 8px 12px;
+    white-space: pre-line;
+}
+
+// IFE report page: rounded cards of label / value pairs
+.ife-report {
+    margin: 1rem;
+    font-size: 12px;
+    color: #333;
+}
+
+.report-section {
+    border: 1px solid #e5e5ea;
+    margin-bottom: 10px;
+    border-radius: 12px;
+    overflow: hidden;
+
+    &__title {
+        background-color: #f2f2f7;
+        padding: 14px;
+        border-bottom: 1px solid #e5e5ea;
+        font-weight: 700;
+        color: #1c1c1e;
+    }
+
+    &__body {
+        padding: 10px;
+    }
+}
+
+.report-item {
+    padding-bottom: 12px;
+    line-height: 1.5;
+
+    &__label {
+        font-weight: 600;
+        font-size: 11px;
+        color: #c0392b;
+        text-decoration: underline;
+    }
+
+    &__value {
+        font-weight: 500;
+        padding-left: 8pt;
+        white-space: pre-line;
+    }
+}
