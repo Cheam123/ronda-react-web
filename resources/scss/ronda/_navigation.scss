@@ -1,0 +1,46 @@
+//
+// Horizontal top navigation.
+//
+
+.topnav {
+    .navbar-nav {
+        .nav-link {
+            font-size: 13px;
+            position: relative;
+            padding: 1rem 1.3rem;
+            cursor: pointer;
+        }
+
+        .dropdown-item {
+            color: #000;
+        }
+    }
+
+    .dropdown .dropdown-menu {
+        border-radius: 0 0 0.25rem 0.25rem;
+        margin-top: 0;
+        box-shadow: 0 2px 4px rgba(15, 34, 58, 0.7);
+    }
+
+    // Below lg the menu is a collapsible list; dropdowns open on tap.
+    @include media-breakpoint-down(lg) {
+        .dropdown .dropdown-menu.show {
+            display: block;
+            position: static;
+            box-shadow: none;
+        }
+    }
+}
+
+.menu-label {
+    display: inline-block;
+    text-indent: 5px;
+    font-style: normal;
+    font-size: 13px;
+}
+
+.nav-active,
+.nav-active > i,
+.topnav .navbar-nav .dropdown-item.nav-active {
+    color: #f78b17 !important;
+}

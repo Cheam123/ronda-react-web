@@ -1,0 +1,419 @@
+//
+// Forms: the form list, "start a form", filling a form, records and previews.
+//
+
+// ----- Form list (grouped, drag to arrange) --------------------------------
+
+.fl-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.fl-search {
+    flex: 1 1 240px;
+    max-width: 340px;
+}
+
+.fl-group {
+    margin-bottom: 18px;
+    overflow: hidden;
+    border: 1px solid #e3e8f0;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+
+    &.is-dragging {
+        opacity: 0.6;
+    }
+
+    &--ungrouped {
+        border-style: dashed;
+    }
+}
+
+.fl-group-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 13px 18px;
+    border-bottom: 1px solid #eceff5;
+    background: #f7f8fb;
+}
+
+.fl-group-name {
+    flex: 1;
+    font-size: 14.5px;
+    font-weight: 700;
+    color: #16203a;
+}
+
+.fl-group-count {
+    font-size: 12px;
+    color: #8a93a8;
+    font-weight: 600;
+}
+
+.fl-group-actions,
+.fl-actions {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0;
+}
+
+.fl-list {
+    min-height: 8px;
+
+    &.fl-drop-hint {
+        outline: 2px dashed #b9c6f0;
+        outline-offset: -6px;
+    }
+
+    &.is-over {
+        background: #f5f7ff;
+    }
+}
+
+.fl-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 13px 18px;
+    border-bottom: 1px solid #f1f4f9;
+    background: #fff;
+
+    &:last-child {
+        border-bottom: 0;
+    }
+
+    &:hover {
+        background: #fafbfe;
+    }
+
+    &.is-dragging {
+        position: relative;
+        z-index: 2;
+        opacity: 0.6;
+    }
+}
+
+.fl-handle {
+    flex-shrink: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #c3cad8;
+    font-size: 17px;
+    cursor: grab;
+    touch-action: none;
+
+    &:active {
+        cursor: grabbing;
+    }
+}
+
+.fl-main {
+    flex: 1;
+    min-width: 0;
+}
+
+.fl-name {
+    font-weight: 600;
+    color: #16203a;
+    font-size: 13.5px;
+}
+
+.fl-desc {
+    margin-top: 2px;
+    font-size: 12px;
+    color: #8a93a8;
+}
+
+.fl-meta {
+    font-size: 12px;
+    color: #8a93a8;
+    white-space: nowrap;
+}
+
+.fl-empty-group {
+    padding: 18px;
+    text-align: center;
+    color: #b6bec7;
+    font-size: 12.5px;
+    font-style: italic;
+}
+
+.fl-saving {
+    position: fixed;
+    right: 22px;
+    bottom: 22px;
+    z-index: 1080;
+    padding: 9px 16px;
+    border-radius: 8px;
+    background: #16203a;
+    color: #fff;
+    font-size: 12.5px;
+    pointer-events: none;
+}
+
+.group-chips {
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid #eceff5;
+
+    &__label {
+        margin-bottom: 8px;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #8a93a8;
+    }
+
+    &__list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        max-height: 96px;
+        overflow-y: auto;
+    }
+
+    &__chip {
+        padding: 3px 11px;
+        border: 1px solid #e3e8f0;
+        border-radius: 999px;
+        background: #f1f4f9;
+        color: #3a445c;
+        font-size: 12px;
+        font-weight: 600;
+    }
+}
+
+// ----- "Start a form" ----------------------------------------------------------
+
+.form-entry-section__head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 4px 0 8px;
+
+    h6 {
+        margin: 0;
+        font-size: 11.5px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: $gray-600;
+    }
+}
+
+.form-entry-section__rule {
+    flex-grow: 1;
+    height: 1px;
+    background: #e3e8f0;
+}
+
+.form-entry-card {
+    box-shadow: 1px 1px 3px 1px rgb(183, 183, 183);
+}
+
+.empty-icon {
+    font-size: 64px;
+    color: #ccc;
+    opacity: 0.8;
+}
+
+// ----- Filling a form -------------------------------------------------------
+
+.form-render {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+
+    &--grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px 28px;
+
+        > .form-element--wide,
+        > .form-section-card {
+            grid-column: 1 / -1;
+        }
+
+        .form-section-card {
+            border: none;
+            background: transparent;
+        }
+
+        .form-section-card__head {
+            padding: 0 0 12px;
+            border-bottom: 1px solid #eceff5;
+            background: transparent;
+            color: #7a56d1;
+            font-size: 11.5px;
+            letter-spacing: 0.09em;
+            text-transform: uppercase;
+            font-weight: 800;
+        }
+
+        .form-section-card__body {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px 28px;
+            padding: 14px 0 0;
+
+            > .form-element--wide {
+                grid-column: 1 / -1;
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            grid-template-columns: 1fr;
+
+            .form-section-card__body {
+                grid-template-columns: 1fr;
+            }
+        }
+    }
+}
+
+.form-section-card {
+    overflow: hidden;
+    border: 1px solid $border-color;
+    border-radius: 0.25rem;
+
+    &__head {
+        padding: 0.5rem 1rem;
+        background-color: #fdf3e7;
+        color: #b06f24;
+        font-weight: 700;
+    }
+
+    &__body {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        padding: 1rem 1rem 0.25rem;
+    }
+}
+
+.form-description {
+    white-space: pre-wrap;
+}
+
+.previous-answer {
+    margin-top: 7px;
+    padding: 8px 11px;
+    border: 1px solid #e7e1f7;
+    border-radius: 9px;
+    background: #f7f5fd;
+
+    &__head {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 3px;
+        font-size: 11.5px;
+        font-weight: 600;
+        color: #7a56d1;
+    }
+
+    &__value {
+        font-size: 13px;
+        color: #3a445c;
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+}
+
+.file-answers {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+
+    &__thumb {
+        padding: 0;
+        border: 0;
+        background: none;
+        cursor: zoom-in;
+
+        img {
+            max-width: 200px;
+            max-height: 130px;
+            border: 1px solid $border-color;
+            border-radius: 0.25rem;
+            object-fit: cover;
+        }
+    }
+
+    &__chip {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.4rem 1rem;
+        border-radius: 999px;
+        background: #e8eeff;
+        color: #3a5bd9;
+        font-size: 0.8rem;
+        text-decoration: none;
+
+        &:hover {
+            color: #3a5bd9;
+            text-decoration: underline;
+        }
+    }
+}
+
+.assignee-hint {
+    padding: 8px 10px;
+    border: 1px solid #e2d9f5;
+    border-radius: 6px;
+    background: #f5f2fc;
+    font-size: 0.8rem;
+    color: #6b7280;
+
+    strong {
+        color: #5b3fa8;
+    }
+}
+
+// ----- Status and stage badges ------------------------------------------------
+
+.record-badge--closed {
+    background: #495057;
+}
+
+.record-badge--cancelled {
+    background: #6c757d;
+}
+
+.stage-badge--fill {
+    background-color: #7a56d1;
+}
+
+.stage-badge--approval {
+    background-color: #e8871e;
+}
+
+// ----- Preview: the process in a side card -------------------------------------
+
+.process-preview {
+    margin-bottom: 0.5rem;
+    padding: 0.5rem;
+    border: 1px solid $border-color;
+    border-radius: 0.25rem;
+
+    &--approval { background: #fdf3e7; }
+    &--fill { background: #f1ecfb; }
+    &--cc { background: #f2fbf4; }
+
+    &--branch {
+        border-style: dashed;
+        background: #fff8ec;
+    }
+}

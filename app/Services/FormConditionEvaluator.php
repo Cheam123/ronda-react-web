@@ -19,7 +19,7 @@ namespace App\Services;
  * Groups are OR'd together; conditions inside a group are AND'd.
  * A null schema always evaluates to true.
  *
- * The JavaScript port lives in public/js/forms/form-conditions.js and must
+ * The TypeScript port lives in resources/js/lib/forms/conditions.ts and must
  * stay behaviourally identical.
  */
 class FormConditionEvaluator

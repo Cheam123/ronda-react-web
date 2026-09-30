@@ -1,0 +1,143 @@
+//
+// Dashboard (Pages/Dashboard).
+//
+
+.dash {
+    --surface: #fff;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --muted: #898781;
+    --hair: #e1e0d9;
+    --critical: #d03b3b;
+    --serious: #ec835a;
+
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    color: var(--ink);
+}
+
+.dash-tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+}
+
+.dash-tile {
+    background: var(--surface);
+    border: 1px solid rgba(11, 11, 11, 0.1);
+    border-radius: 8px;
+    padding: 12px 14px;
+
+    &__label {
+        font-size: 0.78rem;
+        color: var(--ink-2);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    &__value {
+        font-size: 1.6rem;
+        font-weight: 600;
+        line-height: 1.2;
+        margin-top: 4px;
+    }
+
+    &__note {
+        font-size: 0.72rem;
+        color: var(--muted);
+        margin-top: 2px;
+    }
+}
+
+.dash-card {
+    background: var(--surface);
+    border: 1px solid rgba(11, 11, 11, 0.1);
+    border-radius: 8px;
+    padding: 14px 16px;
+    height: 100%;
+
+    h6 {
+        font-size: 0.9rem;
+        font-weight: 600;
+        margin: 0 0 10px;
+        color: var(--ink);
+    }
+}
+
+.dash-sub {
+    font-size: 0.75rem;
+    color: var(--muted);
+}
+
+.dash-table {
+    width: 100%;
+    font-size: 0.8rem;
+    border-collapse: collapse;
+
+    th {
+        color: var(--ink-2);
+        font-weight: 600;
+        border-bottom: 1px solid var(--hair);
+        padding: 6px 8px;
+        white-space: nowrap;
+    }
+
+    td {
+        border-bottom: 1px solid var(--hair);
+        padding: 6px 8px;
+        vertical-align: top;
+    }
+
+    .num {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+    }
+}
+
+.dash-level {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+
+    i {
+        font-size: 1rem;
+    }
+
+    &--overdue i {
+        color: var(--critical);
+    }
+
+    &--at_risk i {
+        color: var(--serious);
+    }
+}
+
+.dash-digest {
+    font-size: 0.85rem;
+    line-height: 1.5;
+
+    &__label {
+        font-weight: 600;
+        margin-top: 8px;
+    }
+
+    ul {
+        padding-left: 18px;
+        margin: 2px 0 0;
+    }
+}
+
+.dash-chart {
+    position: relative;
+    height: 260px;
+}
+
+.dash-icon--critical {
+    color: var(--critical);
+}
+
+.dash-icon--serious {
+    color: var(--serious);
+}

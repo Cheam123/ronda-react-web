@@ -1,0 +1,210 @@
+//
+// Shared components (resources/js/Components).
+//
+
+// SectionHeader: the blue title bar over each block of a page.
+.section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 5px;
+    background-color: rgb(13, 114, 158);
+    color: #fff;
+
+    &__actions {
+        display: flex;
+        gap: 4px;
+    }
+}
+
+// DataTable: dark header, a rule under every row, a soft shadow.
+.data-table-scroll {
+    overflow-x: auto;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    box-shadow: 1px 1px 3px 1px rgb(183, 183, 183);
+
+    > thead th {
+        font-weight: normal;
+        background-color: $gray-900;
+        color: #fff;
+    }
+
+    > tbody > tr > td {
+        border-bottom: 1px solid #acacac;
+        vertical-align: top;
+    }
+
+    .num {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+    }
+}
+
+// Pill: rounded, filled label.
+.pill {
+    display: inline-block;
+    width: fit-content;
+    padding: 0 10px;
+    border-radius: 25px;
+    color: #fff;
+    white-space: nowrap;
+
+    &--navy { background: rgb(30, 7, 111); }
+    &--blue { background: rgb(18, 51, 158); }
+    &--green { background: rgb(7, 111, 36); }
+    &--purple { background: #6f42c1; }
+    &--orange { background: #b36b00; }
+    &--grey { background: #8e8e93; }
+    &--red { background: #c0392b; }
+}
+
+// InfoList: "Label : value" rows inside a table cell.
+.info-list {
+    td {
+        border: 0 !important;
+        padding: 0 2px;
+        font-size: 11px;
+        font-family: Tahoma, sans-serif;
+        vertical-align: top;
+    }
+
+    &__label {
+        width: 1%;
+        white-space: nowrap;
+        color: rgb(61, 61, 149);
+    }
+
+    &__sep {
+        width: 1%;
+    }
+
+    &__value {
+        white-space: normal;
+    }
+}
+
+// ImageLightbox
+.image-lightbox {
+    background: rgba(0, 0, 0, 0.9);
+
+    &__img {
+        max-width: 100%;
+        max-height: 75vh;
+        object-fit: contain;
+    }
+
+    &__caption {
+        color: #ccc;
+        padding: 10px 0 0;
+    }
+}
+
+// FileDropzone
+.file-dropzone {
+    border: 2px dashed #ced4da;
+    border-radius: 6px;
+    padding: 18px;
+    text-align: center;
+    color: #74788d;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+
+    &.is-active {
+        border-color: $primary;
+        background-color: rgba($primary, 0.05);
+    }
+
+    &.is-busy {
+        cursor: progress;
+        opacity: 0.8;
+    }
+}
+
+// FilterPanel
+.filter-panel {
+    margin-bottom: 1rem;
+}
+
+.filter-button {
+    min-width: 100px;
+}
+
+// Thumbnails of photo attachments
+.thumb {
+    width: 100px;
+    height: auto;
+    object-fit: cover;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+// Fixed-width Back / Save / Search buttons
+.action-button {
+    min-width: 100px;
+}
+
+// Profile page: coral caption over each value
+.profile-label {
+    background-color: coral;
+    padding: 4px 10px;
+    color: #fff;
+    border-radius: 6px;
+    box-shadow: 3px 3px 10px 3px rgb(183, 183, 183);
+}
+
+// "Why these?" note under suggested orders
+.recommendation-why {
+    background: #f3f6ff;
+    border-left: 3px solid #556ee6;
+    padding: 8px 12px;
+    white-space: pre-line;
+}
+
+// IFE report page: rounded cards of label / value pairs
+.ife-report {
+    margin: 1rem;
+    font-size: 12px;
+    color: #333;
+}
+
+.report-section {
+    border: 1px solid #e5e5ea;
+    margin-bottom: 10px;
+    border-radius: 12px;
+    overflow: hidden;
+
+    &__title {
+        background-color: #f2f2f7;
+        padding: 14px;
+        border-bottom: 1px solid #e5e5ea;
+        font-weight: 700;
+        color: #1c1c1e;
+    }
+
+    &__body {
+        padding: 10px;
+    }
+}
+
+.report-item {
+    padding-bottom: 12px;
+    line-height: 1.5;
+
+    &__label {
+        font-weight: 600;
+        font-size: 11px;
+        color: #c0392b;
+        text-decoration: underline;
+    }
+
+    &__value {
+        font-weight: 500;
+        padding-left: 8pt;
+        white-space: pre-line;
+    }
+}

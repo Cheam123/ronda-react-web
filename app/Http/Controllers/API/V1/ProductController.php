@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\API\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Catalogue\ProductResource;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
+use Inertia\Inertia;
 
 /**
  * Product catalogue, Admin only. Products are deactivated rather than
@@ -42,7 +44,14 @@ class ProductController extends Controller
         $tmenu_part2 = 'Catalogue';
         $tmenu_part3 = trans('translation.total') . ':' . $products->total();
 
-        return view('page.products.index', compact('products', 'categories', 'request', 'tmenu_part1', 'tmenu_part2', 'tmenu_part3'));
+        return Inertia::render('Products/Index', [
+            'products'    => $products->through(fn (Product $product) => ProductResource::make($product)->resolve()),
+            'categories'  => $categories,
+            'filters'     => $request->only(['search', 'category', 'active']),
+            'tmenu_part1' => $tmenu_part1,
+            'tmenu_part2' => $tmenu_part2,
+            'tmenu_part3' => $tmenu_part3,
+        ]);
     }
 
     public function create()
@@ -57,7 +66,7 @@ class ProductController extends Controller
         $tmenu_part2 = 'Catalogue';
         $tmenu_part3 = trans('translation.create');
 
-        return view('page.products.form', compact('product', 'categories', 'tmenu_part1', 'tmenu_part2', 'tmenu_part3'));
+        return $this->form($product, $categories, compact('tmenu_part1', 'tmenu_part2', 'tmenu_part3'));
     }
 
     public function store(Request $request)
@@ -85,7 +94,7 @@ class ProductController extends Controller
         $tmenu_part2 = 'Catalogue';
         $tmenu_part3 = trans('translation.edit') . ' (' . $product->sku . ')';
 
-        return view('page.products.form', compact('product', 'categories', 'tmenu_part1', 'tmenu_part2', 'tmenu_part3'));
+        return $this->form($product, $categories, compact('tmenu_part1', 'tmenu_part2', 'tmenu_part3'));
     }
 
     public function update(Request $request, $id)
@@ -124,6 +133,15 @@ class ProductController extends Controller
         return redirect()->route('product.index');
     }
 
+    /** The create / edit page; a product that does not exist yet is new. */
+    private function form(Product $product, array $categories, array $breadcrumb)
+    {
+        return Inertia::render('Products/Form', [
+            'product'    => ProductResource::make($product)->resolve(),
+            'categories' => $categories,
+        ] + $breadcrumb);
+    }
+
     private function validated(Request $request, ?Product $product = null): array
     {
         $data = $request->validate([
@@ -148,6 +166,6 @@ class ProductController extends Controller
         $response['message'][0] = trans('translation.access_error_msg');
         $response['message'][1] = trans('translation.check_with_ur_superior');
 
-        return view('errors.custom-error', compact('response'));
+        return Inertia::render('Errors/CustomError', compact('response'));
     }
 }

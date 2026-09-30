@@ -292,7 +292,7 @@ class FormSchemaService
     }
 
     /**
-     * Ordered render tree for Blade: top-level items are either
+     * Ordered render tree for the form pages: top-level items are either
      * ['kind' => 'group', 'group' => g, 'elements' => [...]] or
      * ['kind' => 'element', 'element' => e], interleaved by order.
      */

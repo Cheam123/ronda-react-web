@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\ValidationException;
 use App\Models\User;
+use Inertia\Inertia;
 
 class ForgotPasswordController extends Controller
 {
@@ -30,11 +31,11 @@ class ForgotPasswordController extends Controller
     /**
      * Display the form to request a password reset link.
      *
-     * @return \Illuminate\View\View
+     * @return \Inertia\Response
      */
     public function showLinkRequestForm()
     {
-        return view('auth.passwords.email');
+        return Inertia::render('Auth/ForgotPassword');
     }
 
     /**

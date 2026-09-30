@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules;
 use Illuminate\Validation\ValidationException;
+use Inertia\Inertia;
 
 class ResetPasswordController extends Controller
 {
@@ -45,15 +46,16 @@ class ResetPasswordController extends Controller
      * If no token is present, display the link request form.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
+     * @return \Inertia\Response
      */
     public function showResetForm(Request $request)
     {
         $token = $request->route()->parameter('token');
 
-        return view('auth.passwords.reset')->with(
-            ['token' => $token, 'email' => $request->email]
-        );
+        return Inertia::render('Auth/ResetPassword', [
+            'token' => $token,
+            'email' => $request->email,
+        ]);
     }
 
     /**

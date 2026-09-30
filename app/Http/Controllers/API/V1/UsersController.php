@@ -11,7 +11,10 @@ use App\Models\User;
 use App\Http\Requests\UserRequest;
 use App\Http\Requests\ChangePasswordRequest;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Users\UserResource;
 use App\Helpers\Helper;
+use App\Support\Options;
+use Inertia\Inertia;
 
 class UsersController extends Controller
 {
@@ -53,7 +56,14 @@ class UsersController extends Controller
         $tmenu_part2 = trans('translation.Users');
         $tmenu_part3 = trans('translation.total').':'.$total;
 
-        return view('page.users.index', compact('users','request','total','tmenu_part1','tmenu_part2','tmenu_part3'));
+        return Inertia::render('Users/Index', [
+            'users'       => UserResource::collection($users)->resolve(),
+            'filters'     => $request->only(['active', 'user_type', 'name', 'mobile', 'email']),
+            'userTypes'   => Options::fromMap(User::getUserTypeListing()),
+            'tmenu_part1' => $tmenu_part1,
+            'tmenu_part2' => $tmenu_part2,
+            'tmenu_part3' => $tmenu_part3,
+        ]);
     }
 
     public function view($id)
@@ -67,7 +77,12 @@ class UsersController extends Controller
         $tmenu_part2 = trans('translation.Users');
         $tmenu_part3 = trans('translation.view') . ' (' . trans('translation.id').':'.$user->id . ')';
 
-        return view('page.users.view', compact('user','tmenu_part1','tmenu_part2','tmenu_part3'));
+        return Inertia::render('Users/Show', [
+            'user'        => UserResource::make($user)->resolve(),
+            'tmenu_part1' => $tmenu_part1,
+            'tmenu_part2' => $tmenu_part2,
+            'tmenu_part3' => $tmenu_part3,
+        ]);
     }
 
     public function create()
@@ -80,7 +95,7 @@ class UsersController extends Controller
         $tmenu_part2 = trans('translation.Users');
         $tmenu_part3 = trans('translation.create');
 
-        return view('page.users.create', compact('tmenu_part1','tmenu_part2','tmenu_part3'));
+        return Inertia::render('Users/Create', $this->formOptions() + compact('tmenu_part1', 'tmenu_part2', 'tmenu_part3'));
     }
 
     public function store(UserRequest $request)
@@ -138,7 +153,12 @@ class UsersController extends Controller
         $tmenu_part2 = trans('translation.Users');
         $tmenu_part3 = trans('translation.edit') . ' (' . trans('translation.id').':'.$user->id . ')';
 
-        return view('page.users.edit', compact('user','tmenu_part1','tmenu_part2','tmenu_part3'));
+        return Inertia::render('Users/Edit', $this->formOptions() + [
+            'user'        => UserResource::make($user)->resolve(),
+            'tmenu_part1' => $tmenu_part1,
+            'tmenu_part2' => $tmenu_part2,
+            'tmenu_part3' => $tmenu_part3,
+        ]);
     }
 
     public function update(UserRequest $request)
@@ -193,13 +213,12 @@ class UsersController extends Controller
     public function profile()
     {
         $user = Auth::guard('web')->user();
-        return view('page.users.profile', compact('user'));
+        return Inertia::render('Users/Profile', ['user' => UserResource::make($user)->resolve()]);
     }
 
     public function change_password()
     {
-        $user = Auth::guard('web')->user();
-        return view('page.users.form.change-password-form', compact('user'));
+        return Inertia::render('Users/ChangePassword');
     }
 
     public function reset_password(Request $request)
@@ -244,6 +263,17 @@ class UsersController extends Controller
     }
 
     /**
+     * Dropdown options for the create / edit form.
+     */
+    private function formOptions(): array
+    {
+        return [
+            'teams'     => Options::fromMap(Helper::getTeamListing()),
+            'userTypes' => Options::fromMap(User::getUserTypeListing()),
+        ];
+    }
+
+    /**
      * Another account already uses this email or mobile.
      */
     private function isDuplicate(Request $request, $ignoreId = null)
@@ -261,6 +291,6 @@ class UsersController extends Controller
         $response['title']      = trans('translation.access_error');
         $response['message'][0] = trans('translation.access_error_msg');
         $response['message'][1] = trans('translation.check_with_ur_superior');
-        return view('errors.custom-error', compact('response'));
+        return Inertia::render('Errors/CustomError', compact('response'));
     }
 }

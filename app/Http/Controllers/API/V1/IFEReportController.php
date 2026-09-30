@@ -24,6 +24,10 @@ use App\Exports\IFEReportExport;
 use Maatwebsite\Excel\Facades\Excel;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\IfeReports\IfeReportListResource;
+use App\Http\Resources\IfeReports\IfeReportResource;
+use App\Support\Options;
+use Inertia\Inertia;
 use App\Helpers\Helper;
 use App\Support\Collection;
 use App\Jobs\FirebaseNotification;
@@ -45,7 +49,7 @@ class IFEReportController extends Controller
             $response['title']      = trans('translation.access_error');
             $response['message'][0] = trans('translation.access_error_msg');
             $response['message'][1] = trans('translation.check_with_ur_superior');
-            return view('errors.custom-error', compact('response'));
+            return Inertia::render('Errors/CustomError', compact('response'));
         }
 
         $salesperson = new User();
@@ -96,10 +100,15 @@ class IFEReportController extends Controller
         }
 
         $ifereports = $ifereports->orderBy('created_at','desc')
-                                ->paginate(10);
+                                ->paginate(10)
+                                ->withQueryString();
 
-        $param = $request->all();
-        return view('page.ifereport.index', compact('salesperson','ifeareas','ifereports','param','request'));
+        return Inertia::render('IfeReports/Index', [
+            'reports'     => $ifereports->through(fn (IFEReport $report) => IfeReportListResource::make($report)->resolve()),
+            'salespeople' => Options::fromCollection($salesperson),
+            'ifeAreas'    => Options::fromCollection($ifeareas, 'id', 'area'),
+            'filters'     => $request->only(['start', 'end', 'ifearea', 'salesperson', 'mobile', 'company_name', 'cafe_name']),
+        ]);
     }
 
     public function export(Request $request)
@@ -211,7 +220,7 @@ class IFEReportController extends Controller
             $response['title']      = trans('translation.access_error');
             $response['message'][0] = trans('translation.access_error_msg');
             $response['message'][1] = trans('translation.check_with_ur_superior');
-            return view('errors.custom-error', compact('response'));
+            return Inertia::render('Errors/CustomError', compact('response'));
         }
 
         $param = $request->all();
@@ -224,7 +233,13 @@ class IFEReportController extends Controller
 
         unset($param['id']);
 
-        return view('page.ifereport.view', compact('ifeReport','param','tmenu_part1','tmenu_part2'));
+        return Inertia::render('IfeReports/Show', [
+            'report'      => IfeReportResource::make($ifeReport)->resolve(),
+            // The list's filters, so Back returns to the same page of results.
+            'filters'     => $param,
+            'tmenu_part1' => $tmenu_part1,
+            'tmenu_part2' => $tmenu_part2,
+        ]);
     }
 
     public function convet_to_task(Request $request)
@@ -233,7 +248,7 @@ class IFEReportController extends Controller
             $response['title']      = trans('translation.access_error');
             $response['message'][0] = trans('translation.access_error_msg');
             $response['message'][1] = trans('translation.check_with_ur_superior');
-            return view('errors.custom-error', compact('response'));
+            return Inertia::render('Errors/CustomError', compact('response'));
         }
 
         try {
@@ -372,7 +387,7 @@ class IFEReportController extends Controller
             $response['title']      = trans('translation.access_error');
             $response['message'][0] = trans('translation.access_error_msg');
             $response['message'][1] = trans('translation.check_with_ur_superior');
-            return view('errors.custom-error', compact('response'));
+            return Inertia::render('Errors/CustomError', compact('response'));
         }
 
         $id = $request->id;
@@ -391,7 +406,7 @@ class IFEReportController extends Controller
             $response['title']      = trans('translation.access_error');
             $response['message'][0] = trans('translation.access_error_msg');
             $response['message'][1] = trans('translation.check_with_ur_superior');
-            return view('errors.custom-error', compact('response'));
+            return Inertia::render('Errors/CustomError', compact('response'));
         }
 
         $id = $request->id;
@@ -410,7 +425,7 @@ class IFEReportController extends Controller
             $response['title']      = trans('translation.access_error');
             $response['message'][0] = trans('translation.access_error_msg');
             $response['message'][1] = trans('translation.check_with_ur_superior');
-            return view('errors.custom-error', compact('response'));
+            return Inertia::render('Errors/CustomError', compact('response'));
         }
 
         $id = $request->id;

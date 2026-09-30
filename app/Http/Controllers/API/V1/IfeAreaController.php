@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\API\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Catalogue\IfeAreaResource;
 use App\Models\IFEReport;
 use App\Models\IfeArea;
 use App\Models\Leads;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
 
 /**
  * IFE areas (the field territories leads and visit reports are filed
@@ -37,7 +39,11 @@ class IfeAreaController extends Controller
         $tmenu_part1 = 'IFE Areas';
         $tmenu_part2 = trans('translation.total') . ':' . $areas->count();
 
-        return view('page.areas.index', compact('areas', 'tmenu_part1', 'tmenu_part2'));
+        return Inertia::render('Areas/Index', [
+            'areas'       => IfeAreaResource::collection($areas)->resolve(),
+            'tmenu_part1' => $tmenu_part1,
+            'tmenu_part2' => $tmenu_part2,
+        ]);
     }
 
     public function store(Request $request)
@@ -101,6 +107,6 @@ class IfeAreaController extends Controller
         $response['message'][0] = trans('translation.access_error_msg');
         $response['message'][1] = trans('translation.check_with_ur_superior');
 
-        return view('errors.custom-error', compact('response'));
+        return Inertia::render('Errors/CustomError', compact('response'));
     }
 }
