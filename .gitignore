@@ -28,5 +28,5 @@ yarn-error.log
 public/assets/js
 public/assets/js/*
 /public/mix-manifest.json
-package-lock.json
 /CLAUDE.md
+/public/build

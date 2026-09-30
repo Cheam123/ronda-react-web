@@ -1,0 +1,91 @@
+//
+// App shell: the fixed header, page container and footer controls.
+//
+
+body[data-layout="horizontal"] {
+    background-color: #fff;
+
+    .main-content {
+        background-color: #fff;
+    }
+}
+
+.container,
+.container-fluid {
+    width: 98%;
+    margin-right: auto;
+    margin-left: auto;
+}
+
+@media (max-width: 500px) {
+    body {
+        font-size: 0.9rem;
+        line-height: 2.4;
+        color: #495057;
+        background-color: #f5f6f8;
+    }
+}
+
+.table {
+    --bs-table-hover-bg: #d5f5d5;
+}
+
+.pagination .page-item .page-link {
+    font-size: 11px;
+    height: 30px;
+}
+
+.pagination .page-item:first-child .page-link,
+.pagination .page-item:last-child .page-link {
+    font-size: 13px;
+}
+
+// Breadcrumb in the header ("Home > Users > Total: 12")
+.header-breadcrumb {
+    font-size: 10pt;
+    padding-left: 30px;
+
+    i {
+        margin: 0 4px;
+    }
+}
+
+// Bottom-right "back to top" button
+.scroll-to-top {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 100;
+    width: 48px;
+    height: 48px;
+    border: none;
+    border-radius: 50%;
+    background-color: rgb(178, 8, 8);
+    color: #fff;
+    font-size: 22px;
+    opacity: 0;
+    transform: translateY(100px);
+    transition: all 0.5s ease;
+    pointer-events: none;
+
+    &.visible {
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: auto;
+    }
+}
+
+// Save / Back bar pinned bottom-right on long forms
+.form-actions-float {
+    position: fixed;
+    right: 85px;
+    bottom: 20px;
+    z-index: 99;
+    display: flex;
+    gap: 4px;
+}
+
+.guest-layout {
+    min-height: 100vh;
+    background-color: #f5f6f8;
+}

@@ -1,0 +1,21 @@
+//
+// Ronda: styles for the React front end, layered on the Minible theme
+// (bootstrap.scss, icons.scss and app.scss are imported before this file).
+//
+
+@import "./node_modules/bootstrap/scss/functions";
+@import "./node_modules/bootstrap/scss/variables";
+@import "variables";
+@import "./node_modules/bootstrap/scss/mixins";
+
+// App shell
+@import "ronda/layout";
+@import "ronda/navigation";
+@import "ronda/feedback";
+
+// Shared components
+@import "ronda/components";
+@import "ronda/forms";
+
+// Pages
+@import "ronda/pages/dashboard";

@@ -21,6 +21,7 @@
         "genealabs/laravel-model-caching": "*",
         "google/auth": "^1.49",
         "guzzlehttp/guzzle": "^7.0.1",
+        "inertiajs/inertia-laravel": "^1.3",
         "intervention/image": "^2.7",
         "ixudra/curl": "^6.22",
         "jenssegers/agent": "^2.6",
@@ -43,6 +44,7 @@
         "shuchkin/simplexlsx": "^1.0",
         "shuchkin/simplexlsxgen": "^1.2",
         "spatie/pdf-to-text": "^1.4",
+        "tightenco/ziggy": "^2.6",
         "tucker-eric/eloquentfilter": "^3.1",
         "yajra/laravel-datatables-oracle": "^10.6"
     },

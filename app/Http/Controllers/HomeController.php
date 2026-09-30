@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\Dashboard\DailyDigestResource;
+use App\Http\Resources\Dashboard\DashboardSummaryResource;
 use App\Models\DailyDigest;
 use App\Services\DailyDigestService;
 use App\Services\DashboardService;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
 
 class HomeController extends Controller
 {
@@ -39,7 +42,16 @@ class HomeController extends Controller
         $summary = app(DashboardService::class)->summary($isTeam ? null : $user);
         $digest  = $isTeam ? DailyDigest::latestDigest() : null;
 
-        return view('page.dashboard', compact('request', 'summary', 'digest', 'isTeam'));
+        return Inertia::render('Dashboard/Index', [
+            'isTeam'       => $isTeam,
+            'summary'      => DashboardSummaryResource::make($summary)->resolve(),
+            'digest'       => $digest ? DailyDigestResource::make($digest)->resolve() : null,
+            'digestStatus' => session('digest_status'),
+            'risk'         => [
+                'hours'   => (int) config('ife.risk.hours'),
+                'percent' => (int) round(config('ife.risk.elapsed') * 100),
+            ],
+        ]);
     }
 
     /** "Regenerate" on the digest card: rewrite today's digest now. */

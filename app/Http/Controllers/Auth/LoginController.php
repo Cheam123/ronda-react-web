@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Inertia\Inertia;
 
 
 
@@ -46,6 +47,11 @@ class LoginController extends Controller
     {
         $this->session = $session;
         $this->middleware('guest')->except('logout');
+    }
+
+    public function showLoginForm()
+    {
+        return Inertia::render('Auth/Login');
     }
 
     protected function authenticated()
