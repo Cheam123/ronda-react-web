@@ -17,7 +17,14 @@ use App\Services\FormRecordService;
 use App\Services\FormSchemaService;
 use App\Services\FormUploadService;
 use App\Services\NeedsAssigneeException;
+use App\Http\Resources\Forms\ApprovalStageResource;
+use App\Http\Resources\Forms\CaseLinkResource;
+use App\Http\Resources\Forms\FormSummaryResource;
+use App\Http\Resources\Forms\RecordRowResource;
+use App\Http\Resources\Forms\ResponseSectionResource;
+use App\Support\Options;
 use Illuminate\Support\Facades\DB;
+use Inertia\Inertia;
 use Maatwebsite\Excel\Facades\Excel;
 
 class FormController extends Controller
@@ -38,23 +45,6 @@ class FormController extends Controller
         $this->recordService   = $recordService;
     }
 
-    private const ELEMENT_TYPES = [
-        [ 'value' => 'text', 'label' => 'Free Text (Single Line)' ],
-        [ 'value' => 'textarea', 'label' => 'Free Text (Multiple Line)' ],
-        [ 'value' => 'email', 'label' => 'Email' ],
-        [ 'value' => 'tel', 'label' => 'Telephone' ],
-        [ 'value' => 'number', 'label' => 'Number' ],
-        [ 'value' => 'date', 'label' => 'Date' ],
-        [ 'value' => 'time', 'label' => 'Time' ],
-        [ 'value' => 'select', 'label' => 'Multiple choice' ],
-        [ 'value' => 'multi-choice', 'label' => 'Multi-Choice (Multiple Select)' ],
-        [ 'value' => 'multi-select', 'label' => 'Multi-Selectable Menu (Multiple Categories Multiple Select)' ],
-        [ 'value' => 'checkbox', 'label' => 'Checkbox' ],
-        [ 'value' => 'file', 'label' => 'File' ],
-        [ 'value' => 'user', 'label' => 'User (person picker)' ],
-        [ 'value' => 'gps', 'label' => 'Location Stamp' ],
-    ];
-
     public function index(Request $request) {
         abort_unless($this->canManageForms(), 403);
 
@@ -73,12 +63,17 @@ class FormController extends Controller
         $forms  = $query->arranged()->get();
         $groups = FormGroup::ordered()->get();
 
-        return view('page.form.index', [
-            'groups'   => $groups,
-            'grouped'  => $forms->groupBy('form_group_id'),
-            'ungrouped'=> $forms->whereNull('form_group_id')->values(),
-            'search'   => $request->input('search'),
-            'formCount'=> $forms->count(),
+        $grouped = $forms->groupBy('form_group_id');
+
+        return Inertia::render('Forms/Index', [
+            'groups'    => $groups->map(fn (FormGroup $group) => [
+                'id'    => $group->id,
+                'name'  => $group->name,
+                'forms' => FormSummaryResource::collection($grouped[$group->id] ?? collect())->resolve(),
+            ])->values(),
+            'ungrouped' => FormSummaryResource::collection($forms->whereNull('form_group_id')->values())->resolve(),
+            'search'    => (string) $request->input('search', ''),
+            'formCount' => $forms->count(),
         ]);
     }
 
@@ -254,18 +249,22 @@ class FormController extends Controller
             ]);
         }
 
-        return view('page.form.entry', ['sections' => $sections, 'forms' => $forms]);
+        return Inertia::render('Forms/Entry', [
+            'sections' => $sections->map(fn ($section) => [
+                'name'  => $section['name'],
+                'forms' => FormSummaryResource::collection($section['forms'])->resolve(),
+            ])->values(),
+        ]);
     }
 
     public function create() {
         abort_unless($this->canManageForms(), 403);
 
-        $users       = User::orderBy('name')->get();
-        $types       = $this->userTypeOptions();
-        $formElement = self::ELEMENT_TYPES;
-        $groups      = FormGroup::ordered()->get();
-
-        return view('page.form.create', compact('formElement', 'users', 'types', 'groups'));
+        return Inertia::render('Forms/Builder', $this->builderProps(null, [
+            'schema'   => ['schema_version' => 2, 'groups' => [], 'elements' => []],
+            'process'  => ['process_version' => 1, 'nodes' => []],
+            'settings' => ['access' => ['submit_scope' => 'everyone', 'user_ids' => [], 'user_types' => []]],
+        ]));
     }
 
     public function store(StoreFormRequest $request) {
@@ -289,18 +288,33 @@ class FormController extends Controller
     public function edit($id) {
         abort_unless($this->canManageForms(), 403);
 
-        $form        = Form::findOrFail($id);
-        $users       = User::orderBy('name')->get();
-        $types       = $this->userTypeOptions();
-        $formElement = self::ELEMENT_TYPES;
+        $form = Form::findOrFail($id);
 
-        $schema   = $form->schema;
-        $process  = $form->process;
-        $settings = $form->settings ?: ['access' => ['submit_scope' => 'everyone', 'user_ids' => [], 'user_types' => []]];
+        return Inertia::render('Forms/Builder', $this->builderProps($form, [
+            'schema'   => $form->schema,
+            'process'  => $form->process,
+            'settings' => $form->settings ?: ['access' => ['submit_scope' => 'everyone', 'user_ids' => [], 'user_types' => []]],
+        ]));
+    }
 
-        $groups = FormGroup::ordered()->get();
-
-        return view('page.form.edit', compact('form', 'users', 'types', 'formElement', 'schema', 'process', 'settings', 'groups'));
+    /**
+     * What the builder needs besides the definition itself: the form's basic
+     * info, and the people, user types and groups its pickers offer.
+     */
+    private function builderProps(?Form $form, array $definition): array
+    {
+        return array_merge($definition, [
+            'form'   => $form ? [
+                'id'            => $form->id,
+                'name'          => $form->name,
+                'description'   => $form->description,
+                'is_enabled'    => (bool) $form->is_enabled,
+                'form_group_id' => $form->form_group_id,
+            ] : null,
+            'users'  => User::orderBy('name')->get(['id', 'name']),
+            'types'  => $this->userTypeOptions(),
+            'groups' => FormGroup::ordered()->get(['id', 'name']),
+        ]);
     }
 
     /**
@@ -362,12 +376,15 @@ class FormController extends Controller
 
         $form = Form::findOrFail($id);
 
-        $schema        = $form->schema;
-        $tree          = $this->schemaService->renderTree($schema);
-        $process       = $form->process;
-        $approverNames = $this->userNamesInProcess($process);
+        $process = $form->process;
 
-        return view('page.form.preview', compact('form', 'schema', 'tree', 'process', 'approverNames'));
+        return Inertia::render('Forms/Preview', [
+            'form'          => ['id' => $form->id, 'name' => $form->name, 'description' => $form->description],
+            'schema'        => $form->schema,
+            'process'       => $process,
+            'approverNames' => (object) $this->userNamesInProcess($process),
+            'people'        => User::orderBy('name')->get(['id', 'name']),
+        ]);
     }
 
     public function fill(Request $request, $id) {
@@ -375,7 +392,6 @@ class FormController extends Controller
         abort_unless($this->schemaService->canSubmit($form->settings, auth()->user()), 403, 'You are not allowed to submit this form.');
 
         $schema  = $form->schema;
-        $tree    = $this->schemaService->renderTree($schema);
         $answers = $this->schemaService->answersById(session('clone_prefill', []), $schema);
 
         // This case may follow up on an earlier case of the same form — the
@@ -389,14 +405,15 @@ class FormController extends Controller
             abort_unless($parentCase, 403, 'That case cannot be followed up on.');
         }
 
-        $visibility = $this->schemaService->resolveVisibility($schema, $answers);
-        $deferredIds = $this->processService->deferredFieldIds($form->process, $schema, $this->schemaService);
-        $pickerUsers = User::orderBy('name')->get(['id', 'name']);
-
-        return view('page.form.fill', compact(
-            'form', 'schema', 'tree', 'answers', 'visibility', 'deferredIds', 'pickerUsers',
-            'parentOptions', 'parentCase'
-        ));
+        return Inertia::render('Forms/Fill', [
+            'form'          => ['id' => $form->id, 'name' => $form->name, 'description' => $form->description],
+            'schema'        => $schema,
+            'answers'       => (object) $answers,
+            'deferredIds'   => $this->processService->deferredFieldIds($form->process, $schema, $this->schemaService),
+            'people'        => User::orderBy('name')->get(['id', 'name']),
+            'parentOptions' => CaseLinkResource::collection($parentOptions)->resolve(),
+            'parentId'      => optional($parentCase)->id,
+        ]);
     }
 
     public function submit(Request $request) {
@@ -501,14 +518,14 @@ class FormController extends Controller
 
     /** Records I opened or took part in. */
     public function records(Request $request) {
-        return $this->recordList($request, auth()->user(), 'page.form.records', false);
+        return $this->recordList($request, auth()->user(), 'Forms/Records', false);
     }
 
     /** Every record (form_admin only) — the oversight/export console. */
     public function allRecords(Request $request) {
         abort_unless(auth()->user()->can('form_admin'), 403);
 
-        return $this->recordList($request, null, 'page.form.records', true);
+        return $this->recordList($request, null, 'Forms/Records', true);
     }
 
     /**
@@ -567,13 +584,18 @@ class FormController extends Controller
 
         $records = $query->with('parent')->orderBy($sortBy, $sortMode)->paginate(15)->withQueryString();
 
-        $rows  = collect($records->items())->map(fn ($case) => $this->recordService->summarize($case));
-        $forms = Form::orderBy('name')->get(['id', 'name']);
         // Submitters for the advanced filter row — the same list the Task
         // screen filters by: active users, minus the system account.
         $users = User::where('status', 1)->whereNotIn('id', [1])->orderBy('name')->get(['id', 'name']);
 
-        return view($view, compact('records', 'rows', 'forms', 'users', 'statusCounts', 'isAdmin'));
+        return Inertia::render($view, [
+            'records'      => $records->through(fn (FormSubmission $case) => RecordRowResource::make($case)->resolve()),
+            'forms'        => Options::fromCollection(Form::orderBy('name')->get(['id', 'name'])),
+            'users'        => Options::fromCollection($users),
+            'statusCounts' => $statusCounts,
+            'isAdmin'      => $isAdmin,
+            'filters'      => $request->query(),
+        ]);
     }
 
     /** One case: its header, its answers, and how it relates to other cases. */
@@ -698,23 +720,20 @@ class FormController extends Controller
 
         abort_unless($submission->isUntouched(), 403, 'This submission is already being reviewed and can no longer be edited.');
 
-        $form    = $submission->form;
-        $schema  = $form->schema;
-        $tree    = $this->schemaService->renderTree($schema);
-        $answers = $this->schemaService->answersById($submission->form_elements, $schema);
-        $visibility = $this->schemaService->resolveVisibility($schema, $answers);
-        $deferredIds = $this->processService->deferredFieldIds($form->process, $schema, $this->schemaService);
-        $pickerUsers = User::orderBy('name')->get(['id', 'name']);
+        $form   = $submission->form;
+        $schema = $form->schema;
 
-        // Editing answers never changes which case this follows up on — that
-        // link is set once, when the case is opened.
-        $parentCase  = $submission->parent;
-        $recordTitle = $submission->record_title;
-
-        return view('page.form.submission-edit', compact(
-            'submission', 'form', 'schema', 'tree', 'answers', 'visibility', 'deferredIds', 'pickerUsers',
-            'parentCase', 'recordTitle'
-        ));
+        return Inertia::render('Forms/SubmissionEdit', [
+            'submission'  => ['id' => $submission->id, 'record_title' => $submission->record_title],
+            'form'        => ['id' => $form->id, 'name' => $form->name, 'description' => $form->description],
+            'schema'      => $schema,
+            'answers'     => (object) $this->schemaService->answersById($submission->form_elements, $schema),
+            'deferredIds' => $this->processService->deferredFieldIds($form->process, $schema, $this->schemaService),
+            'people'      => User::orderBy('name')->get(['id', 'name']),
+            // Editing answers never changes which case this follows up on — that
+            // link is set once, when the case is opened.
+            'parentCase'  => $submission->parent ? CaseLinkResource::make($submission->parent)->resolve() : null,
+        ]);
     }
 
     public function updateSubmission(Request $request, $id) {
@@ -813,7 +832,8 @@ class FormController extends Controller
                     'submission_id' => $submission->id,
                     'form_name'     => optional($submission->form)->name ?? 'N/A',
                     'submitted_by'  => optional($submission->submittedBy)->name ?? 'Unknown',
-                    'submitted_at'  => $submission->created_at,
+                    'submitted_at'  => optional($submission->created_at)->format('d M Y, h:i A'),
+                    'submitted_ago' => optional($submission->created_at)->diffForHumans(),
                     'stage_name'    => optional($stage)->name,
                     'stage_type'    => optional($stage)->node_type,
                     'record_id'     => $submission->id,
@@ -822,7 +842,7 @@ class FormController extends Controller
                 ];
             });
 
-        return view('page.form.tasks', compact('tasks'));
+        return Inertia::render('Forms/Tasks', ['tasks' => $tasks->values()]);
     }
 
     /* ---------------------------------------------------------------
@@ -943,14 +963,11 @@ class FormController extends Controller
             $fillStage = $currentStage;
         }
 
-        $pickerUsers = User::orderBy('name')->get(['id', 'name']);
-
         // Case framing: title, reference, status, and the case links.
-        $recordTitle = $this->recordService->titleFor($submission);
         // Closing and reopening belong to whoever opened the case — see
         // FormRecordService::canClose(). form_admin no longer grants it, so the
         // page needs no admin flag at all.
-        $canClose    = $this->recordService->canClose($submission, $user);
+        $canClose = $this->recordService->canClose($submission, $user);
 
         // The case this one followed up on, and the ones opened from it. Both
         // are filtered to what the viewer may see: a link must not become a
@@ -967,17 +984,91 @@ class FormController extends Controller
         $canFollowUp = $submission->canBeParent()
             && $this->schemaService->canSubmit(optional($submission->form)->settings, $user);
 
-        // Kept as an alias so the header partial and older links keep working
-        // now that a case and its submission are the same row.
-        $root = $submission;
+        // The progress timeline: the blocking steps, and whether a runtime
+        // branch or loop may still add more.
+        $blockingStages = $submission->approvals->filter(fn ($row) => $row->isBlockingNode())->values();
+        $currentIndex   = $currentStage ? $blockingStages->search(fn ($row) => $row->id === $currentStage->id) : false;
+        $nextStage      = $currentIndex !== false ? $blockingStages->get($currentIndex + 1) : null;
+        $hasRejectedRow = $blockingStages->contains(fn ($row) => $row->status === 'rejected');
 
-        return view('page.form.record-view', compact(
-            'root', 'recordTitle', 'canClose', 'parentCase', 'childCases', 'canFollowUp',
-            'submission', 'canApprove', 'waitingFor', 'visibleAnswers', 'schema',
-            'fillStage', 'fillElements', 'fillAnswers', 'fillTree', 'fillPrevious',
-            'responseSections', 'responseFieldCount', 'responseSectionCount',
-            'previousRounds', 'pickerUsers'
-        ));
+        // The submitter's own controls over this entry.
+        $isMine = (int) $submission->submitted_by === (int) $user->id;
+
+        return Inertia::render('Forms/Record', [
+            'record'         => [
+                'id'           => $submission->id,
+                'reference'    => $submission->recordReference(),
+                'title'        => $this->recordService->titleFor($submission),
+                'status'       => $submission->status,
+                'open'         => $submission->isRecordOpen(),
+                'form'         => [
+                    'id'          => $submission->form_id,
+                    'name'        => optional($submission->form)->name ?? 'N/A',
+                    'description' => optional($submission->form)->description,
+                ],
+                'submitted_by' => optional($submission->submittedBy)->name ?? 'Unknown',
+                'submitted_at' => $submission->created_at->format('d M Y, h:i A'),
+                'closed'       => $submission->isRecordOpen() ? null : [
+                    'remark' => $submission->record_closed_remark,
+                    'by'     => optional($submission->recordClosedBy)->name ?? 'an administrator',
+                    'at'     => optional($submission->record_closed_at)->format('d M Y, h:i A'),
+                ],
+            ],
+            'parentCase'     => $parentCase ? CaseLinkResource::make($parentCase)->resolve() : null,
+            'childCases'     => CaseLinkResource::collection($childCases)->resolve(),
+            'canFollowUp'    => $canFollowUp,
+            'canClose'       => $canClose,
+            'responses'      => [
+                'sections'     => ResponseSectionResource::collection($responseSections)->resolve(),
+                'fieldCount'   => $responseFieldCount,
+                'sectionCount' => $responseSectionCount,
+            ],
+            'previousRounds' => collect($previousRounds)->map(fn ($round) => [
+                'iteration'   => $round['iteration'],
+                'closed_at'   => $round['closed_at'] ? \Carbon\Carbon::parse($round['closed_at'])->format('d M Y H:i') : null,
+                'actors'      => $round['actors'],
+                'field_count' => $round['field_count'],
+                'sections'    => ResponseSectionResource::collection($round['sections'])->resolve(),
+            ])->values(),
+            'timeline'       => [
+                'submitted_on'   => $submission->created_at->format('d M'),
+                'stages'         => ApprovalStageResource::collection($blockingStages)->resolve(),
+                // Nothing further down the chain is "in progress" once the case
+                // is no longer pending.
+                'current_id'     => $submission->status === 'pending' ? optional($currentStage)->id : null,
+                'legacy_reject'  => $submission->rejected_by && !$hasRejectedRow ? [
+                    'by'     => optional($submission->rejectedBy)->name,
+                    'remark' => $submission->rejected_remark,
+                ] : null,
+                // A runtime branch / loop may still add stages.
+                'process_open'   => $submission->status === 'pending'
+                    && isset($submission->process_snapshot['cursor'])
+                    && empty($submission->process_snapshot['complete']),
+            ],
+            'review'         => [
+                'canApprove' => $canApprove && !$fillStage,
+                'waitingFor' => $waitingFor->pluck('name')->values(),
+                'stageName'  => optional($currentStage)->name,
+                'nextStage'  => optional($nextStage)->name,
+            ],
+            'fillStage'      => $fillStage ? [
+                'name'     => $fillStage->name,
+                'elements' => $fillElements,
+                'tree'     => $fillTree,
+                'answers'  => (object) $fillAnswers,
+                // Last round's answers, shown as a hint under each input.
+                'previous' => (object) $fillPrevious,
+            ] : null,
+            'schema'         => $schema,
+            'entry'          => [
+                'canEdit'   => $isMine && $submission->status === 'pending' && $submission->isUntouched(),
+                // Cancelling withdraws your own case while it is still pending.
+                // Admins have Close, which does the same but demands a reason.
+                'canCancel' => $isMine && $submission->status === 'pending',
+                'canClone'  => $isMine && (bool) optional($submission->form)->is_enabled,
+            ],
+            'people'         => User::orderBy('name')->get(['id', 'name']),
+        ]);
     }
 
     public function completeFillStage(Request $request, $id) {
@@ -1004,7 +1095,9 @@ class FormController extends Controller
                 'fields' => ['form_data' => (string) $request->form_data],
             ]);
 
-            return redirect()->route('form.admin.view', $id);
+            // Straight to the record page, not form.admin.view: that redirects
+            // again, and flashed data only survives a single redirect.
+            return redirect()->route('form.records.show', $id);
         }
 
         // Files last, like IFE, and only once the stage is accepted.
@@ -1018,11 +1111,11 @@ class FormController extends Controller
         } else {
             alert()->error('Not saved', $result['message'])->showConfirmButton();
             if (!empty($result['errors'])) {
-                return redirect()->route('form.admin.view', $id)->withErrors($result['errors']);
+                return redirect()->route('form.records.show', $id)->withErrors($result['errors']);
             }
         }
 
-        return redirect()->route('form.admin.view', $id);
+        return redirect()->route('form.records.show', $id);
     }
 
     public function approveSubmission(Request $request, $id) {
@@ -1039,7 +1132,7 @@ class FormController extends Controller
                 'fields' => ['remark' => (string) $request->remark],
             ]);
 
-            return redirect()->route('form.admin.view', $id);
+            return redirect()->route('form.records.show', $id);
         }
 
         if ($result['ok']) {
@@ -1048,7 +1141,7 @@ class FormController extends Controller
             alert()->error('Not allowed', $result['message'])->showConfirmButton();
         }
 
-        return redirect()->route('form.admin.view', $id);
+        return redirect()->route('form.records.show', $id);
     }
 
     public function rejectSubmission(Request $request, $id) {
@@ -1057,7 +1150,7 @@ class FormController extends Controller
         $submission = FormSubmission::with(['form', 'approvals'])->findOrFail($id);
 
         if (in_array($submission->status, ['rejected', 'cancelled'])) {
-            return redirect()->route('form.admin.view', $id);
+            return redirect()->route('form.records.show', $id);
         }
 
         $result = $this->approvalService->reject($submission, auth()->user(), $request->remark);
@@ -1068,7 +1161,7 @@ class FormController extends Controller
             alert()->error('Not allowed', $result['message'])->showConfirmButton();
         }
 
-        return redirect()->route('form.admin.view', $id);
+        return redirect()->route('form.records.show', $id);
     }
 
     /**

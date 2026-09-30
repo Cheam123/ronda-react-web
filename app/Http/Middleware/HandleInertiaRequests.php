@@ -74,7 +74,9 @@ class HandleInertiaRequests extends Middleware
 
     /**
      * Session flashes. `alert` is the SweetAlert the controllers queue with
-     * alert()->success(...); the page fires it on arrival.
+     * alert()->success(...); the page fires it on arrival. `needsAssignee` is
+     * a form action the server refused until someone picks the next handler
+     * (see FormController): {name, action, fields}.
      */
     private function flash(Request $request): array
     {
@@ -82,10 +84,11 @@ class HandleInertiaRequests extends Middleware
         $alert   = $session->pull('alert.config');
 
         return [
-            'success' => $session->get('success'),
-            'error'   => $session->get('error'),
-            'status'  => $session->get('status'),
-            'alert'   => $alert ? json_decode($alert, true) : null,
+            'success'       => $session->get('success'),
+            'error'         => $session->get('error'),
+            'status'        => $session->get('status'),
+            'alert'         => $alert ? json_decode($alert, true) : null,
+            'needsAssignee' => $session->get('needs_assignee'),
         ];
     }
 }

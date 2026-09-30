@@ -42,6 +42,8 @@ interface PromptOptions {
     text?: string;
     inputLabel?: string;
     inputPlaceholder?: string;
+    /** Text the input starts with. */
+    inputValue?: string;
     inputType?: 'text' | 'textarea' | 'password';
     confirmText?: string;
     required?: string | false;
@@ -55,6 +57,7 @@ export async function promptText({
     text,
     inputLabel,
     inputPlaceholder,
+    inputValue = '',
     inputType = 'text',
     confirmText = 'Submit',
     required = false,
@@ -67,6 +70,7 @@ export async function promptText({
         input: inputType,
         inputLabel,
         inputPlaceholder,
+        inputValue,
         inputAttributes: {
             autocapitalize: 'off',
             ...(minLength ? { minlength: String(minLength) } : {}),

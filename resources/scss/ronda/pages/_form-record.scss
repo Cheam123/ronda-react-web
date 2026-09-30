@@ -1,0 +1,613 @@
+//
+// A form record: its answers, progress, the viewer's part and related cases.
+//
+
+$rs-ink: #16203a;
+$rs-muted: #8a93a8;
+$rs-accent: #4a5fd8;
+$rs-accent-dark: #3446b8;
+$rs-line: #e3e8f0;
+$rs-handler: #7a56d1;
+
+.rs-page {
+    padding: 24px 24px 40px;
+    border-radius: 16px;
+    background: #eef1f6;
+    color: $rs-ink;
+
+    // An anchor styled as a button keeps its button colours.
+    a:not(.btn) {
+        color: $rs-accent;
+        text-decoration: none;
+
+        &:hover { color: $rs-accent-dark; }
+    }
+
+    .btn {
+        padding: 8px 16px;
+        border-radius: 9px;
+        font-size: 13.5px;
+        font-weight: 600;
+    }
+
+    .btn-primary {
+        border-color: $rs-accent;
+        background: $rs-accent;
+
+        &:hover,
+        &:focus { border-color: $rs-accent-dark; background: $rs-accent-dark; }
+    }
+
+    .btn-outline-primary {
+        border-color: #c7d0f5;
+        background: #fff;
+        color: $rs-accent-dark;
+
+        &:hover { border-color: $rs-accent; background: #eef1fd; color: #2c3ba0; }
+    }
+
+    .btn-outline-secondary {
+        border-color: #d5dbe7;
+        background: #fff;
+        color: #3a445c;
+
+        &:hover { border-color: #b9c2d4; background: #f1f4f9; color: $rs-ink; }
+    }
+
+    .btn-outline-danger {
+        border-color: #f2c9c4;
+        background: #fff;
+        color: #c0392b;
+
+        &:hover { border-color: #c0392b; background: #fdeeee; color: #a5301f; }
+    }
+
+    @media (max-width: 575.98px) {
+        padding: 12px 8px 24px;
+    }
+}
+
+.rs-topbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 24px;
+    padding: 20px 26px;
+    border: 1px solid $rs-line;
+    border-radius: 14px;
+    background: #fff;
+}
+
+.rs-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 8px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.rs-title-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+}
+
+.rs-title {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    color: $rs-ink;
+}
+
+.rs-id-badge {
+    padding: 3px 9px;
+    border: 1px solid $rs-line;
+    border-radius: 6px;
+    background: #f1f4f9;
+    color: #6b7690;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.rs-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 11px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+
+    &--pending { background: #eef1fd; color: $rs-accent-dark; }
+    &--approved { background: #e8f6ef; color: #178a50; }
+    &--rejected { background: #fdeeee; color: #c0392b; }
+    &--cancelled { background: #f1f4f9; color: #6b7690; }
+}
+
+.rs-status-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: currentColor;
+}
+
+.rs-form-desc {
+    max-width: 640px;
+    margin-top: 6px;
+    color: #6b7690;
+    font-size: 13px;
+}
+
+.rs-submitter {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #6b7690;
+    font-size: 13px;
+}
+
+.rs-avatar {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    background: #dfe6fb;
+    color: $rs-accent-dark;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.rs-submitter-name { color: $rs-ink; font-weight: 600; }
+.rs-submitter-date { font-size: 12px; }
+
+.rs-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 352px;
+    align-items: start;
+    gap: 24px;
+
+    @media (max-width: 991.98px) {
+        grid-template-columns: 1fr;
+    }
+}
+
+.rs-left {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    min-width: 0;
+}
+
+.rs-right {
+    position: sticky;
+    top: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+
+    @media (max-width: 991.98px) {
+        position: static;
+    }
+}
+
+.rs-card {
+    overflow: hidden;
+    border: 1px solid $rs-line;
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 6px 16px -8px rgba(16, 24, 40, 0.08);
+}
+
+.rs-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 18px 28px;
+    border-bottom: 1px solid #eceff5;
+}
+
+.rs-card-title { font-size: 15px; font-weight: 700; }
+
+.rs-card-meta {
+    color: $rs-muted;
+    font-size: 12.5px;
+    white-space: nowrap;
+}
+
+.rs-card-body { padding: 8px 28px 12px; }
+
+.rs-empty {
+    padding: 48px 0;
+    text-align: center;
+    color: $rs-muted;
+
+    i {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 40px;
+        opacity: 0.4;
+    }
+}
+
+.rs-section { padding: 20px 0 8px; }
+
+.rs-section-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+
+    &::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: #eceff5;
+    }
+}
+
+.rs-section-label {
+    color: $rs-accent;
+    font-size: 11.5px;
+    font-weight: 800;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+}
+
+.rs-fields-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px 32px;
+
+    @media (max-width: 575.98px) {
+        grid-template-columns: 1fr;
+    }
+}
+
+.rs-field-wide { grid-column: 1 / -1; }
+
+.rs-field-label {
+    margin-bottom: 5px;
+    color: $rs-muted;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+}
+
+.rs-field-value { font-size: 14.5px; font-weight: 600; }
+
+.rs-field-text {
+    margin: 0;
+    color: #3a445c;
+    font-size: 14px;
+    line-height: 1.65;
+    white-space: pre-wrap;
+}
+
+.rs-field-empty { color: #b6bec7; font-style: italic; }
+
+.rs-tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 2px;
+}
+
+.rs-tag {
+    padding: 4px 12px;
+    border: 1px solid #dfe6fb;
+    border-radius: 999px;
+    background: #eef1fd;
+    color: $rs-accent-dark;
+    font-size: 12.5px;
+    font-weight: 600;
+}
+
+.rs-check-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 2px;
+}
+
+.rs-check-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    color: #3a445c;
+    font-size: 14px;
+}
+
+.rs-check-icon {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 17px;
+    height: 17px;
+    border: 1.5px solid #d5dbe7;
+    border-radius: 5px;
+    background: #fff;
+    color: #fff;
+    font-size: 11px;
+
+    &-on {
+        border-color: $rs-accent;
+        background: $rs-accent;
+        font-weight: 800;
+    }
+}
+
+// A Handler's section keeps the app-wide Handler purple.
+.fill-stage-card {
+    border-left: 4px solid $rs-handler !important;
+
+    &__dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        margin-right: 9px;
+        border-radius: 999px;
+        background: $rs-handler;
+    }
+
+    .form-control,
+    .form-select {
+        padding: 10px 13px;
+        border: 1px solid #d5dbe7;
+        border-radius: 9px;
+        font-size: 14px;
+
+        &:focus {
+            border-color: $rs-handler;
+            box-shadow: 0 0 0 3px rgba(122, 86, 209, 0.14);
+        }
+    }
+
+    .form-label {
+        color: $rs-ink;
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .btn-handler {
+        border-color: $rs-handler;
+        background: $rs-handler;
+        color: #fff;
+    }
+}
+
+@keyframes fill-attn-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(122, 86, 209, 0.45); }
+    100% { box-shadow: 0 0 0 14px rgba(122, 86, 209, 0); }
+}
+
+.fill-attn { animation: fill-attn-pulse 1.1s ease-out 2; }
+
+.rs-fill-badge {
+    padding: 5px 12px;
+    border-radius: 999px;
+    background: #f1ecfb;
+    color: $rs-handler;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.rs-sidebar-card { padding: 22px 24px; }
+
+.rs-sidebar-title {
+    margin-bottom: 18px;
+    color: #6b7690;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.rs-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+}
+
+.rs-actions-help {
+    margin-top: 14px;
+    color: $rs-muted;
+    font-size: 12.5px;
+    line-height: 1.5;
+}
+
+.rs-waiting-card {
+    padding: 18px 22px;
+    border: 1px solid #f2e2c0;
+    border-radius: 14px;
+    background: #fff8ec;
+    color: #7a5a12;
+    font-size: 13.5px;
+    line-height: 1.55;
+
+    span { color: #9a7b34; }
+}
+
+.rs-closed-card {
+    margin-bottom: 24px;
+    padding: 16px 22px;
+    border: 1px solid $rs-line;
+    border-radius: 14px;
+    background: #f7f8fb;
+}
+
+.rs-closed-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: $rs-ink;
+    font-size: 13.5px;
+    font-weight: 700;
+}
+
+.rs-closed-remark {
+    margin-top: 8px;
+    color: #3a445c;
+    font-size: 13.5px;
+    line-height: 1.55;
+    white-space: pre-wrap;
+}
+
+.rs-closed-meta {
+    margin-top: 8px;
+    color: $rs-muted;
+    font-size: 12px;
+}
+
+.previous-round__header .accordion-button {
+    padding: 1rem 0;
+    background: transparent;
+    font-size: 13.5px;
+    font-weight: 600;
+    box-shadow: none;
+}
+
+// Progress timeline.
+.rs-timeline {
+    display: flex;
+    flex-direction: column;
+}
+
+.rs-step {
+    display: flex;
+    gap: 14px;
+}
+
+.rs-step-rail {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.rs-step-dot {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 999px;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+
+    &--done { background: #178a50; }
+    &--rejected { background: #c0392b; }
+
+    &--current {
+        border: 2px solid $rs-accent;
+        background: #fff;
+        box-shadow: 0 0 0 4px rgba(74, 95, 216, 0.14);
+    }
+
+    &--pending {
+        border: 2px solid #d5dbe7;
+        background: #fff;
+    }
+
+    &--tentative { border-style: dashed; }
+}
+
+.rs-step-line {
+    flex: 1;
+    width: 2px;
+    min-height: 22px;
+
+    &--done { background: #178a50; }
+    &--muted { background: #d5dbe7; }
+}
+
+.rs-step-body { padding-bottom: 18px; }
+
+.rs-step-title {
+    font-size: 14px;
+    font-weight: 700;
+
+    &--current { color: $rs-accent; }
+}
+
+.rs-step-tag {
+    margin-left: 6px;
+    padding: 2px 6px;
+    border-radius: 5px;
+    background: #f1f4f9;
+    color: $rs-muted;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    vertical-align: middle;
+}
+
+.rs-step-sub {
+    margin-top: 2px;
+    font-size: 12.5px;
+
+    &--muted { color: $rs-muted; }
+    &--done { color: #178a50; }
+    &--rejected { color: #c0392b; }
+    &--current { color: $rs-accent; font-weight: 600; }
+}
+
+.rs-step-remark {
+    margin-top: 4px;
+    color: #6b7690;
+    font-size: 12.5px;
+    font-style: italic;
+}
+
+// Confirm dialogs.
+.rs-modal {
+    overflow: hidden;
+    border-radius: 16px;
+
+    .modal-body { padding: 24px 28px 4px; }
+
+    .modal-footer {
+        padding: 18px 28px 24px;
+        border-top: 0;
+    }
+}
+
+.rs-modal-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    margin-bottom: 14px;
+    border-radius: 12px;
+    font-size: 20px;
+    font-weight: 800;
+
+    &--success { background: #e8f6ef; color: #178a50; }
+    &--danger { background: #fdeeee; color: #c0392b; }
+}
+
+.rs-modal-title { font-size: 17px; font-weight: 800; }
+
+.rs-modal-desc {
+    margin-top: 6px;
+    color: #6b7690;
+    font-size: 13.5px;
+    line-height: 1.55;
+}

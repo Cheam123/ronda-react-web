@@ -32,11 +32,22 @@ export interface AuthUser {
 /** A SweetAlert2 config queued by the controllers' alert()->... helper. */
 export type FlashAlert = Record<string, unknown>;
 
+/** A form action held back until the next handler is picked (FormController). */
+export interface NeedsAssignee {
+    /** The step waiting for a handler. */
+    name: string;
+    /** Where to post again. */
+    action: string;
+    /** The original request's fields, replayed as they were. */
+    fields: Record<string, string>;
+}
+
 export interface Flash {
     success: string | null;
     error: string | null;
     status: string | null;
     alert: FlashAlert | null;
+    needsAssignee: NeedsAssignee | null;
 }
 
 export interface SharedProps {
@@ -94,6 +105,8 @@ export type QueryParams = Record<string, string | undefined>;
 export interface SelectOption<V extends string | number = string | number> {
     value: V;
     label: string;
+    /** Listed but not choosable (native selects only). */
+    disabled?: boolean;
 }
 
 /** The {status, message, data} envelope Controller::response_* returns. */
