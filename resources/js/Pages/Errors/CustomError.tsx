@@ -8,7 +8,7 @@ interface CustomErrorProps {
     };
 }
 
-/** The controllers' "access error" page (errors.custom-error). */
+/** The "access error" page controllers render when a user may not see something. */
 export default function CustomError({ response }: CustomErrorProps) {
     return (
         <AppLayout title="Error">

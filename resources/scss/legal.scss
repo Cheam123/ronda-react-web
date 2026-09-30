@@ -1,0 +1,8 @@
+//
+// Stylesheet for the public legal pages, loaded on its own by
+// resources/views/legal/layout.blade.php (the React app is not).
+//
+
+@import "custom/fonts/fonts";
+@import "bootstrap";
+@import "ronda/pages/legal";

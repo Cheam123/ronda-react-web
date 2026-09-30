@@ -6,7 +6,8 @@ import { defineConfig } from 'vite';
 export default defineConfig({
     plugins: [
         laravel({
-            input: 'resources/js/app.tsx',
+            // legal.scss styles the public legal pages, which are plain Blade.
+            input: ['resources/js/app.tsx', 'resources/scss/legal.scss'],
             refresh: true,
         }),
         react(),

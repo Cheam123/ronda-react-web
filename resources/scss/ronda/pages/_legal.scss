@@ -1,0 +1,120 @@
+//
+// Public legal pages (privacy, terms, account deletion). These are plain
+// Blade pages, not React, so crawlers get their text without running JS.
+//
+
+.legal-page {
+    background-color: #f6f6f9;
+    min-height: 100vh;
+    padding: 40px 0 64px;
+}
+
+.legal-wrap {
+    max-width: 840px;
+    margin: 0 auto;
+    padding: 0 16px;
+}
+
+.legal-brand {
+    display: block;
+    height: 34px;
+    margin-bottom: 28px;
+}
+
+.legal-card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 40px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+
+    h1 {
+        font-size: 28px;
+        font-weight: 700;
+        margin-bottom: 6px;
+    }
+
+    h2 {
+        font-size: 18px;
+        font-weight: 600;
+        margin-top: 34px;
+        margin-bottom: 12px;
+    }
+
+    h3 {
+        font-size: 15px;
+        font-weight: 600;
+        margin-top: 22px;
+        margin-bottom: 8px;
+    }
+
+    p,
+    li {
+        font-size: 14.5px;
+        line-height: 1.7;
+        color: #343a40;
+    }
+
+    ul {
+        padding-left: 20px;
+    }
+
+    li {
+        margin-bottom: 6px;
+    }
+
+    @media (max-width: 575px) {
+        padding: 24px 20px;
+    }
+}
+
+.legal-effective {
+    font-size: 13px;
+    color: #74788d;
+    margin-bottom: 0;
+}
+
+.legal-table {
+    width: 100%;
+    font-size: 14px;
+    margin-top: 8px;
+
+    th {
+        font-weight: 600;
+        background: #f8f9fa;
+    }
+
+    th,
+    td {
+        padding: 10px 12px;
+        border: 1px solid #eff0f2;
+        vertical-align: top;
+    }
+}
+
+.legal-callout {
+    background: #f8f9fa;
+    border-left: 3px solid #556ee6;
+    padding: 14px 18px;
+    margin: 18px 0;
+    border-radius: 0 6px 6px 0;
+
+    p:last-child {
+        margin-bottom: 0;
+    }
+}
+
+.legal-footer {
+    margin-top: 28px;
+    text-align: center;
+    font-size: 13px;
+    color: #74788d;
+
+    a {
+        color: #556ee6;
+    }
+
+    span {
+        margin: 0 8px;
+        color: #ced4da;
+    }
+}
