@@ -14,7 +14,9 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Auth::routes();
+# No self sign-up: accounts are created by an admin (Users > Create). Public
+# registration made an active Field Rep account for anyone who found /register.
+Auth::routes(['register' => false]);
 
 # Legal pages — public on purpose. The Play Console fetches the privacy policy
 # and account deletion URLs without signing in, so these must stay unauthenticated
