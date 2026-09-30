@@ -21,11 +21,8 @@ class Kernel extends HttpKernel
         \Illuminate\Foundation\Http\Middleware\ValidatePostSize::class,
         \App\Http\Middleware\TrimStrings::class,
         \Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull::class,
-        
-        \Illuminate\Cookie\Middleware\EncryptCookies::class,
-        \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
-        // \Illuminate\Session\Middleware\StartSession::class,
-        // \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+        // Cookies are encrypted by the 'web' group only. Doing it here too
+        // encrypted every cookie twice, which broke axios' X-XSRF-TOKEN check.
     ];
 
     /**
