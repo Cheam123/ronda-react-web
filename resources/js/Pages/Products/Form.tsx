@@ -92,7 +92,12 @@ export default function ProductForm({ product, categories, ...breadcrumb }: Prod
                                     invalid={Boolean(errors.unit)}
                                 />
                             </Field>
-                            <Field label={`Unit Price (${currency})`} htmlFor="unit_price" required className="col-md-3">
+                            <Field
+                                label={`Unit Price (${currency})`}
+                                htmlFor="unit_price"
+                                required
+                                className="col-md-3"
+                            >
                                 <TextInput
                                     id="unit_price"
                                     type="number"

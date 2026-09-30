@@ -48,11 +48,18 @@ function VisitHistory({ visits }: { visits: Visit[] }) {
                                     <td className="text-nowrap">
                                         {visit.followup_date}
                                         {visit.followup_plan && (
-                                            <div className="text-muted custom-font-xsmall text-wrap">{visit.followup_plan}</div>
+                                            <div className="text-muted custom-font-xsmall text-wrap">
+                                                {visit.followup_plan}
+                                            </div>
                                         )}
                                     </td>
                                     <td>
-                                        <a href={route('ifereport.view', { id: visit.id })} target="_blank" rel="noopener noreferrer" title="Open report">
+                                        <a
+                                            href={route('ifereport.view', { id: visit.id })}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            title="Open report"
+                                        >
                                             <i className="mdi mdi-clipboard-outline font-size-20" />
                                         </a>
                                     </td>
@@ -113,8 +120,7 @@ function OrderHistory({ leadId, orders }: { leadId: number; orders: Order[] }) {
                             {orders.map((order) => (
                                 <tr key={order.id} className={clsx(order.cancelled && 'opacity-50')}>
                                     <td className="text-nowrap">
-                                        {order.order_no}{' '}
-                                        {order.cancelled && <Pill tone="grey">Cancelled</Pill>}
+                                        {order.order_no} {order.cancelled && <Pill tone="grey">Cancelled</Pill>}
                                     </td>
                                     <td className="text-nowrap">{order.order_date}</td>
                                     <td>
@@ -123,13 +129,19 @@ function OrderHistory({ leadId, orders }: { leadId: number; orders: Order[] }) {
                                                 {formatQuantity(line.quantity)} {line.unit} &times; {line.product}
                                             </div>
                                         ))}
-                                        {order.remark && <div className="text-muted custom-font-xsmall">{order.remark}</div>}
+                                        {order.remark && (
+                                            <div className="text-muted custom-font-xsmall">{order.remark}</div>
+                                        )}
                                     </td>
                                     <td className="num text-nowrap">{formatMoney(order.total_amount)}</td>
                                     <td>{order.recorded_by}</td>
                                     <td className="text-nowrap">
                                         {can('manage_order') && !order.cancelled && (
-                                            <button type="button" className="btn btn-sm btn-outline-danger py-0" onClick={() => cancel(order)}>
+                                            <button
+                                                type="button"
+                                                className="btn btn-sm btn-outline-danger py-0"
+                                                onClick={() => cancel(order)}
+                                            >
                                                 Cancel
                                             </button>
                                         )}
@@ -155,8 +167,8 @@ function SuggestedOrders({ recommendation }: { recommendation: Recommendation })
             <div className="m-2">
                 {recommendation.status !== 'ready' ? (
                     <div className="text-muted custom-font-small py-2">
-                        We need more information to give you suggestions. Order history and outlet details from
-                        similar locations help us learn.
+                        We need more information to give you suggestions. Order history and outlet details from similar
+                        locations help us learn.
                     </div>
                 ) : (
                     <>
@@ -183,7 +195,8 @@ function SuggestedOrders({ recommendation }: { recommendation: Recommendation })
                                 {items.map((item) => (
                                     <tr key={item.sku}>
                                         <td>
-                                            {item.name} <span className="text-muted custom-font-xsmall">{item.sku}</span>
+                                            {item.name}{' '}
+                                            <span className="text-muted custom-font-xsmall">{item.sku}</span>
                                         </td>
                                         <td>
                                             <Pill tone={item.status === 'gap' ? 'green' : 'orange'}>

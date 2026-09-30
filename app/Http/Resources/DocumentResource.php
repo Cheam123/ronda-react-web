@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Resources\Leads;
+namespace App\Http\Resources;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * A file attached to a lead or task.
+ * A file attached to a lead or task (DocumentUpload).
  *
  * @mixin \App\Models\DocumentUpload
  */

@@ -1,7 +1,8 @@
 import type { Lead } from '@/types/leads';
 import type { LeadFormData } from './LeadFields';
 
-const text = (value: string | number | null | undefined): string => (value === null || value === undefined ? '' : String(value));
+const text = (value: string | number | null | undefined): string =>
+    value === null || value === undefined ? '' : String(value);
 
 /** The form's initial values: a lead's current details, or blanks for a new one. */
 export function leadFormData(lead: Lead | null, today: string): LeadFormData {

@@ -22,8 +22,6 @@ use App\Models\TaskHistory;
 use App\Models\TaskComment;
 use App\Models\DocumentUpload;
 use App\Models\Notification;
-use App\Models\Reminders;
-use App\Models\Rating;
 use App\Models\IfeArea;
 use App\Models\IFEReport;
 use App\Models\IfeReportDocumentUpload;
@@ -35,7 +33,14 @@ use App\Http\Requests\TaskSaveRequest;
 use App\Http\Requests\TaskCreateRequest;
 use App\Http\Requests\TaskSubmitRequest;
 use App\Helpers\Helper;
+use App\Http\Resources\DocumentResource;
+use App\Http\Resources\Tasks\TaskCommentResource;
+use App\Http\Resources\Tasks\TaskLeadResource;
+use App\Http\Resources\Tasks\TaskListItemResource;
+use App\Http\Resources\Tasks\TaskResource;
 use App\Repositories\S3ClientRepo;
+use App\Support\Options;
+use Inertia\Inertia;
 
 use Barryvdh\DomPDF\Facade\Pdf;
 use Elegant\Sanitizer\Sanitizer;
@@ -69,7 +74,7 @@ class TaskController extends Controller
             $response['title']      = trans('translation.access_error');
             $response['message'][0] = trans('translation.access_error_msg');
             $response['message'][1] = trans('translation.check_with_ur_superior');
-            return view('errors.custom-error', compact('response'));
+            return Inertia::render('Errors/CustomError', compact('response'));
         }
 
         $user     = Auth::guard('web')->user();
@@ -450,20 +455,32 @@ class TaskController extends Controller
         $leadNameOptions = array_unique($leadNameOptions::whereHas('tasks')->orderBy('name','asc')->pluck('name')->toArray());
         $leadNameOptions = array_filter($leadNameOptions, fn($value) => !is_null($value) && $value !== '');
 
-        $tmenu_part1 = 'manage-task';
+        // The in-memory sort above keeps each task's original key; the page
+        // needs a plain list, with what every row and its dialogs show.
+        $tasks->withQueryString();
+        $tasks->setCollection($tasks->getCollection()->values()->loadMissing([
+            'reminder', 'rating', 'lead.ifearea', 'comments.submitBy', 'comments.documentUploads', 'comments.ifeReport.documentUploads',
+        ]));
 
-        return view('page.tasks.index', compact('ifeareas','leadNameOptions','queryString','tasks','all','users','request','tmenu_part1'));
+        return Inertia::render('Tasks/Index', [
+            'tasks'              => $tasks->through(fn (Tasks $task) => TaskListItemResource::make($task)->resolve()),
+            'statusCounts'       => $all->pluck('cnt', 'status'),
+            'users'              => Options::fromCollection($users),
+            'leadNames'          => array_values($leadNameOptions),
+            'ifeAreas'           => $this->areaOptions($ifeareas),
+            'sources'            => Options::fromMap(Helper::getLeadSourceListing()),
+            // The old filter listed four categories by hand, two of them stale.
+            'businessCategories' => Options::fromMap(Helper::getBusinessCategoryListing()),
+            'filters'            => $request->query(),
+        ]);
     }
 
+    /**
+     * The task list has one design now; this older route renders it too.
+     */
     public function index2(Request $request)
     {
-        $response = $this->index($request);
-
-        if ($response instanceof \Illuminate\View\View) {
-            return view('page.tasks.index2', $response->getData());
-        }
-
-        return $response;
+        return $this->index($request);
     }
 
     public function create(Request $request)
@@ -474,21 +491,20 @@ class TaskController extends Controller
             $response['title']      = trans('translation.access_error');
             $response['message'][0] = trans('translation.access_error_msg');
             $response['message'][1] = trans('translation.check_with_ur_superior');
-            return view('errors.custom-error', compact('response'));
+            return Inertia::render('Errors/CustomError', compact('response'));
         }
 
         // Without create_task the view hides the people pickers (the task is
         // the user's own), and only leads they can already see are offered.
-        $lead        = Leads::visibleTo($user)->findOrFail($request->input('id'));
-        $subscriber  = User::assignable()->get();
-        $viewer      = $subscriber;
-        $owner       = $subscriber;
+        $lead = Leads::visibleTo($user)->findOrFail($request->input('id'));
 
-        $ifeareas = IfeArea::orderBy('area','asc')->get();
-
-        $tmenu_part1 = 'create-task';
-
-        return view('page.tasks.create', compact('ifeareas','lead','subscriber','viewer','owner','tmenu_part1'));
+        return Inertia::render('Tasks/Create', [
+            'lead'      => TaskLeadResource::make($lead)->resolve(),
+            'documents' => DocumentResource::collection($lead->documentUploads)->resolve(),
+            'people'    => Options::fromCollection(User::assignable()->get()),
+            'canAssign' => $user->can('create_task'),
+            'today'     => now()->toDateString(),
+        ]);
     }
 
     public function store(TaskCreateRequest $request)
@@ -499,7 +515,7 @@ class TaskController extends Controller
             $response['title']      = trans('translation.access_error');
             $response['message'][0] = trans('translation.access_error_msg');
             $response['message'][1] = trans('translation.check_with_ur_superior');
-            return view('errors.custom-error', compact('response'));
+            return Inertia::render('Errors/CustomError', compact('response'));
         }
 
         // create_task means "create and assign to others". Without it the task
@@ -677,33 +693,23 @@ class TaskController extends Controller
             $response['title']      = trans('translation.access_error');
             $response['message'][0] = trans('translation.access_error_msg');
             $response['message'][1] = trans('translation.check_with_ur_superior');
-            return view('errors.custom-error', compact('response'));
+            return Inertia::render('Errors/CustomError', compact('response'));
         }
 
-        $mode        = $request->input('mode') ?? '';
-        $task        = Tasks::with('comments.documentUploads','comments.ifeReport.documentUploads')->findOrFail($id);
-        $history     = TaskHistory::where('task_id',$id)->orderBy('created_at','asc')->get();
+        $task = Tasks::with(
+            'lead.documentUploads.uploadBy', 'documentUploads.uploadBy', 'users.user',
+            'comments.submitBy', 'comments.documentUploads', 'comments.ifeReport.documentUploads',
+        )->findOrFail($id);
 
-        $subscriber  = User::assignable()->get();
-        $viewer      = $subscriber;
-        $owner       = $subscriber;
-
-        $reminders   = Reminders::where('task_id',$id)->get();
-        $ratings     = Rating::where('task_id',$id)->get();
-
-        $leadNameOptions = new Leads();
-        $leadNameOptions = array_unique($leadNameOptions->orderBy('name','asc')->pluck('name')->toArray());
-        $leadNameOptions = array_filter($leadNameOptions, fn($value) => !is_null($value) && $value !== '');
-
-        $leadBusinessOptions = new Leads();
-        $leadBusinessOptions = array_unique($leadBusinessOptions->orderBy('business_name','asc')->pluck('business_name')->toArray());
-        $leadBusinessOptions = array_filter($leadBusinessOptions, fn($value) => !is_null($value) && $value !== '');
-
-        $ifeareas = IfeArea::orderBy('area','asc')->get();
-
-        $tmenu_part1 = 'view-task';
-
-        return view('page.tasks.view', compact('ifeareas','leadNameOptions','leadBusinessOptions','subscriber','ratings','reminders','request','viewer','owner','history','task','mode','tmenu_part1'));
+        return Inertia::render('Tasks/Show', [
+            'task'       => TaskResource::make($task)->resolve(),
+            'activities' => TaskCommentResource::collection($task->comments->sortByDesc('created_at')->values())->resolve(),
+            'actions'    => $task->actionFlagsFor(Auth::guard('web')->user()),
+            'people'     => Options::fromCollection(User::assignable()->get()),
+            // "comment" opens the Activity tab.
+            'mode'       => $request->input('mode') ?? '',
+            'filters'    => $request->except('mode'),
+        ]);
     }
 
     public function edit(Request $request, $id)
@@ -712,29 +718,20 @@ class TaskController extends Controller
             $response['title']      = trans('translation.access_error');
             $response['message'][0] = trans('translation.access_error_msg');
             $response['message'][1] = trans('translation.check_with_ur_superior');
-            return view('errors.custom-error', compact('response'));
+            return Inertia::render('Errors/CustomError', compact('response'));
         }
 
-        $task        = Tasks::where('id',$id)->first();
-        $history     = TaskHistory::where('task_id',$id)->orderBy('created_at','asc')->get();
-        $subscriber  = User::assignable()->get();
-        $viewer      = $subscriber;
-        $owner       = $subscriber;
-        $reminders   = Reminders::where('task_id',$id)->get();
+        $task = Tasks::with('lead.documentUploads.uploadBy', 'documentUploads.uploadBy', 'users.user')->findOrFail($id);
+        $user = Auth::guard('web')->user();
 
-        $leadNameOptions = new Leads();
-        $leadNameOptions = array_unique($leadNameOptions->orderBy('name','asc')->pluck('name')->toArray());
-        $leadNameOptions = array_filter($leadNameOptions, fn($value) => !is_null($value) && $value !== '');
-
-        $leadBusinessOptions = new Leads();
-        $leadBusinessOptions = array_unique($leadBusinessOptions->orderBy('business_name','asc')->pluck('business_name')->toArray());
-        $leadBusinessOptions = array_filter($leadBusinessOptions, fn($value) => !is_null($value) && $value !== '');
-
-        $ifeareas = IfeArea::orderBy('area','asc')->get();
-
-        $tmenu_part1 = 'edit-task';
-
-        return view('page.tasks.edit', compact('ifeareas','leadNameOptions','leadBusinessOptions','history','reminders','request','task','subscriber','viewer','owner','tmenu_part1'));
+        return Inertia::render('Tasks/Edit', [
+            'task'                => TaskResource::make($task)->resolve(),
+            'actions'             => $this->editActionFlags($task, $user),
+            'people'              => Options::fromCollection(User::assignable()->get()),
+            // Only an owner (or an Admin) moves the task to another subscriber.
+            'canChangeSubscriber' => $task->users->where('role', 4)->where('user_id', $user->id)->isNotEmpty() || $user->type == User::TYPE_ADMIN,
+            'filters'             => $request->query(),
+        ]);
     }
 
     public function update(TaskSaveRequest $request)
@@ -743,7 +740,7 @@ class TaskController extends Controller
             $response['title']      = trans('translation.access_error');
             $response['message'][0] = trans('translation.access_error_msg');
             $response['message'][1] = trans('translation.check_with_ur_superior');
-            return view('errors.custom-error', compact('response'));
+            return Inertia::render('Errors/CustomError', compact('response'));
         }
 
         $retryCount = 0;
@@ -1038,7 +1035,7 @@ class TaskController extends Controller
             $response['title']      = trans('translation.access_error');
             $response['message'][0] = trans('translation.access_error_msg');
             $response['message'][1] = trans('translation.check_with_ur_superior');
-            return view('errors.custom-error', compact('response'));
+            return Inertia::render('Errors/CustomError', compact('response'));
         }
 
         try {
@@ -1120,7 +1117,7 @@ class TaskController extends Controller
             $response['title']      = trans('translation.access_error');
             $response['message'][0] = trans('translation.access_error_msg');
             $response['message'][1] = trans('translation.check_with_ur_superior');
-            return view('errors.custom-error', compact('response'));
+            return Inertia::render('Errors/CustomError', compact('response'));
         }
 
         $retryCount = 0;
@@ -1203,7 +1200,7 @@ class TaskController extends Controller
             $response['title']      = trans('translation.access_error');
             $response['message'][0] = trans('translation.access_error_msg');
             $response['message'][1] = trans('translation.check_with_ur_superior');
-            return view('errors.custom-error', compact('response'));
+            return Inertia::render('Errors/CustomError', compact('response'));
         }
 
         $retryCount = 0;
@@ -1295,7 +1292,7 @@ class TaskController extends Controller
             $response['title']      = trans('translation.access_error');
             $response['message'][0] = trans('translation.access_error_msg');
             $response['message'][1] = trans('translation.check_with_ur_superior');
-            return view('errors.custom-error', compact('response'));
+            return Inertia::render('Errors/CustomError', compact('response'));
         }
 
         $retryCount = 0;
@@ -1379,7 +1376,7 @@ class TaskController extends Controller
             $response['title']      = trans('translation.access_error');
             $response['message'][0] = trans('translation.access_error_msg');
             $response['message'][1] = trans('translation.check_with_ur_superior');
-            return view('errors.custom-error', compact('response'));
+            return Inertia::render('Errors/CustomError', compact('response'));
         }
 
         try {
@@ -1432,7 +1429,7 @@ class TaskController extends Controller
             $response['title']      = trans('translation.access_error');
             $response['message'][0] = trans('translation.access_error_msg');
             $response['message'][1] = trans('translation.check_with_ur_superior');
-            return view('errors.custom-error', compact('response'));
+            return Inertia::render('Errors/CustomError', compact('response'));
         }
 
         $retryCount = 0;
@@ -1515,7 +1512,7 @@ class TaskController extends Controller
             $response['title']      = trans('translation.access_error');
             $response['message'][0] = trans('translation.access_error_msg');
             $response['message'][1] = trans('translation.check_with_ur_superior');
-            return view('errors.custom-error', compact('response'));
+            return Inertia::render('Errors/CustomError', compact('response'));
         }
 
         $retryCount = 0;
@@ -1598,7 +1595,7 @@ class TaskController extends Controller
             $response['title']      = trans('translation.access_error');
             $response['message'][0] = trans('translation.access_error_msg');
             $response['message'][1] = trans('translation.check_with_ur_superior');
-            return view('errors.custom-error', compact('response'));
+            return Inertia::render('Errors/CustomError', compact('response'));
         }
 
         $retryCount = 0;
@@ -1681,7 +1678,7 @@ class TaskController extends Controller
             $response['title']      = trans('translation.access_error');
             $response['message'][0] = trans('translation.access_error_msg');
             $response['message'][1] = trans('translation.check_with_ur_superior');
-            return view('errors.custom-error', compact('response'));
+            return Inertia::render('Errors/CustomError', compact('response'));
         }
 
         $retryCount = 0;
@@ -1764,7 +1761,7 @@ class TaskController extends Controller
             $response['title']      = trans('translation.access_error');
             $response['message'][0] = trans('translation.access_error_msg');
             $response['message'][1] = trans('translation.check_with_ur_superior');
-            return view('errors.custom-error', compact('response'));
+            return Inertia::render('Errors/CustomError', compact('response'));
         }
 
         $retryCount = 0;
@@ -2168,6 +2165,32 @@ class TaskController extends Controller
         $message->put('type', 'success');
         $message->put('message', trans('translation.successfully_update'));
         return response()->json($message->toArray(), 200);
+    }
+
+    /**
+     * The status actions the edit page offers: the checker's and owner's
+     * steps only, so no Accept, and Done only for an owner.
+     */
+    private function editActionFlags(Tasks $task, User $user): array
+    {
+        $isOwner = $task->users->where('role', 4)->where('user_id', $user->id)->isNotEmpty();
+
+        return array_merge($task->actionFlagsFor($user), [
+            'can_accept_task' => false,
+            'can_done_task'   => $task->status == 2 && $isOwner,
+        ]);
+    }
+
+    /**
+     * IFE areas as options, with their descriptions for the area listing.
+     */
+    private function areaOptions($ifeareas): array
+    {
+        return collect($ifeareas)->map(fn (IfeArea $area) => [
+            'value'       => $area->id,
+            'label'       => $area->area,
+            'description' => $area->description,
+        ])->values()->all();
     }
 
     public function upload(Request $request, $task_id)

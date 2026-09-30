@@ -2,6 +2,7 @@
  * What kind of preview a file gets, from its extension.
  */
 
+// prettier-ignore
 const AUDIO = new Set([
     '3gp', 'aa', 'aac', 'aax', 'act', 'aiff', 'alac', 'amr', 'au', 'awb', 'dvf', 'flac', 'gsm', 'iklax', 'ivs',
     'm4a', 'm4b', 'm4p', 'mmf', 'movpkg', 'mp3', 'mpc', 'msv', 'nmf', 'ogg', 'oga', 'mogg', 'opus', 'ra', 'rm',

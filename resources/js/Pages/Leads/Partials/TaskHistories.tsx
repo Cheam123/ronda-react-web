@@ -48,7 +48,10 @@ export default function TaskHistories({ lead, tasks }: TaskHistoriesProps) {
                                     ['Reference No', task.reference],
                                     ['Lead/Customer Source', task.lead_source],
                                     ['Business Category', task.business_category],
-                                    ['Appointment Date', task.appointment && <Pill tone="blue">{task.appointment}</Pill>],
+                                    [
+                                        'Appointment Date',
+                                        task.appointment && <Pill tone="blue">{task.appointment}</Pill>,
+                                    ],
                                 ]}
                             />
                         </td>
@@ -67,7 +70,9 @@ export default function TaskHistories({ lead, tasks }: TaskHistoriesProps) {
                             <Pill tone="navy">{task.status_label}</Pill>
                             {task.status_date && (
                                 <div>
-                                    <span className="text-primary">{task.status === 1 ? 'Created' : task.status_label}</span>{' '}
+                                    <span className="text-primary">
+                                        {task.status === 1 ? 'Created' : task.status_label}
+                                    </span>{' '}
                                     on
                                     <br />
                                     {task.status_date}
@@ -82,10 +87,20 @@ export default function TaskHistories({ lead, tasks }: TaskHistoriesProps) {
                         </td>
                         <td>
                             <div className="d-flex gap-1 pe-2">
-                                <a href={route('tasks.view', { id: task.id, mode: 'comment' })} target="_blank" rel="noopener noreferrer" title="Open chat">
+                                <a
+                                    href={route('tasks.view', { id: task.id, mode: 'comment' })}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    title="Open chat"
+                                >
                                     <i className="mdi mdi-forum-outline font-size-22" />
                                 </a>
-                                <a href={route('tasks.view', task.id)} target="_blank" rel="noopener noreferrer" title="Open task">
+                                <a
+                                    href={route('tasks.view', task.id)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    title="Open task"
+                                >
                                     <i className="mdi mdi-clipboard-outline font-size-22" />
                                 </a>
                             </div>

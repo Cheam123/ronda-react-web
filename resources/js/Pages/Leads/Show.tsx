@@ -4,8 +4,9 @@ import SectionHeader from '@/Components/ui/SectionHeader';
 import AppLayout from '@/Layouts/AppLayout';
 import { breadcrumbFrom } from '@/lib/breadcrumbs';
 import type { BreadcrumbProps } from '@/types';
-import type { Lead, LeadDocument, LeadFormOptions, Order, Recommendation, TaskSummary, Visit } from '@/types/leads';
-import LeadDocuments from './Partials/LeadDocuments';
+import type { DocumentFile } from '@/types/documents';
+import type { Lead, LeadFormOptions, Order, Recommendation, TaskSummary, Visit } from '@/types/leads';
+import DocumentTable from '@/Components/documents/DocumentTable';
 import LeadFields from './Partials/LeadFields';
 import { leadFormData } from './Partials/leadFormData';
 import OutletActivity from './Partials/OutletActivity';
@@ -13,7 +14,7 @@ import TaskHistories from './Partials/TaskHistories';
 
 interface ShowLeadProps extends BreadcrumbProps, LeadFormOptions {
     lead: Lead;
-    documents: LeadDocument[];
+    documents: DocumentFile[];
     tasks: TaskSummary[];
     visits: Visit[];
     orders: Order[];
@@ -42,7 +43,7 @@ export default function ShowLead({
                     <div className="custom-font-xsmall mb-2">
                         <b>Document(s)</b>
                     </div>
-                    <LeadDocuments documents={documents} previews />
+                    <DocumentTable documents={documents} previews />
                 </div>
 
                 <SectionHeader title="Task Histories" className="mt-3" />

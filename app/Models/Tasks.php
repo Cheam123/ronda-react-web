@@ -214,8 +214,8 @@ class Tasks extends Model
 
     /**
      * Which "Mark as ..." actions $user may perform on this task.
-     * Single source of truth for the mobile list + detail responses; mirrors the
-     * dropdown rules in resources/views/page/tasks/view.blade.php - keep in sync.
+     * Single source of truth for the mobile list + detail responses and the web
+     * task pages' action menu (TaskStatusMenu).
      *
      * ROLE:
      *  1:creator

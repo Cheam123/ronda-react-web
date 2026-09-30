@@ -48,7 +48,9 @@ export default function LeadsIndex({ leads, ifeAreas, filters, ...breadcrumb }: 
     };
 
     const deleteLead = async (lead: LeadListItem) => {
-        if (await confirm({ title: 'Please confirm to proceed on the deletion!', text: lead.name ?? '', danger: true })) {
+        if (
+            await confirm({ title: 'Please confirm to proceed on the deletion!', text: lead.name ?? '', danger: true })
+        ) {
             router.post(route('lead.delete'), { id: lead.id }, { preserveScroll: true });
         }
     };
@@ -220,12 +222,18 @@ export default function LeadsIndex({ leads, ifeAreas, filters, ...breadcrumb }: 
                                             </Button>
                                         )}
                                         {can('view_lead') && (
-                                            <Link className="btn btn-sm btn-primary custom-button-shadow" href={route('lead.view', lead.id)}>
+                                            <Link
+                                                className="btn btn-sm btn-primary custom-button-shadow"
+                                                href={route('lead.view', lead.id)}
+                                            >
                                                 View
                                             </Link>
                                         )}
                                         {can('edit_lead') && (
-                                            <Link className="btn btn-sm btn-primary custom-button-shadow" href={route('lead.edit', lead.id)}>
+                                            <Link
+                                                className="btn btn-sm btn-primary custom-button-shadow"
+                                                href={route('lead.edit', lead.id)}
+                                            >
                                                 Edit
                                             </Link>
                                         )}

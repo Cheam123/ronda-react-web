@@ -45,17 +45,6 @@ export interface Lead {
     remark: string | null;
 }
 
-/** A file attached to a lead or task (DocumentResource). */
-export interface LeadDocument {
-    id: number;
-    filename: string;
-    name: string;
-    uploaded_at: string;
-    uploaded_by: string | null;
-    size: number;
-    url: string;
-}
-
 export interface IfeAreaOption extends SelectOption<number> {
     description: string | null;
 }

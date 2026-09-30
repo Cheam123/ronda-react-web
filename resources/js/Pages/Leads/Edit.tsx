@@ -9,8 +9,9 @@ import { useToast } from '@/Components/feedback/ToastProvider';
 import AppLayout from '@/Layouts/AppLayout';
 import { breadcrumbFrom } from '@/lib/breadcrumbs';
 import type { BreadcrumbProps } from '@/types';
-import type { Lead, LeadDocument, LeadFormOptions } from '@/types/leads';
-import LeadDocuments from './Partials/LeadDocuments';
+import type { DocumentFile } from '@/types/documents';
+import type { Lead, LeadFormOptions } from '@/types/leads';
+import DocumentTable from '@/Components/documents/DocumentTable';
 import LeadFields from './Partials/LeadFields';
 import { leadFormData } from './Partials/leadFormData';
 
@@ -26,11 +27,19 @@ const ACCEPTED_FILES = {
 
 interface EditLeadProps extends BreadcrumbProps, LeadFormOptions {
     lead: Lead;
-    documents: LeadDocument[];
+    documents: DocumentFile[];
     today: string;
 }
 
-export default function EditLead({ lead, documents, today, tmenu_part1, tmenu_part2, tmenu_part3, ...options }: EditLeadProps) {
+export default function EditLead({
+    lead,
+    documents,
+    today,
+    tmenu_part1,
+    tmenu_part2,
+    tmenu_part3,
+    ...options
+}: EditLeadProps) {
     const toast = useToast();
     const [uploading, setUploading] = useState(false);
     const { data, setData, post, processing, errors } = useForm({ ...leadFormData(lead, today), id: lead.id });
@@ -79,7 +88,7 @@ export default function EditLead({ lead, documents, today, tmenu_part1, tmenu_pa
                         onReject={(message) => toast(message, 'error')}
                     />
                     <div className="mt-2">
-                        <LeadDocuments documents={documents} deletable />
+                        <DocumentTable documents={documents} deletable />
                     </div>
                 </div>
             </Card>

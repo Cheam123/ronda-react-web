@@ -74,7 +74,10 @@ export default function ShowIfeReport({ report, filters, ...breadcrumb }: ShowIf
                     </ReportSection>
 
                     <ReportSection title="🏢 Company Information">
-                        <ReportItem label="Company Name" value={report.company_name || <em className="text-muted">Not specified</em>} />
+                        <ReportItem
+                            label="Company Name"
+                            value={report.company_name || <em className="text-muted">Not specified</em>}
+                        />
                         <ReportItem label="Nature of Business" value={report.nature_of_business} />
                         <ReportItem label="Status" value={report.status} />
                         <ReportItem label="Cafe/Outlet/Shop Name" value={report.shop_name} />

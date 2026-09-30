@@ -15,7 +15,12 @@ const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function TextInpu
         <input
             ref={ref}
             autoComplete={autoComplete}
-            className={clsx('form-control custom-font-small', !large && 'form-control-sm', invalid && 'is-invalid', className)}
+            className={clsx(
+                'form-control custom-font-small',
+                !large && 'form-control-sm',
+                invalid && 'is-invalid',
+                className,
+            )}
             {...props}
         />
     );

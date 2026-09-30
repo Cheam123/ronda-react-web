@@ -50,3 +50,89 @@
 .rs__option--is-selected {
     background-color: #04c !important;
 }
+
+// RichTextEditor (TipTap): a toolbar over a bordered editing area.
+.rich-text {
+    border: 1px solid $input-border-color;
+    border-radius: $input-border-radius-sm;
+    background: #fff;
+
+    &.is-invalid {
+        border-color: $form-feedback-invalid-color;
+    }
+
+    &__toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+        padding: 4px;
+        border-bottom: 1px solid $input-border-color;
+        background: $gray-100;
+    }
+
+    &__group {
+        display: flex;
+        gap: 1px;
+    }
+
+    &__button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 26px;
+        margin: 0;
+        padding: 0;
+        border: none;
+        border-radius: 3px;
+        background: transparent;
+        color: $gray-700;
+        font-size: 16px;
+        cursor: pointer;
+
+        &:hover:not(:disabled) { background: $gray-300; }
+        &.is-active { background: $gray-400; color: $gray-900; }
+        &:disabled { opacity: 0.4; cursor: default; }
+    }
+
+    // The colour input sits invisibly over its icon.
+    &__color {
+        position: relative;
+
+        input {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+    }
+
+    &__size {
+        width: auto;
+        padding-top: 0;
+        padding-bottom: 0;
+        font-size: 12px;
+    }
+
+    &__content {
+        min-height: 100px;
+        padding: 6px 8px;
+        outline: none;
+
+        p {
+            margin: 0;
+        }
+
+        ul,
+        ol {
+            margin: 0;
+            padding-left: 1.5rem;
+        }
+    }
+
+    &--readonly {
+        min-height: 60px;
+        background: $input-disabled-bg;
+    }
+}

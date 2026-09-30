@@ -66,7 +66,10 @@ export default function AppLayout({ title, breadcrumb, children }: AppLayoutProp
                     <div className="container-fluid">
                         <div className="topnav">
                             <nav className="navbar navbar-light navbar-expand-lg topnav-menu">
-                                <div className={clsx('collapse navbar-collapse', menuOpen && 'show')} id="topnav-menu-content">
+                                <div
+                                    className={clsx('collapse navbar-collapse', menuOpen && 'show')}
+                                    id="topnav-menu-content"
+                                >
                                     <NavMenu />
                                 </div>
                             </nav>

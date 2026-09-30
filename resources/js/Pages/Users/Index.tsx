@@ -136,19 +136,35 @@ export default function UsersIndex({ users, filters, userTypes, ...breadcrumb }:
                                 <td>{user.type_label}</td>
                                 <td>{user.team_label}</td>
                                 <td className="text-center">
-                                    <Button variant="warning" size="sm" shadow={false} onClick={() => resetPassword(user)}>
+                                    <Button
+                                        variant="warning"
+                                        size="sm"
+                                        shadow={false}
+                                        onClick={() => resetPassword(user)}
+                                    >
                                         Reset Password
                                     </Button>
                                 </td>
                                 <td>
                                     <div className="d-flex gap-1">
-                                        <Button variant="danger" size="sm" className="me-3" onClick={() => deleteUser(user)}>
+                                        <Button
+                                            variant="danger"
+                                            size="sm"
+                                            className="me-3"
+                                            onClick={() => deleteUser(user)}
+                                        >
                                             Delete
                                         </Button>
-                                        <Link className="btn btn-sm btn-primary custom-button-shadow" href={route('users.view', user.id)}>
+                                        <Link
+                                            className="btn btn-sm btn-primary custom-button-shadow"
+                                            href={route('users.view', user.id)}
+                                        >
                                             View
                                         </Link>
-                                        <Link className="btn btn-sm btn-primary custom-button-shadow" href={route('users.edit', user.id)}>
+                                        <Link
+                                            className="btn btn-sm btn-primary custom-button-shadow"
+                                            href={route('users.edit', user.id)}
+                                        >
                                             Edit
                                         </Link>
                                     </div>

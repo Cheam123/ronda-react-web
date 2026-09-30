@@ -137,3 +137,23 @@
         transform: scaleX(0);
     }
 }
+
+// promptWithFields(): labelled inputs above the dialog's comment box.
+.swal-field {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 1em 0.5em;
+    font-size: 0.9rem;
+
+    span {
+        flex: 0 0 110px;
+        text-align: right;
+    }
+
+    .swal2-input {
+        flex: 1;
+        margin: 0;
+        height: 2.25em;
+    }
+}

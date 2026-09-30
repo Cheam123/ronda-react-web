@@ -27,7 +27,7 @@ use App\Models\DocumentUpload;
 use App\Repositories\S3ClientRepo;
 use App\Jobs\RefreshOutletRecommendations;
 use App\Services\Recommendation\RecommendationService;
-use App\Http\Resources\Leads\DocumentResource;
+use App\Http\Resources\DocumentResource;
 use App\Http\Resources\Leads\LeadListResource;
 use App\Http\Resources\Leads\LeadResource;
 use App\Http\Resources\Leads\OrderResource;

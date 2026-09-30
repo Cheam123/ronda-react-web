@@ -54,7 +54,13 @@ export default function LeadFields({ data, setData, errors = {}, options, readOn
                         onChange={(event) => update('name', event.target.value)}
                     />
                 </Field>
-                <Field label="Receiving Date" htmlFor="receive_date" required error={errors.receive_date} className="col-md-3">
+                <Field
+                    label="Receiving Date"
+                    htmlFor="receive_date"
+                    required
+                    error={errors.receive_date}
+                    className="col-md-3"
+                >
                     <TextInput
                         id="receive_date"
                         type="date"

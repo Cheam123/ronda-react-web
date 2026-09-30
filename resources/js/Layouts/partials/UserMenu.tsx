@@ -15,7 +15,13 @@ export default function UserMenu() {
 
     return (
         <Dropdown align="end" className="d-inline-block">
-            <Dropdown.Toggle as="button" type="button" bsPrefix="btn" className="header-item" id="page-header-user-dropdown">
+            <Dropdown.Toggle
+                as="button"
+                type="button"
+                bsPrefix="btn"
+                className="header-item"
+                id="page-header-user-dropdown"
+            >
                 <img className="rounded-circle header-profile-user" src={avatarFor(user.gender)} alt="" height={22} />
                 <span className="d-none d-xl-inline-block ms-1 fw-medium custom-font-xsmall text-nowrap">{name}</span>
             </Dropdown.Toggle>

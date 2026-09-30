@@ -17,7 +17,9 @@ export default function CustomError({ response }: CustomErrorProps) {
                     <i className="fa fa-exclamation-triangle text-danger me-1" />
                     {response.title}
                 </h5>
-                {response.message?.map((line, index) => <p key={index}>{line}</p>)}
+                {response.message?.map((line, index) => (
+                    <p key={index}>{line}</p>
+                ))}
             </Card>
         </AppLayout>
     );

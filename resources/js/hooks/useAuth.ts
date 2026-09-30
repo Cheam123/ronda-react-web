@@ -9,7 +9,10 @@ import type { Ability, PageProps } from '@/types';
 export function useAuth() {
     const { auth } = usePage<PageProps>().props;
 
-    const can = useCallback((...abilities: Ability[]) => abilities.some((ability) => auth.can[ability] === true), [auth]);
+    const can = useCallback(
+        (...abilities: Ability[]) => abilities.some((ability) => auth.can[ability] === true),
+        [auth],
+    );
 
     return { user: auth.user, can };
 }

@@ -13,9 +13,10 @@ export function digitsOnly(event: KeyboardEvent<HTMLInputElement>): void {
     }
 }
 
-/** Drop empty values so filter URLs stay short: {a: '', b: '1'} -> {b: '1'} */
+const isEmpty = (value: unknown) =>
+    value === '' || value === null || value === undefined || (Array.isArray(value) && value.length === 0);
+
+/** Drop empty values so filter URLs stay short: {a: '', b: '1', c: []} -> {b: '1'} */
 export function compactParams<T extends Record<string, unknown>>(params: T): Partial<T> {
-    return Object.fromEntries(
-        Object.entries(params).filter(([, value]) => value !== '' && value !== null && value !== undefined),
-    ) as Partial<T>;
+    return Object.fromEntries(Object.entries(params).filter(([, value]) => !isEmpty(value))) as Partial<T>;
 }

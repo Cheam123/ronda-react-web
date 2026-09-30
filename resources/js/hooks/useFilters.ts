@@ -7,7 +7,7 @@ import { compactParams } from '@/lib/input';
  * the filters in the query string (so the URL stays shareable and the
  * controller does the filtering, as before); `reset` drops them all.
  */
-export function useFilters<T extends Record<string, string>>(url: string, initial: T) {
+export function useFilters<T extends Record<string, string | string[]>>(url: string, initial: T) {
     const [values, setValues] = useState<T>(initial);
 
     const set = useCallback(<K extends keyof T>(key: K, value: T[K]) => {

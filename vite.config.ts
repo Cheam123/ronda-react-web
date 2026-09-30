@@ -16,6 +16,20 @@ export default defineConfig({
             '@': fileURLToPath(new URL('./resources/js', import.meta.url)),
         },
     },
+    build: {
+        rollupOptions: {
+            output: {
+                // React in its own chunk: it caches across deploys, and lazy
+                // chunks import it rather than the entry. (A lazy chunk that
+                // imports the entry makes Vite load the entry's stylesheet a
+                // second time, and fail the import if that load fails.)
+                manualChunks: (id) =>
+                    /node_modules\/(react|react-dom|scheduler|use-sync-external-store|clsx)\//.test(id)
+                        ? 'vendor'
+                        : undefined,
+            },
+        },
+    },
     css: {
         preprocessorOptions: {
             scss: {

@@ -62,11 +62,15 @@ export default function MorningRoundUp({ digest, status }: MorningRoundUpProps) 
     const [regenerating, setRegenerating] = useState(false);
 
     const regenerate = () => {
-        router.post(route('dashboard.digest'), {}, {
-            preserveScroll: true,
-            onStart: () => setRegenerating(true),
-            onFinish: () => setRegenerating(false),
-        });
+        router.post(
+            route('dashboard.digest'),
+            {},
+            {
+                preserveScroll: true,
+                onStart: () => setRegenerating(true),
+                onFinish: () => setRegenerating(false),
+            },
+        );
     };
 
     return (

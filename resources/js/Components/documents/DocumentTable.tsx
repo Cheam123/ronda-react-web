@@ -2,17 +2,17 @@ import { router } from '@inertiajs/react';
 import DataTable, { EmptyRow } from '@/Components/ui/DataTable';
 import { confirm } from '@/lib/dialogs';
 import { fileKind } from '@/lib/files';
-import type { LeadDocument } from '@/types/leads';
+import type { DocumentFile } from '@/types/documents';
 
-interface LeadDocumentsProps {
-    documents: LeadDocument[];
+interface DocumentTableProps {
+    documents: DocumentFile[];
     /** Show inline audio players and preview buttons (the View page). */
     previews?: boolean;
     /** Offer a delete button per file (the Edit page). */
     deletable?: boolean;
 }
 
-function Preview({ document }: { document: LeadDocument }) {
+function Preview({ document }: { document: DocumentFile }) {
     switch (fileKind(document.filename)) {
         case 'audio':
             return (
@@ -37,9 +37,9 @@ function Preview({ document }: { document: LeadDocument }) {
     }
 }
 
-/** The files attached to a lead. */
-export default function LeadDocuments({ documents, previews = false, deletable = false }: LeadDocumentsProps) {
-    const remove = async (document: LeadDocument) => {
+/** Files attached to a lead or task, with download (and optional delete / preview). */
+export default function DocumentTable({ documents, previews = false, deletable = false }: DocumentTableProps) {
+    const remove = async (document: DocumentFile) => {
         if (await confirm({ title: 'Are you sure to delete?', text: document.name, icon: 'warning', danger: true })) {
             router.get(route('lead.file.delete', { doc_id: document.id }), {}, { preserveScroll: true });
         }

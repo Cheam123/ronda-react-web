@@ -56,7 +56,11 @@ export default function IfeReportsIndex({ reports, salespeople, ifeAreas, filter
 
     const convertToTask = async (report: IfeReportListItem) => {
         if (await confirm({ title: 'Please confirm to convert this report to sales task!' })) {
-            router.post(route('ifereport.convert'), { ...compactParams(filters), id: report.id }, { preserveScroll: true });
+            router.post(
+                route('ifereport.convert'),
+                { ...compactParams(filters), id: report.id },
+                { preserveScroll: true },
+            );
         }
     };
 

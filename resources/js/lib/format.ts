@@ -54,3 +54,9 @@ export function truncate(text: string | null | undefined, limit: number): string
 export function pluralize(count: number, singular: string, plural = `${singular}s`): string {
     return `${count} ${count === 1 ? singular : plural}`;
 }
+
+/** The text of an HTML fragment, for one-line previews of rich text. */
+export function plainText(html: string | null | undefined): string {
+    if (!html) return '';
+    return (new DOMParser().parseFromString(html, 'text/html').body.textContent ?? '').replace(/\s+/g, ' ').trim();
+}
