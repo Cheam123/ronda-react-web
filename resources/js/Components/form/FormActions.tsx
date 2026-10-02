@@ -1,5 +1,5 @@
+import { Link } from '@inertiajs/react';
 import type { ReactNode } from 'react';
-import Button, { ButtonLink } from '@/Components/ui/Button';
 
 interface FormActionsProps {
     /** Where "Back" goes. */
@@ -11,18 +11,19 @@ interface FormActionsProps {
     children?: ReactNode;
 }
 
-/** Back / Save pinned to the bottom-right corner of long forms. */
+/** Back / Save floating at the foot of the window on long forms that have no FormFoot. */
 export default function FormActions({ backHref, submitLabel, processing = false, children }: FormActionsProps) {
     return (
         <div className="form-actions-float">
             {children}
-            <ButtonLink href={backHref} variant={submitLabel ? 'light' : 'primary'} className="action-button">
+            <Link href={backHref} className={submitLabel ? 'rd-btn rd-btn--lg rd-btn--quiet' : 'rd-btn rd-btn--lg'}>
                 Back
-            </ButtonLink>
+            </Link>
             {submitLabel && (
-                <Button type="submit" className="action-button" loading={processing}>
+                <button type="submit" className="rd-btn rd-btn--lg rd-btn--primary" disabled={processing}>
+                    {processing && <span className="spinner-border spinner-border-sm" aria-hidden="true" />}
                     {submitLabel}
-                </Button>
+                </button>
             )}
         </div>
     );

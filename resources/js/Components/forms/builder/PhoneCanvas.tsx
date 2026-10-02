@@ -3,24 +3,27 @@ import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-
 import { CSS } from '@dnd-kit/utilities';
 import clsx from 'clsx';
 import type { MouseEvent, ReactNode } from 'react';
-import { conditionCount } from '@/lib/forms/conditions';
-import { ROOT, type DesignState } from '@/lib/forms/design';
+import { collectFields, ROOT, type DesignState } from '@/lib/forms/design';
+import { describeCondition } from '@/lib/forms/process';
 import { typeLabel } from '@/lib/forms/schema';
-import type { FieldType } from '@/types/forms';
+import type { ConditionSchema, FieldElement, FieldType } from '@/types/forms';
 import { elKey, grpKey, zoneKey, type Selection } from './useFormDesign';
 
 /** What an empty input shows in the phone preview. */
 const PLACEHOLDERS: Partial<Record<FieldType, string>> = {
-    select: 'Select ›',
-    'multi-choice': 'Select ›',
-    'multi-select': 'Select ›',
-    checkbox: 'Select ›',
-    date: 'Select ›',
-    time: 'Select ›',
-    file: 'Upload ›',
-    user: 'Select a person ›',
-    gps: 'Stamp location ›',
+    select: 'Choose one',
+    'multi-choice': 'Choose any',
+    'multi-select': 'Choose any',
+    checkbox: 'Tick any',
+    date: 'Pick a date',
+    time: 'Pick a time',
+    file: 'Attach a file',
+    user: 'Choose a person',
+    gps: 'Stamp the location',
 };
+
+/** Types drawn with a chevron, like a dropdown. */
+const PICKERS: FieldType[] = ['select', 'multi-choice', 'multi-select', 'checkbox', 'date', 'time', 'user'];
 
 interface PhoneCanvasProps {
     design: DesignState;
@@ -32,7 +35,7 @@ interface PhoneCanvasProps {
     onRemove: (selection: NonNullable<Selection>) => void;
 }
 
-/** The phone-style live preview: click to select, drag to reorder or file into sections. */
+/** The form as it shows on a phone: click to select, drag to reorder or move into a group. */
 export default function PhoneCanvas({
     design,
     formName,
@@ -42,7 +45,8 @@ export default function PhoneCanvas({
     onDuplicate,
     onRemove,
 }: PhoneCanvasProps) {
-    const { setNodeRef } = useDroppable({ id: zoneKey(ROOT) });
+    const root = useDroppable({ id: zoneKey(ROOT) });
+    const fields = collectFields(design);
     const isSelected = (kind: 'element' | 'group', id: string) => selected?.kind === kind && selected.id === id;
 
     const row = (id: string) => (
@@ -50,6 +54,7 @@ export default function PhoneCanvas({
             key={id}
             id={id}
             design={design}
+            fields={fields}
             selected={isSelected('element', id)}
             invalid={invalid.includes(id)}
             onSelect={() => onSelect({ kind: 'element', id })}
@@ -59,20 +64,24 @@ export default function PhoneCanvas({
     );
 
     return (
-        <div className="phone-frame shadow-sm">
-            <div className="phone-header">{formName || 'New Form'}</div>
+        <div className="phone">
+            <div className="phone__head">
+                <span className="phone__eyebrow">Preview on a phone</span>
+                <span className="phone__title">{formName.trim() || 'New form'}</span>
+            </div>
             <SortableContext
                 items={design.layout.map((item) => (item.kind === 'group' ? grpKey(item.id) : elKey(item.id)))}
                 strategy={verticalListSortingStrategy}
             >
-                <div ref={setNodeRef} className="phone-body">
+                <div ref={root.setNodeRef} className="phone__body">
                     {design.layout.map((item) =>
                         item.kind === 'group' ? (
                             <CanvasSection
                                 key={item.id}
                                 id={item.id}
                                 label={design.sections[item.id]?.label ?? ''}
-                                hasConditions={conditionCount(design.sections[item.id]?.visible_when) > 0}
+                                shownWhen={design.sections[item.id]?.visible_when}
+                                fields={fields}
                                 childIds={item.children}
                                 selected={isSelected('group', item.id)}
                                 invalid={invalid.includes(item.id)}
@@ -85,27 +94,32 @@ export default function PhoneCanvas({
                             row(item.id)
                         ),
                     )}
+                    <div className={clsx('phone__drop', root.isOver && 'is-over')}>
+                        {design.layout.length > 0
+                            ? 'Drop a field here'
+                            : 'Nothing here yet. Click a field on the left, or drag it here.'}
+                    </div>
                 </div>
             </SortableContext>
-            <div className="phone-footer">
-                {design.layout.length > 0 ? (
-                    <>
-                        <i className="mdi mdi-cursor-move me-1" />
-                        Click or drag widgets from the left
-                    </>
-                ) : (
-                    <>
-                        <i className="mdi mdi-gesture-tap-button me-1" />
-                        Your form is empty — click or drag widgets from the left to start
-                    </>
-                )}
-            </div>
         </div>
     );
 }
 
 function Actions({ children }: { children: ReactNode }) {
-    return <div className="pv-actions">{children}</div>;
+    return <span className="phone-tools">{children}</span>;
+}
+
+/** "Shown when Price is less than 70", for a field or group with conditions. */
+function ShownWhen({ when, fields }: { when: ConditionSchema | null | undefined; fields: FieldElement[] }) {
+    const text = describeCondition(when, fields);
+    if (!text) return null;
+
+    return (
+        <span className="phone-when">
+            <i className="mdi mdi-source-branch" aria-hidden="true" />
+            Shown {text.charAt(0).toLowerCase() + text.slice(1)}
+        </span>
+    );
 }
 
 const stop = (handler: () => void) => (event: MouseEvent) => {
@@ -116,6 +130,7 @@ const stop = (handler: () => void) => (event: MouseEvent) => {
 interface CanvasRowProps {
     id: string;
     design: DesignState;
+    fields: FieldElement[];
     selected: boolean;
     invalid: boolean;
     onSelect: () => void;
@@ -123,7 +138,7 @@ interface CanvasRowProps {
     onRemove: () => void;
 }
 
-function CanvasRow({ id, design, selected, invalid, onSelect, onDuplicate, onRemove }: CanvasRowProps) {
+function CanvasRow({ id, design, fields, selected, invalid, onSelect, onDuplicate, onRemove }: CanvasRowProps) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: elKey(id) });
     const element = design.elements[id];
     if (!element) return null;
@@ -132,46 +147,50 @@ function CanvasRow({ id, design, selected, invalid, onSelect, onDuplicate, onRem
         <div
             ref={setNodeRef}
             style={{ transform: CSS.Transform.toString(transform), transition }}
-            className={clsx('pv-row', selected && 'pv-selected', invalid && 'pv-invalid', isDragging && 'is-dragging')}
+            className={clsx(
+                'phone-field',
+                selected && 'is-selected',
+                invalid && 'is-invalid',
+                isDragging && 'is-dragging',
+            )}
             onClick={stop(onSelect)}
             {...attributes}
             {...listeners}
         >
             {selected && (
                 <Actions>
-                    <button type="button" title="Duplicate" onClick={stop(onDuplicate)}>
-                        <i className="mdi mdi-content-copy" />
+                    <button type="button" aria-label="Duplicate this field" onClick={stop(onDuplicate)}>
+                        <i className="mdi mdi-content-copy" aria-hidden="true" />
                     </button>
-                    <button type="button" title="Delete" onClick={stop(onRemove)}>
-                        <i className="mdi mdi-trash-can-outline" />
+                    <button type="button" aria-label="Remove this field" onClick={stop(onRemove)}>
+                        <i className="mdi mdi-trash-can-outline" aria-hidden="true" />
                     </button>
                 </Actions>
             )}
 
             {element.kind === 'description' ? (
-                <>
-                    <span className="badge bg-info pv-badge mb-1">Description</span>
-                    <div className="pv-desc-text">
-                        {element.text || <span className="untitled">Description text…</span>}
-                    </div>
-                </>
+                <p className="phone-field__text">
+                    {element.text || <span className="phone-field__untitled">Some text for the person filling in</span>}
+                </p>
             ) : (
-                <div className="pv-flex">
-                    <span className="pv-label">
-                        {element.label || <span className="untitled">{typeLabel(element.type)}</span>}
-                        {element.mandatory && <span className="req"> *</span>}
+                <>
+                    <span className="phone-field__label">
+                        {element.label || <span className="phone-field__untitled">{typeLabel(element.type)}</span>}
+                        {element.mandatory && (
+                            <span className="phone-field__required" aria-label="required">
+                                {' '}
+                                *
+                            </span>
+                        )}
                     </span>
-                    <span className="pv-placeholder">
-                        {element.placeholder || PLACEHOLDERS[element.type] || 'Enter'}
+                    <span className={clsx('phone-field__input', element.type === 'textarea' && 'is-tall')}>
+                        <span>{element.placeholder || PLACEHOLDERS[element.type] || ''}</span>
+                        {PICKERS.includes(element.type) && <i className="mdi mdi-chevron-down" aria-hidden="true" />}
                     </span>
-                </div>
+                </>
             )}
 
-            {conditionCount(element.visible_when) > 0 && (
-                <span className="pv-cond-flag" title="Shown only when its conditions match">
-                    <i className="mdi mdi-eye-settings-outline" />
-                </span>
-            )}
+            <ShownWhen when={element.visible_when} fields={fields} />
         </div>
     );
 }
@@ -179,7 +198,8 @@ function CanvasRow({ id, design, selected, invalid, onSelect, onDuplicate, onRem
 interface CanvasSectionProps {
     id: string;
     label: string;
-    hasConditions: boolean;
+    shownWhen: ConditionSchema | null | undefined;
+    fields: FieldElement[];
     childIds: string[];
     selected: boolean;
     invalid: boolean;
@@ -191,7 +211,8 @@ interface CanvasSectionProps {
 function CanvasSection({
     id,
     label,
-    hasConditions,
+    shownWhen,
+    fields,
     childIds,
     selected,
     invalid,
@@ -207,34 +228,33 @@ function CanvasSection({
             ref={sortable.setNodeRef}
             style={{ transform: CSS.Transform.toString(sortable.transform), transition: sortable.transition }}
             className={clsx(
-                'pv-group',
-                selected && 'pv-selected',
-                invalid && 'pv-invalid',
+                'phone-group',
+                selected && 'is-selected',
+                invalid && 'is-invalid',
+                describeCondition(shownWhen, fields) && 'is-conditional',
                 sortable.isDragging && 'is-dragging',
             )}
             onClick={stop(onSelect)}
         >
             {selected && (
                 <Actions>
-                    <button type="button" title="Delete group" onClick={stop(onRemove)}>
-                        <i className="mdi mdi-trash-can-outline" />
+                    <button type="button" aria-label="Remove this group" onClick={stop(onRemove)}>
+                        <i className="mdi mdi-trash-can-outline" aria-hidden="true" />
                     </button>
                 </Actions>
             )}
-            <div className="pv-group-header" {...sortable.attributes} {...sortable.listeners}>
-                {label || <span className="untitled">Group name…</span>}
+            <div className="phone-group__head" {...sortable.attributes} {...sortable.listeners}>
+                <span className="phone-group__name">
+                    {label || <span className="phone-field__untitled">Untitled group</span>}
+                </span>
+                <ShownWhen when={shownWhen} fields={fields} />
             </div>
             <SortableContext items={childIds.map(elKey)} strategy={verticalListSortingStrategy}>
-                <div ref={zone.setNodeRef} className={clsx('group-drop-zone', zone.isOver && 'is-over')}>
+                <div ref={zone.setNodeRef} className={clsx('phone-group__body', zone.isOver && 'is-over')}>
                     {children}
-                    {childIds.length === 0 && <div className="group-drop-zone__empty">Drag fields into this group</div>}
+                    {childIds.length === 0 && <div className="phone-group__empty">Drag fields into this group</div>}
                 </div>
             </SortableContext>
-            {hasConditions && (
-                <span className="pv-cond-flag" title="Shown only when its conditions match">
-                    <i className="mdi mdi-eye-settings-outline" />
-                </span>
-            )}
         </div>
     );
 }

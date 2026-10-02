@@ -1,23 +1,21 @@
 import { router } from '@inertiajs/react';
 import clsx from 'clsx';
-import { useEffect, useState, type ReactNode } from 'react';
-import DocumentTable from '@/Components/documents/DocumentTable';
+import { useEffect, useState } from 'react';
+import DocumentList from '@/Components/documents/DocumentList';
 import Field from '@/Components/form/Field';
 import TextInput from '@/Components/form/TextInput';
+import SurfacePage from '@/Components/surface/SurfacePage';
 import ActivityComposer from '@/Components/tasks/ActivityComposer';
 import ActivityTimeline from '@/Components/tasks/ActivityTimeline';
 import TaskLeadDetails from '@/Components/tasks/TaskLeadDetails';
 import TaskStatusMenu from '@/Components/tasks/TaskStatusMenu';
-import TaskSummary from '@/Components/tasks/TaskSummary';
-import { ButtonLink } from '@/Components/ui/Button';
-import Card from '@/Components/ui/Card';
 import ImageLightbox from '@/Components/ui/ImageLightbox';
-import SectionHeader from '@/Components/ui/SectionHeader';
 import AppLayout from '@/Layouts/AppLayout';
 import { markActivitiesRead } from '@/lib/taskActivity';
 import type { SelectOption } from '@/types';
 import type { TaskActionFlags, TaskActivity, TaskDetail, TaskFilters } from '@/types/tasks';
 import TaskFields from './Partials/TaskFields';
+import TaskHeader from './Partials/TaskHeader';
 import { taskFormData } from './Partials/taskFormData';
 
 type Tab = 'task' | 'activity';
@@ -44,82 +42,69 @@ export default function ShowTask({ task, activities, actions, people, mode, filt
         }
     }, [tab, task.id]);
 
+    const tabs: { key: Tab; label: string; count?: number }[] = [
+        { key: 'task', label: 'Task' },
+        { key: 'activity', label: 'Activity', count: activities.length },
+    ];
+
     return (
-        <AppLayout title="Task" breadcrumb={['Task', task.reference]}>
-            <Card variant="plain">
-                <div className="d-flex gap-2 mb-2">
-                    <ButtonLink href={route('tasks.index2', filters)} variant="dark" className="action-button">
-                        Back
-                    </ButtonLink>
-                    <TaskStatusMenu taskId={task.id} actions={actions} filters={filters} />
-                </div>
+        <AppLayout title={task.reference}>
+            <SurfacePage>
+                <TaskHeader
+                    task={task}
+                    listHref={route('tasks.index2', filters)}
+                    trail={[{ label: task.reference }]}
+                    actions={<TaskStatusMenu taskId={task.id} actions={actions} filters={filters} />}
+                />
 
-                <TaskSummary task={task} />
+                <nav className="rd-tabs" aria-label="Task">
+                    {tabs.map((item) => (
+                        <button
+                            key={item.key}
+                            type="button"
+                            className={clsx('rd-tabs__tab', tab === item.key && 'is-active')}
+                            aria-pressed={tab === item.key}
+                            onClick={() => setTab(item.key)}
+                        >
+                            {item.label}
+                            {item.count !== undefined && <span className="rd-count">{item.count}</span>}
+                        </button>
+                    ))}
+                </nav>
 
-                <ul className="nav nav-tabs nav-tabs-custom nav-justified mt-1" role="tablist">
-                    <TabLink tab="task" current={tab} onSelect={setTab}>
-                        Task Information
-                    </TabLink>
-                    <TabLink tab="activity" current={tab} onSelect={setTab}>
-                        Activity ({activities.length})
-                    </TabLink>
-                </ul>
-
-                <div className="pt-2">
-                    {tab === 'task' ? (
-                        <>
-                            <SectionHeader title="Task Detail" />
-                            <div className="m-2">
-                                <TaskFields
-                                    mode="view"
-                                    data={taskFormData(task)}
-                                    people={people}
-                                    names={{
-                                        subscriber: task.people.subscriber_name,
-                                        creator: task.people.creator,
-                                        checker: task.people.checker,
-                                    }}
-                                />
-                            </div>
+                {tab === 'task' ? (
+                    <div className="rd-form-page">
+                        <div className="rd-form">
+                            <TaskFields
+                                mode="view"
+                                data={taskFormData(task)}
+                                people={people}
+                                names={{
+                                    subscriber: task.people.subscriber_name,
+                                    creator: task.people.creator,
+                                    checker: task.people.checker,
+                                }}
+                            />
+                        </div>
+                        <aside className="rd-form-page__aside">
                             <TaskLeadDetails lead={task.lead} />
-                            <div className="m-2">
-                                <div className="custom-font-xsmall mb-2">
-                                    <b>Document(s)</b>
-                                </div>
-                                <DocumentTable documents={task.documents} previews />
-                            </div>
-                        </>
-                    ) : (
+                            <section className="rd-panel lead-card" aria-labelledby="task-docs-title">
+                                <h2 id="task-docs-title" className="rd-panel__title">
+                                    Documents <span className="rd-count">{task.documents.length}</span>
+                                </h2>
+                                <DocumentList documents={task.documents} empty="No documents on this task." />
+                            </section>
+                        </aside>
+                    </div>
+                ) : (
+                    <section className="rd-panel" aria-label="Activity">
                         <ActivityPane task={task} activities={activities} onImageClick={setPhoto} />
-                    )}
-                </div>
-            </Card>
+                    </section>
+                )}
+            </SurfacePage>
 
             <ImageLightbox src={photo} onClose={() => setPhoto(null)} />
         </AppLayout>
-    );
-}
-
-interface TabLinkProps {
-    tab: Tab;
-    current: Tab;
-    onSelect: (tab: Tab) => void;
-    children: ReactNode;
-}
-
-function TabLink({ tab, current, onSelect, children }: TabLinkProps) {
-    return (
-        <li className="nav-item" role="presentation">
-            <button
-                type="button"
-                role="tab"
-                aria-selected={tab === current}
-                className={clsx('nav-link', tab === current && 'active')}
-                onClick={() => onSelect(tab)}
-            >
-                {children}
-            </button>
-        </li>
     );
 }
 
@@ -151,8 +136,8 @@ function ActivityPane({ task, activities, onImageClick }: ActivityPaneProps) {
                 extra={canMoveDue ? { task_due_date: dueDate, task_due_time: dueTime } : undefined}
             >
                 {canMoveDue && (
-                    <Field label="New Due Date" htmlFor="new_due_date" className="composer-due">
-                        <div className="d-flex gap-1">
+                    <Field label="New due date" htmlFor="new_due_date" className="composer-due">
+                        <div className="task-when">
                             <TextInput
                                 id="new_due_date"
                                 type="date"
@@ -171,7 +156,7 @@ function ActivityPane({ task, activities, onImageClick }: ActivityPaneProps) {
                 )}
             </ActivityComposer>
 
-            <div className="timeline-label">Activity Timeline ({activities.length})</div>
+            <div className="timeline-label">Activity timeline ({activities.length})</div>
             <div className="timeline-scroll">
                 <ActivityTimeline activities={activities} onChanged={reload} onImageClick={onImageClick} />
             </div>

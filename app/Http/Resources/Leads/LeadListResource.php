@@ -29,9 +29,12 @@ class LeadListResource extends JsonResource
             'presales_name'      => $this->presales_name,
             'closing_sales_name' => $this->closing_sales_name,
             'ife_area'           => optional($this->ifearea)->area,
+            'ife_area_id'        => $this->ife_area_id,
             'created_by'         => optional($this->createdBy)->name,
             'assignee'           => $this->assign_to ? optional($this->assignee)->name : null,
+            'assignee_id'        => $this->assign_to,
             'created_date'       => optional($this->created_at)->format('Y-m-d'),
+            'created_label'      => optional($this->created_at)->format('j M Y'),
             'created_time'       => optional($this->created_at)->format('h:i:s A'),
             // A lead with work still open (New .. KIV) cannot be deleted.
             'deletable'          => $this->tasks->whereIn('status', [1, 2, 3, 4, 5, 6])->isEmpty(),

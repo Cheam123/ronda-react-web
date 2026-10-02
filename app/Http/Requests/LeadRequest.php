@@ -51,4 +51,25 @@ class LeadRequest extends FormRequest
             'gps'           => 'nullable',
         ];
     }
+
+    /**
+     * How the fields read in messages, as the form labels them
+     * ("The company name field is required.").
+     */
+    public function attributes()
+    {
+        return [
+            'name'          => 'company name',
+            'receive_date'  => 'received on date',
+            'business_name' => 'shop name',
+            'customer_id'   => 'customer ID',
+            'leadsource'    => 'source',
+            'businesscat'   => 'business category',
+            'state_id'      => 'state',
+            'city_id'       => 'city',
+            'ifearea'       => 'IFE area',
+            'size_band'     => 'size',
+            'gps'           => 'location',
+        ];
+    }
 }

@@ -5,7 +5,8 @@ import { compactParams } from '@/lib/input';
 /**
  * State for a list page's GET filter form. `apply` reloads the page with
  * the filters in the query string (so the URL stays shareable and the
- * controller does the filtering, as before); `reset` drops them all.
+ * controller does the filtering, as before); `choose` changes some filters
+ * and applies them at once; `reset` drops them all.
  */
 export function useFilters<T extends Record<string, string | string[]>>(url: string, initial: T) {
     const [values, setValues] = useState<T>(initial);
@@ -21,7 +22,15 @@ export function useFilters<T extends Record<string, string | string[]>>(url: str
         [url, values],
     );
 
+    const choose = useCallback(
+        (changes: Partial<T>) => {
+            setValues((current) => ({ ...current, ...changes }));
+            apply(changes);
+        },
+        [apply],
+    );
+
     const reset = useCallback(() => router.get(url), [url]);
 
-    return { values, set, apply, reset };
+    return { values, set, apply, choose, reset };
 }

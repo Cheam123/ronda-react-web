@@ -147,10 +147,21 @@ class TaskController extends Controller
 
         }
 
+        // 2 is flagged. Anything else is not, including the 0 an IFE report's task starts with.
         if (null !== $request->get('filter_alert')) {
-            $keyword = $request->get('filter_alert');
-            $tasks   = $tasks->where('alert', $keyword);
-            $all     = $all->where('alert', $keyword);
+            $flagged = fn ($query) => $request->get('filter_alert') == 2
+                ? $query->where('alert', 2)
+                : $query->where(fn ($q) => $q->where('alert', '!=', 2)->orWhereNull('alert'));
+            $tasks = $tasks->where($flagged);
+            $all   = $all->where($flagged);
+        }
+
+        // The list's search box: the title or the reference.
+        if (null !== $request->get('search')) {
+            $keyword = '%' . $request->get('search') . '%';
+            $match   = fn ($query) => $query->where('title', 'like', $keyword)->orWhere('task_reference', 'like', $keyword);
+            $tasks   = $tasks->where($match);
+            $all     = $all->where($match);
         }
 
         if (null !== $request->get('filter_title')) {
@@ -159,9 +170,13 @@ class TaskController extends Controller
             $all     = $all->where('title', 'like' ,'%'.$keyword.'%');
         }
 
+        // Y: tasks with a sales amount; N: tasks without one.
         if (null !== $request->get('filter_withsales')) {
-            $tasks   = $tasks->where('sales', '>', 0);
-            $all     = $all->where('sales', '>', 0);
+            $withSales = fn ($query) => $request->get('filter_withsales') === 'N'
+                ? $query->where(fn ($q) => $q->whereNull('sales')->orWhere('sales', '<=', 0))
+                : $query->where('sales', '>', 0);
+            $tasks = $tasks->where($withSales);
+            $all   = $all->where($withSales);
         }
 
         if (null != $request->get('filter_cid')) {

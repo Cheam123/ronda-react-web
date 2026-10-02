@@ -17,8 +17,14 @@ class DashboardSummaryResource extends JsonResource
     {
         $summary = $this->resource;
 
+        $summary['visits']['daily'] = array_map(fn (array $day) => $day + [
+            'label' => Carbon::parse($day['date'])->format('D j M'),
+        ], $summary['visits']['daily']);
+
         return array_merge($summary, [
             'generated_label' => Carbon::parse($summary['generated_at'])->format('j M Y, g:i A'),
+            'time_label'      => Carbon::parse($summary['generated_at'])->format('g:i A'),
+            'date_label'      => Carbon::parse($summary['generated_at'])->format('l, j F Y'),
             'trend'           => array_map(fn (array $day) => $day + [
                 'label' => Carbon::parse($day['date'])->format('D j M'),
             ], $summary['trend']),

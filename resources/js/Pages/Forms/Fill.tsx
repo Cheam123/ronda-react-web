@@ -1,6 +1,8 @@
-import { ButtonLink } from '@/Components/ui/Button';
+import PageHeader from '@/Components/surface/PageHeader';
+import SurfacePage from '@/Components/surface/SurfacePage';
 import AppLayout from '@/Layouts/AppLayout';
-import type { Answers, CaseLink, FormSchema, Person } from '@/types/forms';
+import type { Answers, CaseLink, FormSchema, Person, ProcessDefinition } from '@/types/forms';
+import AfterSubmit from './Partials/AfterSubmit';
 import SubmissionForm from './Partials/SubmissionForm';
 
 interface FillFormProps {
@@ -8,34 +10,42 @@ interface FillFormProps {
     schema: FormSchema;
     /** Answers carried over from a cloned entry, or restored after a refusal. */
     answers: Answers;
-    /** Fields a later Handler step fills in. */
+    /** Fields a later fill-in step fills in. */
     deferredIds: string[];
+    /** The steps after submitting, for "After you submit". */
+    process: ProcessDefinition;
+    processNames: Record<string, string>;
     people: Person[];
     parentOptions: CaseLink[];
     parentId: number | null;
 }
 
-/** Start a new case from a form. */
-export default function FillForm({ form, parentOptions, parentId, ...props }: FillFormProps) {
+/** Start a new record from a form. */
+export default function FillForm({ form, parentOptions, parentId, process, processNames, ...props }: FillFormProps) {
     return (
-        <AppLayout title="Fill Form" breadcrumb={['Forms', form.name]}>
-            <div className="page-title-box d-flex align-items-center justify-content-between">
-                <h4 className="mb-0">{form.name}</h4>
-                <ButtonLink href={route('form.entry')} variant="secondary" icon="mdi mdi-arrow-left">
-                    Back to Start
-                </ButtonLink>
-            </div>
+        <AppLayout title={form.name}>
+            <SurfacePage>
+                <PageHeader
+                    crumbs={[
+                        { label: 'Home', href: '/index' },
+                        { label: 'Start a form', href: route('form.entry') },
+                        { label: form.name },
+                    ]}
+                    title={form.name}
+                    lede={form.description}
+                />
 
-            <SubmissionForm
-                {...props}
-                form={form}
-                action={route('form.submit')}
-                extra={{ form_id: form.id }}
-                parentOptions={parentOptions}
-                parentId={parentId}
-                submitLabel="Submit Form"
-                onCancel={() => window.history.back()}
-            />
+                <SubmissionForm
+                    {...props}
+                    action={route('form.submit')}
+                    extra={{ form_id: form.id }}
+                    parentOptions={parentOptions}
+                    parentId={parentId}
+                    submitLabel="Submit"
+                    onCancel={() => window.history.back()}
+                    aside={<AfterSubmit process={process} names={processNames} schema={props.schema} />}
+                />
+            </SurfacePage>
         </AppLayout>
     );
 }

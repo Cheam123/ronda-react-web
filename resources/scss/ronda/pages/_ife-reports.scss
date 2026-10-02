@@ -1,0 +1,155 @@
+//
+// IFE reports: the list of visit reports. The report page's pieces
+// (.ife-text, .ife-photos) sit with the outlet page in _leads.scss.
+//
+
+.ife-table {
+    min-width: 1080px;
+
+    &__outlet {
+        width: 24%;
+    }
+
+    &__location {
+        width: 24%;
+    }
+
+    &__date {
+        display: block;
+        color: $rd-body;
+        line-height: 20px;
+    }
+
+    &__time {
+        display: block;
+        color: $rd-muted;
+        font-size: 12px;
+        line-height: 18px;
+    }
+
+    &__address {
+        display: -webkit-box;
+        overflow: hidden;
+        color: $rd-ink-2;
+        font-size: 13px;
+        line-height: 18px;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+    }
+}
+
+// Phones: each report is a card, the headings go.
+@media (max-width: 767.98px) {
+    .rd-table.ife-table {
+        min-width: 0;
+
+        thead {
+            display: none;
+        }
+
+        tbody,
+        td {
+            display: block;
+        }
+
+        tr {
+            display: grid;
+            grid-template-areas:
+                "outlet outlet actions"
+                "area by by"
+                "filed filed filed"
+                "location location location"
+                "task task task";
+            grid-template-columns: auto minmax(0, 1fr) auto;
+            align-items: center;
+            gap: 8px;
+            padding: 16px 0;
+            border-bottom: 1px solid $rd-line-soft;
+        }
+
+        td,
+        td:first-child,
+        td:last-child {
+            width: auto;
+            height: auto;
+            padding: 0;
+            border: 0;
+        }
+
+        tbody tr:last-child {
+            border-bottom: 0;
+        }
+
+        .ife-table__outlet {
+            grid-area: outlet;
+        }
+
+        .rd-col-actions {
+            grid-area: actions;
+            margin-right: -8px;
+        }
+
+        .ife-table__area {
+            grid-area: area;
+        }
+
+        .ife-table__by {
+            grid-area: by;
+        }
+
+        .ife-table__filed {
+            grid-area: filed;
+        }
+
+        .ife-table__date,
+        .ife-table__time {
+            display: inline;
+            font-size: 13px;
+        }
+
+        .ife-table__date::after {
+            content: ", ";
+        }
+
+        .ife-table__location {
+            grid-area: location;
+        }
+
+        .ife-table__address {
+            -webkit-line-clamp: 3;
+        }
+
+        .ife-table__task {
+            grid-area: task;
+
+            .rd-btn {
+                width: 100%;
+            }
+        }
+
+        .rd-list__empty {
+            grid-column: 1 / -1;
+        }
+    }
+}
+
+// Phones: the search across, area and salesperson side by side, then the dates.
+@media (max-width: 767.98px) {
+    .rd-list__filters.ife-filters {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        width: 100%;
+
+        form,
+        .dropdown {
+            grid-column: 1 / -1;
+        }
+
+        .rd-search,
+        .search-select,
+        .rd-btn {
+            width: 100%;
+            max-width: none;
+        }
+    }
+}

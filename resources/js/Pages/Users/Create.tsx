@@ -1,20 +1,29 @@
-import Card from '@/Components/ui/Card';
+import PageHeader from '@/Components/surface/PageHeader';
+import SurfacePage from '@/Components/surface/SurfacePage';
 import AppLayout from '@/Layouts/AppLayout';
-import { breadcrumbFrom } from '@/lib/breadcrumbs';
-import type { BreadcrumbProps, SelectOption } from '@/types';
+import type { SelectOption } from '@/types';
 import UserForm from './Partials/UserForm';
 
-interface CreateUserProps extends BreadcrumbProps {
+interface CreateUserProps {
     teams: SelectOption[];
     userTypes: SelectOption[];
 }
 
-export default function CreateUser({ teams, userTypes, ...breadcrumb }: CreateUserProps) {
+export default function CreateUser({ teams, userTypes }: CreateUserProps) {
     return (
-        <AppLayout title="Users" breadcrumb={breadcrumbFrom(breadcrumb)}>
-            <Card>
+        <AppLayout title="Add a user">
+            <SurfacePage>
+                <PageHeader
+                    crumbs={[
+                        { label: 'Admin' },
+                        { label: 'Users', href: route('users.index') },
+                        { label: 'Add a user' },
+                    ]}
+                    title="Add a user"
+                    lede="Ronda emails them a password when you save."
+                />
                 <UserForm teams={teams} userTypes={userTypes} />
-            </Card>
+            </SurfacePage>
         </AppLayout>
     );
 }

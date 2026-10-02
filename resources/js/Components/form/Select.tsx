@@ -14,17 +14,20 @@ interface SelectProps extends Omit<SelectHTMLAttributes<HTMLSelectElement>, 'chi
     /** A first, empty option ("-- Select Area --"). */
     placeholder?: string;
     invalid?: boolean;
+    /** The 44px form size instead of the 40px toolbar size. */
+    large?: boolean;
 }
 
 /** A native select. Use SearchSelect when the list is long enough to need typing. */
 const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select(
-    { options = [], groups = [], placeholder, invalid = false, className, ...props },
+    { options = [], groups = [], placeholder, invalid = false, large = false, className, ...props },
     ref,
 ) {
     return (
         <select
             ref={ref}
-            className={clsx('form-select form-select-sm custom-font-small', invalid && 'is-invalid', className)}
+            aria-invalid={invalid || undefined}
+            className={clsx('rd-input', !large && 'rd-input--md', invalid && 'is-invalid', className)}
             {...props}
         >
             {placeholder !== undefined && <option value="">{placeholder}</option>}

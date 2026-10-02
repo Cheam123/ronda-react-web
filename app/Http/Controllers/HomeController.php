@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\Dashboard\AdminDashboardResource;
 use App\Http\Resources\Dashboard\DailyDigestResource;
 use App\Http\Resources\Dashboard\DashboardSummaryResource;
 use App\Models\DailyDigest;
+use App\Services\AdminDashboardService;
 use App\Services\DailyDigestService;
 use App\Services\DashboardService;
 
@@ -30,13 +32,23 @@ class HomeController extends Controller
     }
 
     /**
-     * Admins and Managers get the team dashboard (every task, the team
-     * activity table, the AI digest); a Field Rep gets the same tiles and
-     * chart for their own work.
+     * Admins land on the organisation overview and can switch to the team
+     * view (?view=team). Managers get the team dashboard (every task, the
+     * team activity table, the AI digest); a Field Rep gets the same tiles
+     * and chart for their own work.
      */
     private function dashboard(Request $request)
     {
-        $user   = Auth::guard('web')->user();
+        $user    = Auth::guard('web')->user();
+        $isAdmin = $user->isAdmin();
+
+        if ($isAdmin && $request->query('view') !== 'team') {
+            return Inertia::render('Dashboard/Admin', [
+                'summary'   => AdminDashboardResource::make(app(AdminDashboardService::class)->summary($user))->resolve(),
+                'teamRisks' => app(DashboardService::class)->riskCounts(),
+            ]);
+        }
+
         $isTeam = $user->seesAllRecords();
 
         $summary = app(DashboardService::class)->summary($isTeam ? null : $user);
@@ -44,6 +56,7 @@ class HomeController extends Controller
 
         return Inertia::render('Dashboard/Index', [
             'isTeam'       => $isTeam,
+            'showViewTabs' => $isAdmin,
             'summary'      => DashboardSummaryResource::make($summary)->resolve(),
             'digest'       => $digest ? DailyDigestResource::make($digest)->resolve() : null,
             'digestStatus' => session('digest_status'),
@@ -67,6 +80,8 @@ class HomeController extends Controller
             ? 'Morning Round-Up rewritten by Claude.'
             : 'Morning Round-Up rewritten from the template' . ($digest->error ? ' (Bedrock error: ' . $digest->error . ')' : ' (Bedrock not configured)') . '.';
 
-        return redirect()->to('/index')->with('digest_status', $message);
+        // Admins regenerate from the team view (/index?view=team); keep them there.
+        return redirect()->to(Auth::guard('web')->user()->isAdmin() ? '/index?view=team' : '/index')
+            ->with('digest_status', $message);
     }
 }

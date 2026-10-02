@@ -1,37 +1,37 @@
 import { useForm, usePage } from '@inertiajs/react';
 import { useMemo, type FormEvent } from 'react';
 import Field from '@/Components/form/Field';
-import FormActions from '@/Components/form/FormActions';
 import type { OptionGroup } from '@/Components/form/Select';
 import TextArea from '@/Components/form/TextArea';
 import TextInput from '@/Components/form/TextInput';
-import Button from '@/Components/ui/Button';
-import Card from '@/Components/ui/Card';
+import { FormFoot, FormRow, FormSection } from '@/Components/surface/FormSection';
+import PageHeader from '@/Components/surface/PageHeader';
+import SurfacePage from '@/Components/surface/SurfacePage';
 import ErrorSummary from '@/Components/ui/ErrorSummary';
-import SectionHeader from '@/Components/ui/SectionHeader';
 import AppLayout from '@/Layouts/AppLayout';
-import { breadcrumbFrom } from '@/lib/breadcrumbs';
-import { formatMoney } from '@/lib/format';
-import type { BreadcrumbProps, PageProps } from '@/types';
+import { formatMoney, pluralize } from '@/lib/format';
+import type { PageProps } from '@/types';
 import type { Product } from '@/types/catalogue';
 import OrderLineRow, { type OrderLine } from './Partials/OrderLineRow';
 
 const BLANK_LINE: OrderLine = { product_id: '', quantity: '' };
+const REMARK_MAX = 1000;
 
-interface CreateOrderProps extends BreadcrumbProps {
+interface CreateOrderProps {
     lead: { id: number; name: string | null; business_name: string | null; customer_id: string | null };
     products: Product[];
     today: string;
 }
 
 /** Record what an outlet ordered (lead.orders.store). */
-export default function CreateOrder({ lead, products, today, ...breadcrumb }: CreateOrderProps) {
+export default function CreateOrder({ lead, products, today }: CreateOrderProps) {
     const { currency } = usePage<PageProps>().props.app;
-    const { data, setData, post, processing } = useForm({
+    const { data, setData, post, processing, errors } = useForm({
         order_date: today,
         remark: '',
         lines: [BLANK_LINE],
     });
+    const outlet = lead.business_name || lead.name || 'Unnamed outlet';
 
     const productsById = useMemo(() => new Map(products.map((product) => [String(product.id), product])), [products]);
 
@@ -45,11 +45,11 @@ export default function CreateOrder({ lead, products, today, ...breadcrumb }: Cr
         return [...groups.values()];
     }, [products]);
 
-    const total = data.lines.reduce((sum, line) => {
-        const product = productsById.get(line.product_id);
-        const quantity = Number(line.quantity) || 0;
-        return product && quantity > 0 ? sum + (product.unit_price ?? 0) * quantity : sum;
-    }, 0);
+    const counted = data.lines.filter((line) => productsById.has(line.product_id) && Number(line.quantity) > 0);
+    const total = counted.reduce(
+        (sum, line) => sum + (productsById.get(line.product_id)?.unit_price ?? 0) * Number(line.quantity),
+        0,
+    );
 
     const updateLine = (index: number, line: OrderLine) =>
         setData(
@@ -67,109 +67,140 @@ export default function CreateOrder({ lead, products, today, ...breadcrumb }: Cr
     };
 
     return (
-        <AppLayout title="Record Order" breadcrumb={breadcrumbFrom(breadcrumb)}>
-            <Card>
+        <AppLayout title="Record an order">
+            <SurfacePage>
+                <PageHeader
+                    crumbs={[
+                        { label: 'Home', href: '/index' },
+                        { label: 'Lead/Customer', href: route('lead.index') },
+                        { label: outlet, href: route('lead.view', lead.id) },
+                        { label: 'Record an order' },
+                    ]}
+                    title="Record an order"
+                    lede={`What ${outlet} ordered${lead.customer_id ? ` (${lead.customer_id})` : ''}. Prices come from the catalogue when you save.`}
+                />
+
                 <ErrorSummary />
 
-                <div className="mb-3">
-                    <SectionHeader title="Outlet" />
-                    <div className="m-2">
-                        <b>{lead.business_name || lead.name}</b>
-                        {lead.business_name && <span className="text-muted"> ({lead.name})</span>}
-                        {lead.customer_id && <> &middot; Customer ID {lead.customer_id}</>}
-                    </div>
-                </div>
-
                 {products.length === 0 ? (
-                    <div className="alert alert-warning">
+                    <p className="rd-notice">
+                        <i className="mdi mdi-alert-outline" aria-hidden="true" />
                         There are no active products in the catalogue yet. An Admin can add them under Admin &rsaquo;
                         Products.
-                    </div>
+                    </p>
                 ) : (
-                    <form onSubmit={submit}>
-                        <div className="row mb-2">
-                            <Field label="Order date" htmlFor="order_date" className="col-md-3">
-                                <TextInput
-                                    id="order_date"
-                                    type="date"
-                                    max={today}
-                                    value={data.order_date}
-                                    onChange={(event) => setData('order_date', event.target.value)}
-                                />
-                            </Field>
-                        </div>
-
-                        <SectionHeader title="Products" />
-                        <div className="m-2 overflow-auto">
-                            <table className="table table-sm custom-font-small mb-1 data-table">
-                                <thead>
-                                    <tr>
-                                        <th style={{ minWidth: 260 }}>Product</th>
-                                        <th style={{ width: 120 }}>Quantity</th>
-                                        <th className="num" style={{ width: 140 }}>
-                                            Unit price ({currency})
-                                        </th>
-                                        <th className="num" style={{ width: 140 }}>
-                                            Line total ({currency})
-                                        </th>
-                                        <th style={{ width: 40 }} />
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {data.lines.map((line, index) => (
-                                        <OrderLineRow
-                                            key={index}
-                                            line={line}
-                                            product={productsById.get(line.product_id)}
-                                            productGroups={productGroups}
-                                            onChange={(changed) => updateLine(index, changed)}
-                                            onRemove={() => removeLine(index)}
+                    <div className="rd-form-page">
+                        <form className="rd-form" onSubmit={submit} noValidate>
+                            <FormSection title="Order" intro="When they ordered.">
+                                <FormRow columns="minmax(0, 220px)">
+                                    <Field label="Order date" htmlFor="order_date" required error={errors.order_date}>
+                                        <TextInput
+                                            id="order_date"
+                                            type="date"
+                                            large
+                                            max={today}
+                                            value={data.order_date}
+                                            onChange={(event) => setData('order_date', event.target.value)}
                                         />
-                                    ))}
-                                </tbody>
-                                <tfoot>
-                                    <tr>
-                                        <td colSpan={3} className="num">
-                                            <b>Total</b>
-                                        </td>
-                                        <td className="num">
-                                            <b>{formatMoney(total)}</b>
-                                        </td>
-                                        <td />
-                                    </tr>
-                                </tfoot>
-                            </table>
-                            <Button
-                                variant="outline-primary"
-                                size="sm"
-                                shadow={false}
-                                onClick={() => setData('lines', [...data.lines, BLANK_LINE])}
+                                    </Field>
+                                </FormRow>
+                            </FormSection>
+
+                            <FormSection
+                                title="Products"
+                                intro="One line per product. Quantities in the product’s unit."
+                                wide
                             >
-                                + Add product
-                            </Button>
-                            <div className="text-muted custom-font-xsmall mt-1">
-                                Prices come from the catalogue when the order is saved.
-                            </div>
-                        </div>
+                                <div className="rd-scroll">
+                                    <table className="rd-table order-lines">
+                                        <thead>
+                                            <tr>
+                                                <th scope="col">Product</th>
+                                                <th scope="col">Quantity</th>
+                                                <th scope="col" className="num">
+                                                    Unit price ({currency})
+                                                </th>
+                                                <th scope="col" className="num">
+                                                    Line total ({currency})
+                                                </th>
+                                                <th scope="col" className="rd-col-actions">
+                                                    <span className="visually-hidden">Remove</span>
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {data.lines.map((line, index) => (
+                                                <OrderLineRow
+                                                    key={index}
+                                                    number={index + 1}
+                                                    line={line}
+                                                    product={productsById.get(line.product_id)}
+                                                    productGroups={productGroups}
+                                                    onChange={(changed) => updateLine(index, changed)}
+                                                    onRemove={() => removeLine(index)}
+                                                />
+                                            ))}
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <td colSpan={3} className="num">
+                                                    Total
+                                                </td>
+                                                <td className="num">{formatMoney(total)}</td>
+                                                <td />
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                                <div>
+                                    <button
+                                        type="button"
+                                        className="rd-btn"
+                                        onClick={() => setData('lines', [...data.lines, BLANK_LINE])}
+                                    >
+                                        <i className="mdi mdi-plus" aria-hidden="true" />
+                                        Add a product
+                                    </button>
+                                </div>
+                            </FormSection>
 
-                        <Field label="Remark" htmlFor="remark" className="mt-2">
-                            <TextArea
-                                id="remark"
-                                rows={2}
-                                maxLength={1000}
-                                value={data.remark}
-                                onChange={(event) => setData('remark', event.target.value)}
+                            <FormSection title="Remark" intro="Delivery notes, a promotion, anything unusual.">
+                                <Field label="Remark" htmlFor="remark" error={errors.remark}>
+                                    <TextArea
+                                        id="remark"
+                                        maxLength={REMARK_MAX}
+                                        value={data.remark}
+                                        onChange={(event) => setData('remark', event.target.value)}
+                                    />
+                                    <span className="rd-form__counter">
+                                        {data.remark.length} / {REMARK_MAX}
+                                    </span>
+                                </Field>
+                            </FormSection>
+
+                            <FormFoot
+                                cancelHref={route('lead.view', lead.id)}
+                                submitLabel="Save order"
+                                processing={processing}
                             />
-                        </Field>
+                        </form>
 
-                        <FormActions
-                            backHref={route('lead.view', lead.id)}
-                            submitLabel="Save order"
-                            processing={processing}
-                        />
-                    </form>
+                        <aside className="rd-form-page__aside">
+                            <section className="rd-panel order-summary" aria-labelledby="order-summary-title">
+                                <h2 id="order-summary-title" className="rd-panel__title">
+                                    This order
+                                </h2>
+                                <span className="order-summary__total">
+                                    {currency} {formatMoney(total)}
+                                </span>
+                                <span className="rd-panel__sub">
+                                    {counted.length > 0 ? pluralize(counted.length, 'product') : 'No products yet'}
+                                </span>
+                            </section>
+                        </aside>
+                    </div>
                 )}
-            </Card>
+            </SurfacePage>
         </AppLayout>
     );
 }

@@ -3,7 +3,7 @@ import { forwardRef, type InputHTMLAttributes } from 'react';
 
 interface TextInputProps extends InputHTMLAttributes<HTMLInputElement> {
     invalid?: boolean;
-    /** Full-size control instead of the compact default. */
+    /** The 44px form size instead of the 40px toolbar size. */
     large?: boolean;
 }
 
@@ -15,12 +15,8 @@ const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function TextInpu
         <input
             ref={ref}
             autoComplete={autoComplete}
-            className={clsx(
-                'form-control custom-font-small',
-                !large && 'form-control-sm',
-                invalid && 'is-invalid',
-                className,
-            )}
+            aria-invalid={invalid || undefined}
+            className={clsx('rd-input', !large && 'rd-input--md', invalid && 'is-invalid', className)}
             {...props}
         />
     );

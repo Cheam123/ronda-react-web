@@ -1,19 +1,20 @@
 import { Link } from '@inertiajs/react';
-import { Fragment, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 export type BreadcrumbTrail = ReactNode[];
 
-/** "Home > Users > Total: 12" in the header. Hidden on phones. */
+/** "Home > Users > Total: 12" above a page that has no PageHeader of its own. */
 export default function Breadcrumbs({ trail }: { trail: BreadcrumbTrail }) {
     return (
-        <div className="header-breadcrumb d-none d-md-flex align-items-center">
-            <Link href="/index">Home</Link>
-            {trail.map((crumb, index) => (
-                <Fragment key={index}>
-                    <i className="fas fa-arrow-alt-circle-right" />
-                    <span>{crumb}</span>
-                </Fragment>
-            ))}
-        </div>
+        <nav aria-label="Breadcrumb" className="rd-shell__crumbs">
+            <ol className="rd-crumbs">
+                <li>
+                    <Link href="/index">Home</Link>
+                </li>
+                {trail.map((crumb, index) => (
+                    <li key={index}>{index === trail.length - 1 ? <span aria-current="page">{crumb}</span> : crumb}</li>
+                ))}
+            </ol>
+        </nav>
     );
 }

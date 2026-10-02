@@ -31,14 +31,23 @@ class UsersController extends Controller
 
         $users = User::whereNotIn('id',[1]);
 
-        if (!empty($request->get('active'))) {
-            $users = $users->where('status', $request->get('active'));
-        } else {
-            $users = $users->where('status', 1);
-            $request->merge(['active'=>1]);
-        }
         if ($request->get('user_type') !== NULL) {
             $users = $users->where('type', $request->get('user_type'));
+        }
+        // One box for the name, username, email or mobile.
+        if ($request->filled('search')) {
+            $keyword = '%'.$request->get('search').'%';
+            // A number typed as people read it ("012-345 6789") still finds the stored digits.
+            $digits = ltrim(preg_replace('/\D/', '', $request->get('search')), '0');
+            $users = $users->where(function ($q) use ($keyword, $digits) {
+                $q->where('name', 'like', $keyword)
+                  ->orWhere('username', 'like', $keyword)
+                  ->orWhere('email', 'like', $keyword)
+                  ->orWhere('mobile', 'like', $keyword);
+                if (strlen($digits) >= 3) {
+                    $q->orWhere('mobile', 'like', '%'.$digits.'%');
+                }
+            });
         }
         if (!empty($request->get('name'))) {
             $users = $users->where('name', 'like' ,'%'.$request->get('name').'%');
@@ -50,19 +59,29 @@ class UsersController extends Controller
             $users = $users->where('email', 'like' ,'%'.$request->get('email').'%');
         }
 
-        $users       = $users->orderBy('name','asc')->get();
-        $total       = $users->count();
-        $tmenu_part1 = trans('translation.Users');
-        $tmenu_part2 = trans('translation.Users');
-        $tmenu_part3 = trans('translation.total').':'.$total;
+        // The status buttons count what the other filters leave.
+        $counts = [
+            'active'   => (clone $users)->where('status', 1)->count(),
+            'inactive' => (clone $users)->where('status', '!=', 1)->count(),
+            'all'      => (clone $users)->count(),
+        ];
+
+        // Active (1), Inactive (anything else, normally 0) or all; active unless asked.
+        $status = in_array($request->get('active'), ['1', '2', 'all'], true) ? $request->get('active') : '1';
+        $request->merge(['active' => $status]);
+        if ($status === '1') {
+            $users = $users->where('status', 1);
+        } elseif ($status === '2') {
+            $users = $users->where('status', '!=', 1);
+        }
+
+        $users = $users->orderBy('name','asc')->get();
 
         return Inertia::render('Users/Index', [
-            'users'       => UserResource::collection($users)->resolve(),
-            'filters'     => $request->only(['active', 'user_type', 'name', 'mobile', 'email']),
-            'userTypes'   => Options::fromMap(User::getUserTypeListing()),
-            'tmenu_part1' => $tmenu_part1,
-            'tmenu_part2' => $tmenu_part2,
-            'tmenu_part3' => $tmenu_part3,
+            'users'     => UserResource::collection($users)->resolve(),
+            'counts'    => $counts,
+            'filters'   => $request->only(['active', 'user_type', 'search', 'name', 'mobile', 'email']),
+            'userTypes' => Options::fromMap(User::getUserTypeListing()),
         ]);
     }
 

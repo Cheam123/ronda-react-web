@@ -1,10 +1,11 @@
 import { router, usePage } from '@inertiajs/react';
-import { useMemo, useState, type FormEvent } from 'react';
+import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import AssigneePicker from '@/Components/forms/AssigneePicker';
 import FormRenderer from '@/Components/forms/FormRenderer';
+import Field from '@/Components/form/Field';
 import SearchSelect from '@/Components/form/SearchSelect';
 import TextInput from '@/Components/form/TextInput';
-import Button from '@/Components/ui/Button';
+import { FormSection } from '@/Components/surface/FormSection';
 import ErrorSummary from '@/Components/ui/ErrorSummary';
 import ImageLightbox from '@/Components/ui/ImageLightbox';
 import { useFormFill } from '@/hooks/useFormFill';
@@ -13,7 +14,6 @@ import type { PageProps } from '@/types';
 import type { Answers, CaseLink, FormSchema, Person } from '@/types/forms';
 
 interface SubmissionFormProps {
-    form: { id: number; name: string; description: string | null };
     schema: FormSchema;
     answers: Answers;
     deferredIds: string[];
@@ -23,18 +23,19 @@ interface SubmissionFormProps {
     /** Fields posted alongside the answers (form_id on a new submission). */
     extra?: Record<string, string | number>;
     recordTitle?: string | null;
-    /** Cases this one may follow up on; empty hides the picker. */
+    /** Records this one may follow up on; empty hides the picker. */
     parentOptions?: CaseLink[];
     parentId?: number | null;
-    /** The case this follows up on, fixed (when editing). */
+    /** The record this follows up on, fixed (when editing). */
     parentCase?: CaseLink | null;
     submitLabel: string;
     onCancel: () => void;
+    /** Beside the form on wide screens: what happens after submitting. */
+    aside?: ReactNode;
 }
 
-/** Fill in a form: case title, follow-up link, and the fields, posted with attachments. */
+/** Fill in a form: a title, the record it follows up on, and the fields, posted with attachments. */
 export default function SubmissionForm({
-    form,
     schema,
     answers,
     deferredIds,
@@ -47,6 +48,7 @@ export default function SubmissionForm({
     parentCase,
     submitLabel,
     onCancel,
+    aside,
 }: SubmissionFormProps) {
     const serverErrors = usePage<PageProps>().props.errors;
     const fill = useFormFill({ schema, initial: answers, deferredIds });
@@ -86,72 +88,67 @@ export default function SubmissionForm({
     };
 
     return (
-        <div className="card">
-            <div className="card-body p-3 p-md-4">
-                {form.description && <p className="text-muted mb-4">{form.description}</p>}
+        <>
+            <ErrorSummary />
 
-                {deferredIds.length > 0 && (
-                    <div className="alert alert-info py-2 px-3 small">
-                        <i className="mdi mdi-account-multiple-outline me-1" />
-                        Some sections of this form are completed by other participants after you submit.
-                    </div>
-                )}
+            <div className="rd-form-page">
+                <form className="rd-form" onSubmit={submit} noValidate>
+                    {deferredIds.length > 0 && (
+                        <p className="form-fill__note">
+                            <i className="mdi mdi-account-multiple-outline" aria-hidden="true" />
+                            Some parts of this form are filled in by other people after you submit.
+                        </p>
+                    )}
 
-                <ErrorSummary />
-
-                <form onSubmit={submit} noValidate>
-                    <div className="row g-3 mb-3">
-                        <div className="col-12 col-md-6">
-                            <label className="form-label fw-bold" htmlFor="record_title">
-                                Case title
-                            </label>
+                    <FormSection title="This record" intro="A title so you can find it again in My records.">
+                        <Field
+                            label="Title"
+                            htmlFor="record_title"
+                            hint="Optional, but it makes the record easy to spot."
+                            error={serverErrors.record_title}
+                        >
                             <TextInput
                                 id="record_title"
                                 large
                                 maxLength={255}
-                                placeholder="e.g. Acme Sdn Bhd – CNC-220 coolant leak"
+                                placeholder="e.g. Kopi Kita Bangsar, October price"
                                 invalid={!!serverErrors.record_title}
                                 value={title}
                                 onChange={(event) => setTitle(event.target.value)}
                             />
-                            <div className="form-text small">Optional — how people will find this case later.</div>
-                        </div>
+                        </Field>
 
                         {parentOptions.length > 0 && (
-                            <div className="col-12 col-md-6">
-                                <label className="form-label fw-bold" htmlFor="parent_submission_id">
-                                    Follows up on
-                                </label>
+                            <Field
+                                label="Follows up on"
+                                htmlFor="parent_submission_id"
+                                hint="Only if this continues an earlier record. Leave it empty otherwise."
+                                error={serverErrors.parent_submission_id}
+                            >
                                 <SearchSelect
                                     id="parent_submission_id"
                                     placeholder="Not a follow-up"
                                     invalid={!!serverErrors.parent_submission_id}
                                     options={parentOptions.map((option) => ({
                                         value: option.id,
-                                        label: `${option.reference} — ${option.title}${option.open ? '' : ' (closed)'}`,
+                                        label: `${option.reference} · ${option.title}${option.open ? '' : ' (closed)'}`,
                                     }))}
                                     value={parent}
                                     onChange={setParent}
                                 />
-                                {serverErrors.parent_submission_id && (
-                                    <div className="invalid-feedback d-block">{serverErrors.parent_submission_id}</div>
-                                )}
-                                <div className="form-text small">
-                                    Leave empty unless this is a return visit on an earlier case.
-                                </div>
-                            </div>
+                            </Field>
                         )}
 
                         {parentCase && (
-                            <div className="col-12 col-md-6">
-                                <div className="form-label fw-bold">Follows up on</div>
-                                <div className="small">
-                                    <i className="mdi mdi-subdirectory-arrow-right me-1" />
-                                    {parentCase.reference} — {parentCase.title}
-                                </div>
+                            <div className="rd-field">
+                                <span className="rd-field__label">Follows up on</span>
+                                <span className="form-fill__parent">
+                                    <span className="rd-mono">{parentCase.reference}</span>
+                                    {parentCase.title}
+                                </span>
                             </div>
                         )}
-                    </div>
+                    </FormSection>
 
                     <FormRenderer
                         items={tree}
@@ -165,19 +162,22 @@ export default function SubmissionForm({
                         onImageClick={setPhoto}
                     />
 
-                    <div className="text-center mt-4">
-                        <Button variant="secondary" className="me-2 mb-2 mb-sm-0" onClick={onCancel}>
+                    <div className="rd-form__foot">
+                        <button type="button" className="rd-btn rd-btn--quiet rd-btn--lg" onClick={onCancel}>
                             Cancel
-                        </Button>
-                        <Button type="submit" className="mb-2 mb-sm-0" loading={sending}>
+                        </button>
+                        <button type="submit" className="rd-btn rd-btn--primary rd-btn--lg" disabled={sending}>
+                            {sending && <span className="spinner-border spinner-border-sm" aria-hidden="true" />}
                             {submitLabel}
-                        </Button>
+                        </button>
                     </div>
                 </form>
+
+                {aside && <aside className="rd-form-page__aside">{aside}</aside>}
             </div>
 
             <AssigneePicker people={people} />
             <ImageLightbox src={photo} onClose={() => setPhoto(null)} />
-        </div>
+        </>
     );
 }

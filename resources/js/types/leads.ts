@@ -13,10 +13,14 @@ export interface LeadListItem {
     presales_name: string;
     closing_sales_name: string;
     ife_area: string | null;
+    ife_area_id: number | null;
     created_by: string | null;
     assignee: string | null;
+    assignee_id: number | null;
     created_date: string | null;
     created_time: string | null;
+    /** "28 Sep 2026" */
+    created_label: string | null;
     deletable: boolean;
     taskable: boolean;
 }
@@ -43,6 +47,12 @@ export interface Lead {
     /** Location stamp as JSON, '' when never captured. */
     gps: string;
     remark: string | null;
+    /** Who the outlet is assigned to (the last task subscriber). */
+    assignee: string | null;
+    assignee_id: number | null;
+    created_by: string | null;
+    /** Whether a new task may be raised on it now. */
+    taskable: boolean;
 }
 
 export interface IfeAreaOption extends SelectOption<number> {

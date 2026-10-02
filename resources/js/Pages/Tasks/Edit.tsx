@@ -1,19 +1,17 @@
 import { useForm } from '@inertiajs/react';
 import type { FormEvent } from 'react';
-import DocumentTable from '@/Components/documents/DocumentTable';
-import FormActions from '@/Components/form/FormActions';
+import DocumentList from '@/Components/documents/DocumentList';
+import { FormFoot } from '@/Components/surface/FormSection';
+import SurfacePage from '@/Components/surface/SurfacePage';
 import TaskLeadDetails from '@/Components/tasks/TaskLeadDetails';
 import TaskStatusMenu from '@/Components/tasks/TaskStatusMenu';
-import TaskSummary from '@/Components/tasks/TaskSummary';
-import { ButtonLink } from '@/Components/ui/Button';
-import Card from '@/Components/ui/Card';
 import ErrorSummary from '@/Components/ui/ErrorSummary';
-import SectionHeader from '@/Components/ui/SectionHeader';
 import AppLayout from '@/Layouts/AppLayout';
 import { promptText } from '@/lib/dialogs';
 import type { SelectOption } from '@/types';
 import type { TaskActionFlags, TaskDetail, TaskFilters } from '@/types/tasks';
 import TaskFields from './Partials/TaskFields';
+import TaskHeader from './Partials/TaskHeader';
 import { taskFormData } from './Partials/taskFormData';
 
 interface EditTaskProps {
@@ -28,6 +26,7 @@ interface EditTaskProps {
 /** Change a task's people, schedule, sales and remark. Every save asks why. */
 export default function EditTask({ task, actions, people, canChangeSubscriber, filters }: EditTaskProps) {
     const { data, setData, post, transform, processing, errors } = useForm(taskFormData(task));
+    const listHref = route('tasks.index2', filters);
 
     const submit = async (event: FormEvent) => {
         event.preventDefault();
@@ -46,21 +45,20 @@ export default function EditTask({ task, actions, people, canChangeSubscriber, f
     };
 
     return (
-        <AppLayout title="Task" breadcrumb={['Task', task.reference]}>
-            <Card variant="plain">
-                <div className="d-flex gap-2 mb-2">
-                    <ButtonLink href={route('tasks.index2', filters)} variant="dark" className="action-button">
-                        Back
-                    </ButtonLink>
-                    <TaskStatusMenu taskId={task.id} actions={actions} filters={filters} />
-                </div>
+        <AppLayout title={`Edit ${task.reference}`}>
+            <SurfacePage>
+                <TaskHeader
+                    task={task}
+                    listHref={listHref}
+                    trail={[{ label: task.reference, href: route('tasks.view', task.id) }, { label: 'Edit' }]}
+                    title={`Edit: ${task.title}`}
+                    actions={<TaskStatusMenu taskId={task.id} actions={actions} filters={filters} />}
+                />
 
-                <TaskSummary task={task} />
                 <ErrorSummary />
 
-                <form onSubmit={submit} className="mt-2">
-                    <SectionHeader title="Task Detail" />
-                    <div className="m-2">
+                <div className="rd-form-page">
+                    <form className="rd-form" onSubmit={submit} noValidate>
                         <TaskFields
                             mode="edit"
                             data={data}
@@ -74,19 +72,20 @@ export default function EditTask({ task, actions, people, canChangeSubscriber, f
                                 checker: task.people.checker,
                             }}
                         />
-                    </div>
+                        <FormFoot cancelHref={listHref} submitLabel="Save changes" processing={processing} />
+                    </form>
 
-                    <TaskLeadDetails lead={task.lead} />
-                    <div className="m-2">
-                        <div className="custom-font-xsmall mb-2">
-                            <b>Document(s)</b>
-                        </div>
-                        <DocumentTable documents={task.documents} previews />
-                    </div>
-
-                    <FormActions backHref={route('tasks.index2', filters)} submitLabel="Save" processing={processing} />
-                </form>
-            </Card>
+                    <aside className="rd-form-page__aside">
+                        <TaskLeadDetails lead={task.lead} />
+                        <section className="rd-panel lead-card" aria-labelledby="task-docs-title">
+                            <h2 id="task-docs-title" className="rd-panel__title">
+                                Documents <span className="rd-count">{task.documents.length}</span>
+                            </h2>
+                            <DocumentList documents={task.documents} empty="No documents on this task." />
+                        </section>
+                    </aside>
+                </div>
+            </SurfacePage>
         </AppLayout>
     );
 }

@@ -55,15 +55,23 @@ class LeadController extends Controller
             return Inertia::render('Errors/CustomError', compact('response'));
         }
 
-        $lead_detail = Leads::with('assignee','createdBy','tasks')->visibleTo(Auth::guard('web')->user());
-        $states      = States::all();
-        $cities      = Cities::all();
+        $user        = Auth::guard('web')->user();
+        $lead_detail = Leads::with('assignee','createdBy','tasks','runningTasks','ifearea')->visibleTo($user);
 
-        if ($request->get('has_customerid') == 'Y') {
-            $lead_detail = $lead_detail->whereNotNull('customer_id');
-        } elseif ($request->get('has_customerid') == 'N') {
-            $lead_detail = $lead_detail->whereNull('customer_id');
-        } else {   
+        // One box for the name, shop, mobile or customer ID.
+        if ($request->filled('search')) {
+            $keyword = '%'.$request->get('search').'%';
+            // A number typed as people read it ("012-345 6789") still finds the stored digits.
+            $digits = ltrim(preg_replace('/\D/', '', $request->get('search')), '0');
+            $lead_detail = $lead_detail->where(function ($q) use ($keyword, $digits) {
+                $q->where('name', 'like', $keyword)
+                  ->orWhere('business_name', 'like', $keyword)
+                  ->orWhere('mobile', 'like', $keyword)
+                  ->orWhere('customer_id', 'like', $keyword);
+                if (strlen($digits) >= 3) {
+                    $q->orWhere('mobile', 'like', '%'.$digits.'%');
+                }
+            });
         }
 
         if ($request->get('customer_id') !== NULL) {
@@ -98,14 +106,25 @@ class LeadController extends Controller
             $lead_detail = $lead_detail->where('ife_area_id', $keyword);
         }
 
-        if ($request->get('start') !== NULL) {
-            $from = Carbon::parse($request->get('start'))->startOfDay()->format('Y-m-d 00:00:00');
-            $to   = Carbon::parse($request->get('end'))->endOfDay()->format('Y-m-d 23:59:59');
-            
-            $lead_detail = $lead_detail->whereBetween('created_at', [$from, $to]);
+        // Created between the two dates; either end may be left open.
+        if ($request->filled('start')) {
+            $lead_detail = $lead_detail->where('created_at', '>=', Carbon::parse($request->get('start'))->startOfDay());
+        }
+        if ($request->filled('end')) {
+            $lead_detail = $lead_detail->where('created_at', '<=', Carbon::parse($request->get('end'))->endOfDay());
         }
 
-        $total = $lead_detail->count();
+        // The tabs count what the other filters leave, customers and prospects apart.
+        $all       = (clone $lead_detail)->count();
+        $customers = (clone $lead_detail)->whereNotNull('customer_id')->count();
+        $counts    = ['all' => $all, 'customers' => $customers, 'prospects' => $all - $customers];
+
+        if ($request->get('has_customerid') == 'Y') {
+            $lead_detail = $lead_detail->whereNotNull('customer_id');
+        } elseif ($request->get('has_customerid') == 'N') {
+            $lead_detail = $lead_detail->whereNull('customer_id');
+        }
+
         $lead_detail = $lead_detail->orderBy('created_at','desc')
                                            ->sortable()
                                            ->paginate(10)
@@ -113,16 +132,30 @@ class LeadController extends Controller
 
         $ifeareas = IfeArea::get();
 
-        $tmenu_part1 = trans('translation.customer');
-        $tmenu_part2 = trans('translation.customer');
-
         return Inertia::render('Leads/Index', [
-            'leads'       => $lead_detail->through(fn (Leads $lead) => LeadListResource::make($lead)->resolve()),
-            'ifeAreas'    => $this->areaOptions($ifeareas),
-            'filters'     => $request->only(['start', 'end', 'has_customerid', 'ifearea', 'lead_name', 'business_name', 'mobile', 'customer_id']),
-            'tmenu_part1' => $tmenu_part1,
-            'tmenu_part2' => $tmenu_part2,
+            'leads'    => $lead_detail->through(fn (Leads $lead) => LeadListResource::make($lead)->resolve()),
+            'ifeAreas' => $this->areaOptions($ifeareas),
+            'stats'    => $this->leadStats($user),
+            'counts'   => $counts,
+            'filters'  => $request->only(['search', 'start', 'end', 'has_customerid', 'ifearea', 'lead_name', 'business_name', 'mobile', 'customer_id']),
         ]);
+    }
+
+    /**
+     * The figures above the list, over every lead the user can see
+     * whatever the filters.
+     */
+    private function leadStats(User $user): array
+    {
+        $total     = Leads::visibleTo($user)->count();
+        $customers = Leads::visibleTo($user)->whereNotNull('customer_id')->count();
+
+        return [
+            'total'     => $total,
+            'customers' => $customers,
+            'prospects' => $total - $customers,
+            'areas'     => Leads::visibleTo($user)->whereNotNull('ife_area_id')->distinct()->count('ife_area_id'),
+        ];
     }
 
     public function view($id)
@@ -136,6 +169,8 @@ class LeadController extends Controller
 
         $user           = Auth::guard('web')->user();
         $customerDetail = Leads::with([
+                                    'assignee:id,name',
+                                    'createdBy:id,name',
                                     'documentUploads',
                                     'visits.createdBy:id,name',
                                     'orders.lines.product',
@@ -168,11 +203,7 @@ class LeadController extends Controller
 
         $ifeareas    = IfeArea::orderBy('area','asc')->get();
 
-        $tmenu_part1 = trans('translation.customer');
-        $tmenu_part2 = trans('translation.customer');
-        $tmenu_part3 = trans('translation.view') . ' (' . trans('translation.id').':'.$customerDetail->id . ')';
-
-        $customerDetail->loadMissing('tasks.lead', 'tasks.users.user', 'tasks.comments');
+        $customerDetail->loadMissing('tasks.lead', 'tasks.users.user', 'tasks.comments', 'documentUploads.uploadBy');
 
         return Inertia::render('Leads/Show', $this->formOptions($ifeareas, $states, $cities) + [
             'lead'           => LeadResource::make($customerDetail)->resolve(),
@@ -181,9 +212,6 @@ class LeadController extends Controller
             'visits'         => VisitResource::collection($customerDetail->visits)->resolve(),
             'orders'         => OrderResource::collection($customerDetail->orders)->resolve(),
             'recommendation' => $recommendation,
-            'tmenu_part1'    => $tmenu_part1,
-            'tmenu_part2'    => $tmenu_part2,
-            'tmenu_part3'    => $tmenu_part3,
         ]);
     }
 
@@ -200,15 +228,8 @@ class LeadController extends Controller
         $cities      = Cities::all();
         $ifeareas    = IfeArea::get();
 
-        $tmenu_part1 = trans('translation.customer');
-        $tmenu_part2 = trans('translation.customer');
-        $tmenu_part3 = trans('translation.create');
-
         return Inertia::render('Leads/Create', $this->formOptions($ifeareas, $states, $cities) + [
-            'today'       => now()->toDateString(),
-            'tmenu_part1' => $tmenu_part1,
-            'tmenu_part2' => $tmenu_part2,
-            'tmenu_part3' => $tmenu_part3,
+            'today' => now()->toDateString(),
         ]);
     }
 
@@ -303,17 +324,10 @@ class LeadController extends Controller
 
         $ifeareas    = IfeArea::get();
 
-        $tmenu_part1 = trans('translation.customer');
-        $tmenu_part2 = trans('translation.customer');
-        $tmenu_part3 = trans('translation.edit') . ' (' . trans('translation.id').':'.$customerDetail->id . ')';
-
         return Inertia::render('Leads/Edit', $this->formOptions($ifeareas, $states, $cities) + [
-            'lead'        => LeadResource::make($customerDetail)->resolve(),
-            'documents'   => DocumentResource::collection($customerDetail->documentUploads()->with('uploadBy')->get())->resolve(),
-            'today'       => now()->toDateString(),
-            'tmenu_part1' => $tmenu_part1,
-            'tmenu_part2' => $tmenu_part2,
-            'tmenu_part3' => $tmenu_part3,
+            'lead'      => LeadResource::make($customerDetail)->resolve(),
+            'documents' => DocumentResource::collection($customerDetail->documentUploads()->with('uploadBy')->get())->resolve(),
+            'today'     => now()->toDateString(),
         ]);
     }
     
@@ -391,6 +405,44 @@ class LeadController extends Controller
         $lead->delete();
         return redirect()->route('lead.index')->with('success', trans('translation.delete_success'));
 
+    }
+
+    /**
+     * Delete the leads ticked on the list. A lead with work still open
+     * (New .. KIV) is kept, as the list's own delete button is hidden for it.
+     */
+    public function deleteMany(Request $request)
+    {
+        if (!Auth::guard('web')->user()->can('edit_lead')) {
+            $response['title']      = trans('translation.access_error');
+            $response['message'][0] = trans('translation.access_error_msg');
+            $response['message'][1] = trans('translation.check_with_ur_superior');
+            return Inertia::render('Errors/CustomError', compact('response'));
+        }
+
+        $ids = $request->validate([
+            'ids'   => ['required', 'array', 'max:100'],
+            'ids.*' => ['integer'],
+        ])['ids'];
+
+        [$deletable, $kept] = Leads::visibleTo(Auth::guard('web')->user())
+            ->with('tasks')
+            ->whereIn('id', $ids)
+            ->get()
+            ->partition(fn (Leads $lead) => $lead->tasks->whereIn('status', [1, 2, 3, 4, 5, 6])->isEmpty());
+
+        if ($deletable->isEmpty()) {
+            return redirect()->back()->with('error', 'None of those outlets can be deleted: each still has an open task.');
+        }
+
+        DB::transaction(fn () => $deletable->each->delete());
+
+        $message = trans_choice('Deleted :count outlet.|Deleted :count outlets.', $deletable->count());
+        if ($kept->isNotEmpty()) {
+            $message .= ' '.trans_choice(':count was kept because it has an open task.|:count were kept because they have open tasks.', $kept->count());
+        }
+
+        return redirect()->back()->with('success', $message);
     }
 
     public function fileStore(Request $request)

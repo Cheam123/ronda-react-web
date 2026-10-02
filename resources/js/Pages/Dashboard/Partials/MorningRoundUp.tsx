@@ -1,6 +1,6 @@
 import { router } from '@inertiajs/react';
+import clsx from 'clsx';
 import { useState, type ReactNode } from 'react';
-import Button from '@/Components/ui/Button';
 import type { DailyDigest } from '../types';
 
 /**
@@ -38,11 +38,11 @@ function renderDigest(content: string): ReactNode[] {
 
         blocks.push(
             line.endsWith(':') && line.length <= 30 ? (
-                <div key={blocks.length} className="dash-digest__label">
-                    {line}
+                <div key={blocks.length} className="dash-roundup__label">
+                    {line.slice(0, -1)}
                 </div>
             ) : (
-                <div key={blocks.length}>{line}</div>
+                <p key={blocks.length}>{line}</p>
             ),
         );
     });
@@ -55,10 +55,11 @@ function renderDigest(content: string): ReactNode[] {
 interface MorningRoundUpProps {
     digest: DailyDigest | null;
     status: string | null;
+    className?: string;
 }
 
 /** The AI daily brief managers see (DailyDigestService). */
-export default function MorningRoundUp({ digest, status }: MorningRoundUpProps) {
+export default function MorningRoundUp({ digest, status, className }: MorningRoundUpProps) {
     const [regenerating, setRegenerating] = useState(false);
 
     const regenerate = () => {
@@ -74,40 +75,56 @@ export default function MorningRoundUp({ digest, status }: MorningRoundUpProps) 
     };
 
     return (
-        <div className="dash-card">
-            <div className="d-flex justify-content-between align-items-start">
-                <h6>Morning Round-Up</h6>
-                <Button
-                    variant="outline-secondary"
-                    size="sm"
-                    shadow={false}
-                    className="py-0"
-                    icon="mdi mdi-refresh"
-                    loading={regenerating}
+        <section className={clsx('rd-panel dash-roundup', className)} aria-labelledby="roundup-title">
+            <div className="rd-panel__head">
+                <div className="d-flex align-items-center gap-3">
+                    <span className="rd-icon rd-icon--lg rd-icon--dark">
+                        <i className="mdi mdi-creation" aria-hidden="true" />
+                    </span>
+                    <h2 id="roundup-title" className="rd-panel__title">
+                        Morning Round-Up
+                    </h2>
+                </div>
+                <button
+                    type="button"
+                    className="rd-btn rd-btn--sm"
                     title="Write today's Morning Round-Up again from the latest figures"
+                    disabled={regenerating}
                     onClick={regenerate}
                 >
+                    {regenerating ? (
+                        <span className="spinner-border spinner-border-sm" aria-hidden="true" />
+                    ) : (
+                        <i className="mdi mdi-refresh" aria-hidden="true" />
+                    )}
                     Regenerate
-                </Button>
+                </button>
             </div>
 
-            {status && <div className="alert alert-info py-1 px-2 small mb-2">{status}</div>}
+            {digest && (
+                <p className="dash-roundup__source">
+                    {digest.date_label} &middot;{' '}
+                    {digest.source === 'bedrock'
+                        ? 'Written by Claude (Amazon Bedrock)'
+                        : 'Template summary (Bedrock not configured or unavailable)'}
+                </p>
+            )}
 
-            {digest ? (
-                <>
-                    <div className="dash-sub mb-1">
-                        {digest.date_label} &middot;{' '}
-                        {digest.source === 'bedrock'
-                            ? 'Written by Claude (Amazon Bedrock)'
-                            : 'Template summary (Bedrock not configured or unavailable)'}
-                    </div>
-                    <div className="dash-digest">{renderDigest(digest.content)}</div>
-                </>
-            ) : (
-                <div className="dash-sub">
-                    No Morning Round-Up yet. It is written at 7:00 AM each day. Press Regenerate to write one now.
+            {status && (
+                <div className="dash-roundup__status" role="status">
+                    {status}
                 </div>
             )}
-        </div>
+
+            <div className="dash-roundup__body">
+                {digest ? (
+                    renderDigest(digest.content)
+                ) : (
+                    <p className="rd-muted">
+                        No Morning Round-Up yet. It is written at 7:00 AM each day. Press Regenerate to write one now.
+                    </p>
+                )}
+            </div>
+        </section>
     );
 }

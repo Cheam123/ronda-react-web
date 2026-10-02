@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import SearchSelect from '@/Components/form/SearchSelect';
-import Select from '@/Components/form/Select';
 import TextInput from '@/Components/form/TextInput';
 import {
     CONDITION_OPERATORS,
@@ -29,6 +28,15 @@ function operatorsFor(field: FieldElement | undefined): ConditionOperator[] {
     return field ? (CONDITION_OPERATORS[field.type] ?? CONDITION_OPERATORS.text) : CONDITION_OPERATORS.text;
 }
 
+/** "is less than" for a number, "is before" for a date or time. */
+function operatorLabel(operator: ConditionOperator, field: FieldElement | undefined): string {
+    if (operator === 'gt' || operator === 'lt') {
+        if (field?.type === 'number') return operator === 'gt' ? 'is more than' : 'is less than';
+        if (field?.type === 'date' || field?.type === 'time') return operator === 'gt' ? 'is after' : 'is before';
+    }
+    return OPERATOR_LABELS[operator];
+}
+
 function newRow(sources: FieldElement[]): DraftRow {
     const field = sources[0];
     return { key: nextKey(), field: field?.id ?? '', operator: operatorsFor(field)[0], value: '' };
@@ -45,7 +53,7 @@ function toDraft(schema: ConditionSchema | null): Draft {
     );
 }
 
-/** Complete rows only; empty blocks dropped; nothing left means "always". */
+/** Complete rows only; empty sets dropped; nothing left means "always". */
 export function serializeConditions(draft: Draft): ConditionSchema | null {
     const groups = draft
         .map((rows) => ({
@@ -70,13 +78,14 @@ interface ConditionEditorProps {
     /** Fields a condition may look at. */
     sources: FieldElement[];
     people: Person[];
-    /** Start with one empty block (the branch dialog). */
+    /** Start with one empty set (the path dialog). */
     startWithBlock?: boolean;
 }
 
 /**
- * OR'd blocks of AND'd conditions. Mount it with a `key` per subject: it
- * keeps its own draft, so half-built rows survive while the user edits.
+ * Sets of conditions: everything in a set must match, and any one set
+ * matching is enough. Mount it with a `key` per subject: it keeps its own
+ * draft, so half-built rows survive while the user edits.
  */
 export default function ConditionEditor({
     initial,
@@ -118,7 +127,8 @@ export default function ConditionEditor({
         if (field && TYPES_WITH_VALUES.includes(field.type) && optionList(field).length > 0) {
             return (
                 <SearchSelect
-                    placeholder="Select a value..."
+                    ariaLabel="Value"
+                    placeholder="Value"
                     options={optionList(field).map((option) => ({ value: option, label: option }))}
                     value={row.value}
                     onChange={set}
@@ -128,7 +138,8 @@ export default function ConditionEditor({
         if (field?.type === 'user') {
             return (
                 <SearchSelect
-                    placeholder="Select a person..."
+                    ariaLabel="Value"
+                    placeholder="Person"
                     options={peopleFor(field, people).map((person) => ({ value: person.id, label: person.name }))}
                     value={row.value}
                     onChange={set}
@@ -140,8 +151,10 @@ export default function ConditionEditor({
             field?.type === 'date' || field?.type === 'time' || field?.type === 'number' ? field.type : 'text';
         return (
             <TextInput
+                large
                 type={inputType}
                 aria-label="Value"
+                placeholder="Value"
                 value={row.value}
                 onChange={(event) => set(event.target.value)}
             />
@@ -151,92 +164,106 @@ export default function ConditionEditor({
     return (
         <div className="condition-editor">
             {draft.map((rows, blockIndex) => (
-                <div key={rows[0]?.key ?? blockIndex} className="condition-block">
-                    <div className="d-flex justify-content-between align-items-center mb-2">
-                        <span className="fw-semibold small text-muted">When ALL of these match</span>
+                <div key={rows[0]?.key ?? blockIndex} className="condition-editor__set">
+                    {blockIndex > 0 && <span className="condition-editor__or">or</span>}
+                    <div className="condition-block">
+                        <div className="condition-block__head">
+                            <span>{rows.length > 1 ? 'All of these match' : 'This matches'}</span>
+                            <button
+                                type="button"
+                                className="rd-btn rd-btn--icon rd-btn--icon-danger"
+                                aria-label="Remove this set"
+                                onClick={() => update(draft.filter((_, b) => b !== blockIndex))}
+                            >
+                                <i className="mdi mdi-trash-can-outline" aria-hidden="true" />
+                            </button>
+                        </div>
+
+                        {rows.map((row, rowIndex) => {
+                            const field = sources.find((source) => source.id === row.field);
+                            return (
+                                <div key={row.key} className="condition-row">
+                                    <div className="condition-row__field">
+                                        <SearchSelect
+                                            ariaLabel="Field"
+                                            placeholder="Choose a field"
+                                            clearable={false}
+                                            options={sources.map((source) => ({
+                                                value: source.id,
+                                                label: source.label || 'Untitled field',
+                                            }))}
+                                            value={row.field}
+                                            onChange={(fieldId) => {
+                                                const picked = sources.find((source) => source.id === fieldId);
+                                                patchRow(blockIndex, rowIndex, {
+                                                    field: fieldId,
+                                                    operator: operatorsFor(picked)[0],
+                                                    value: '',
+                                                });
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="condition-row__operator">
+                                        <SearchSelect
+                                            ariaLabel="Test"
+                                            clearable={false}
+                                            searchable={false}
+                                            options={operatorsFor(field).map((operator) => ({
+                                                value: operator,
+                                                label: operatorLabel(operator, field),
+                                            }))}
+                                            value={row.operator}
+                                            onChange={(operator) =>
+                                                patchRow(blockIndex, rowIndex, {
+                                                    operator: operator as ConditionOperator,
+                                                    value: '',
+                                                })
+                                            }
+                                        />
+                                    </div>
+                                    <div className="condition-row__value">
+                                        {valueControl(row, blockIndex, rowIndex)}
+                                    </div>
+                                    <button
+                                        type="button"
+                                        className="rd-btn rd-btn--icon condition-row__remove"
+                                        aria-label="Remove this condition"
+                                        onClick={() => removeRow(blockIndex, rowIndex)}
+                                    >
+                                        <i className="mdi mdi-close" aria-hidden="true" />
+                                    </button>
+                                </div>
+                            );
+                        })}
+
                         <button
                             type="button"
-                            className="btn btn-sm btn-outline-danger"
-                            title="Remove block"
-                            onClick={() => update(draft.filter((_, b) => b !== blockIndex))}
+                            className="rd-btn rd-btn--sm rd-btn--quiet condition-block__add"
+                            onClick={() =>
+                                update(
+                                    draft.map((block, b) => (b === blockIndex ? [...block, newRow(sources)] : block)),
+                                )
+                            }
                         >
-                            <i className="mdi mdi-trash-can" />
+                            <i className="mdi mdi-plus" aria-hidden="true" />
+                            And another condition
                         </button>
                     </div>
-
-                    {rows.map((row, rowIndex) => {
-                        const field = sources.find((source) => source.id === row.field);
-                        return (
-                            <div key={row.key} className="condition-row">
-                                <div className="condition-row__field">
-                                    <SearchSelect
-                                        placeholder="Select a field..."
-                                        clearable={false}
-                                        options={sources.map((source) => ({
-                                            value: source.id,
-                                            label: source.label || '(untitled)',
-                                        }))}
-                                        value={row.field}
-                                        onChange={(fieldId) => {
-                                            const picked = sources.find((source) => source.id === fieldId);
-                                            patchRow(blockIndex, rowIndex, {
-                                                field: fieldId,
-                                                operator: operatorsFor(picked)[0],
-                                                value: '',
-                                            });
-                                        }}
-                                    />
-                                </div>
-                                <div className="condition-row__operator">
-                                    <Select
-                                        aria-label="Operator"
-                                        options={operatorsFor(field).map((operator) => ({
-                                            value: operator,
-                                            label: OPERATOR_LABELS[operator],
-                                        }))}
-                                        value={row.operator}
-                                        onChange={(event) =>
-                                            patchRow(blockIndex, rowIndex, {
-                                                operator: event.target.value as ConditionOperator,
-                                                value: '',
-                                            })
-                                        }
-                                    />
-                                </div>
-                                <div className="condition-row__value">{valueControl(row, blockIndex, rowIndex)}</div>
-                                <button
-                                    type="button"
-                                    className="btn btn-sm btn-outline-danger"
-                                    title="Remove condition"
-                                    onClick={() => removeRow(blockIndex, rowIndex)}
-                                >
-                                    <i className="mdi mdi-minus" />
-                                </button>
-                            </div>
-                        );
-                    })}
-
-                    <button
-                        type="button"
-                        className="btn btn-sm btn-outline-secondary mt-1"
-                        onClick={() =>
-                            update(draft.map((block, b) => (b === blockIndex ? [...block, newRow(sources)] : block)))
-                        }
-                    >
-                        <i className="mdi mdi-plus" /> And condition
-                    </button>
                 </div>
             ))}
 
-            <button
-                type="button"
-                className="btn btn-sm btn-outline-primary"
-                disabled={sources.length === 0}
-                title={sources.length === 0 ? 'Add other input fields first' : undefined}
-                onClick={() => update([...draft, [newRow(sources)]])}
-            >
-                <i className="mdi mdi-plus" /> Or condition block
-            </button>
+            {sources.length === 0 ? (
+                <p className="condition-editor__none">Add another field first. A condition looks at its answer.</p>
+            ) : (
+                <button
+                    type="button"
+                    className="rd-btn rd-btn--sm condition-editor__add"
+                    onClick={() => update([...draft, [newRow(sources)]])}
+                >
+                    <i className="mdi mdi-plus" aria-hidden="true" />
+                    {draft.length === 0 ? 'Add a condition' : 'Or another set'}
+                </button>
+            )}
         </div>
     );
 }

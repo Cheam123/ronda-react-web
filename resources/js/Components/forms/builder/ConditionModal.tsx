@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import BootstrapModal from 'react-bootstrap/Modal';
-import Button from '@/Components/ui/Button';
+import Dialog from '@/Components/surface/Dialog';
 import type { ConditionSchema, FieldElement, Person } from '@/types/forms';
 import ConditionEditor from './ConditionEditor';
 
 interface ConditionModalProps {
     show: boolean;
+    /** The path being edited, for the title. */
+    pathName: string;
     initial: ConditionSchema | null;
     sources: FieldElement[];
     people: Person[];
@@ -14,42 +15,45 @@ interface ConditionModalProps {
     onHide: () => void;
 }
 
-/** "Display Conditions" for a branch arm; edits apply on Save. Remount per opening. */
-export default function ConditionModal({ show, initial, sources, people, onSave, onHide }: ConditionModalProps) {
+/** When a branch takes this path; edits apply on Save. Remount per opening. */
+export default function ConditionModal({
+    show,
+    pathName,
+    initial,
+    sources,
+    people,
+    onSave,
+    onHide,
+}: ConditionModalProps) {
     const [draft, setDraft] = useState<ConditionSchema | null>(initial);
 
     return (
-        <BootstrapModal show={show} onHide={onHide} size="lg" centered scrollable backdrop="static">
-            <BootstrapModal.Header closeButton>
-                <BootstrapModal.Title as="h5" className="fw-bold">
-                    <i className="mdi mdi-eye-settings-outline me-1 text-primary" />
-                    Display Conditions
-                </BootstrapModal.Title>
-            </BootstrapModal.Header>
-            <BootstrapModal.Body>
-                <p className="text-muted small mb-3">
-                    Conditions inside a block must <strong>all</strong> match (AND). If you add several blocks, matching{' '}
-                    <strong>any one</strong> block is enough (OR).
-                </p>
-                <ConditionEditor
-                    initial={initial}
-                    onChange={setDraft}
-                    sources={sources}
-                    people={people}
-                    startWithBlock
-                />
-            </BootstrapModal.Body>
-            <BootstrapModal.Footer>
-                <Button variant="outline-secondary" shadow={false} onClick={() => onSave(null)}>
-                    Clear (always show)
-                </Button>
-                <Button variant="secondary" shadow={false} onClick={onHide}>
-                    Cancel
-                </Button>
-                <Button shadow={false} onClick={() => onSave(draft)}>
-                    Save conditions
-                </Button>
-            </BootstrapModal.Footer>
-        </BootstrapModal>
+        <Dialog
+            show={show}
+            onHide={onHide}
+            wide
+            icon="mdi-source-branch"
+            title={`When to take ${pathName || 'this path'}`}
+            text="Everything in a set must match. If there are several sets, any one matching is enough. Paths are checked from left to right, and the first match wins."
+            footer={
+                <>
+                    <button
+                        type="button"
+                        className="rd-btn rd-btn--quiet rd-btn--lg me-auto"
+                        onClick={() => onSave(null)}
+                    >
+                        Remove the conditions
+                    </button>
+                    <button type="button" className="rd-btn rd-btn--lg" onClick={onHide}>
+                        Cancel
+                    </button>
+                    <button type="button" className="rd-btn rd-btn--primary rd-btn--lg" onClick={() => onSave(draft)}>
+                        Save
+                    </button>
+                </>
+            }
+        >
+            <ConditionEditor initial={initial} onChange={setDraft} sources={sources} people={people} startWithBlock />
+        </Dialog>
     );
 }

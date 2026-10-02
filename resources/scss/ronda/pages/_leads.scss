@@ -1,0 +1,368 @@
+//
+// Leads and customers (Pages/Leads/Index). Built on the surface styles
+// (ronda/_surface.scss); the list itself is .rd-list with a banded table.
+//
+
+.lead-table {
+    min-width: 1120px;
+
+    &__id {
+        color: $rd-body;
+        font-size: 13px;
+    }
+}
+
+// ------------------------------------------------ Outlet page (Leads/Show)
+
+.lead-head__id {
+    color: $rd-body;
+    font-size: 13px;
+}
+
+.lead-head__assignee {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: $rd-ink-2;
+
+    strong {
+        color: $rd-ink;
+        font-weight: 500;
+    }
+}
+
+.lead-page {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 392px;
+    align-items: start;
+    gap: 24px;
+
+    &__aside {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+        min-width: 0;
+    }
+
+    @media (max-width: 1199.98px) {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.lead-activity {
+    overflow: hidden;
+
+    &__tabs {
+        padding: 4px 24px 0;
+    }
+
+    &__table {
+        min-width: 760px;
+
+        td {
+            height: 64px;
+        }
+    }
+
+    &__top td {
+        padding-top: 14px;
+        padding-bottom: 14px;
+        vertical-align: top;
+    }
+
+    tr.is-inactive td {
+        color: $rd-muted;
+    }
+
+    &__strong {
+        color: $rd-ink;
+        font-weight: 600;
+    }
+
+    &__stack {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        line-height: 1.45;
+
+        &--tight {
+            gap: 2px;
+        }
+    }
+
+    &__note {
+        color: $rd-muted;
+        font-size: 13px;
+        line-height: 1.45;
+    }
+
+    &__support {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 150px;
+    }
+
+    &__empty {
+        margin: 0;
+        padding: 40px 24px;
+        color: $rd-muted;
+        font-size: 14px;
+        text-align: center;
+    }
+
+    &__lede {
+        margin: 0;
+        padding: 18px 24px;
+        border-bottom: 1px solid $rd-line;
+        color: $rd-body;
+        font-size: 14px;
+        line-height: 1.5;
+
+        strong {
+            color: $rd-ink;
+        }
+    }
+
+    &__why {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin: 20px 24px 24px;
+        padding: 16px 18px;
+        border: 1px solid $rd-line;
+        border-radius: 12px;
+        background: $rd-row-alt;
+        color: $rd-body;
+        font-size: 14px;
+        line-height: 1.5;
+        white-space: pre-line;
+
+        strong {
+            color: $rd-ink;
+        }
+    }
+}
+
+.lead-card {
+    gap: 14px;
+
+    &__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+
+        .rd-panel__title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+    }
+}
+
+.lead-where {
+    margin: 0;
+    color: $rd-body;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.lead-profile {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+
+    &__cell {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        padding: 12px 14px;
+        border: 1px solid $rd-line;
+        border-radius: 12px;
+    }
+
+    &__label {
+        color: $rd-muted;
+        font-size: 12px;
+    }
+
+    &__value {
+        color: $rd-ink;
+        font-size: 16px;
+        font-weight: 600;
+    }
+
+    &__note {
+        margin: 0;
+        color: $rd-muted;
+        font-size: 13px;
+        line-height: 1.45;
+    }
+}
+
+.lead-remark {
+    margin: 0;
+    color: $rd-body;
+    font-size: 14px;
+    line-height: 1.5;
+    white-space: pre-line;
+}
+
+// The notes beside the lead form.
+.lead-note {
+    margin: 0;
+    color: $rd-body;
+    font-size: 14px;
+    line-height: 1.5;
+
+    &__warn {
+        color: $rd-serious;
+    }
+}
+
+// ------------------------------------------- Record an order (Orders/Create)
+
+.order-lines {
+    min-width: 720px;
+
+    th:first-child {
+        width: 45%;
+    }
+
+    td {
+        vertical-align: middle;
+    }
+
+    &__qty {
+        min-width: 130px;
+    }
+
+    &__total {
+        color: $rd-ink;
+        font-weight: 600;
+    }
+
+    tfoot td {
+        padding-top: 14px;
+        border-bottom: 0;
+        font-size: 15px;
+    }
+}
+
+.order-summary {
+    gap: 6px;
+
+    &__total {
+        font-size: 28px;
+        font-weight: 600;
+        line-height: 36px;
+        letter-spacing: -0.02em;
+        font-variant-numeric: tabular-nums;
+    }
+}
+
+// ------------------------------------------------ IFE report (IfeReports/Show)
+
+.ife-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    &__label {
+        margin: 0;
+        color: $rd-muted;
+        font-size: 13px;
+        font-weight: 500;
+    }
+
+    &__body {
+        margin: 0;
+        color: $rd-body;
+        font-size: 14px;
+        line-height: 1.55;
+        white-space: pre-line;
+    }
+}
+
+.ife-photos {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+
+    &__item {
+        aspect-ratio: 1;
+        overflow: hidden;
+        padding: 0;
+        border: 1px solid $rd-line;
+        border-radius: 10px;
+        background: $rd-row-alt;
+        cursor: zoom-in;
+
+        img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        &:focus-visible {
+            outline: 2px solid $rd-brand;
+            outline-offset: 2px;
+        }
+    }
+}
+
+// ------------------------------------------------------ IFE areas (Areas/Index)
+
+.area-add {
+    display: grid;
+    grid-template-columns: minmax(0, 240px) minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 16px;
+
+    .form-field {
+        margin-bottom: 0;
+    }
+
+    > .rd-btn {
+        margin-top: 26px;
+    }
+
+    @media (max-width: 767.98px) {
+        grid-template-columns: minmax(0, 1fr);
+
+        > .rd-btn {
+            margin-top: 0;
+        }
+    }
+}
+
+.area-table {
+    min-width: 760px;
+}
+
+.area-row {
+    &__fields {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    // The area's tag colour, as outlets show it.
+    &__swatch {
+        flex-shrink: 0;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: currentColor;
+    }
+
+    &__name {
+        max-width: 200px;
+    }
+
+    &__keep {
+        display: inline-block;
+        width: 40px;
+    }
+}

@@ -1,74 +1,59 @@
-import { BarElement, CategoryScale, Chart as ChartJS, Legend, LinearScale, Tooltip, type ChartOptions } from 'chart.js';
+import { BarElement, CategoryScale, Chart as ChartJS, LinearScale, Tooltip } from 'chart.js';
+import clsx from 'clsx';
+import { useMemo } from 'react';
 import { Bar } from 'react-chartjs-2';
+import { BAR_STYLE, barOptions, CHART } from '@/lib/chartTheme';
 import type { TrendDay } from '../types';
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
-
-const SERIES = { created: '#2a78d6', done: '#eb6834' };
-const INK_2 = '#52514e';
-const MUTED = '#898781';
-
-const barStyle = {
-    maxBarThickness: 24,
-    borderRadius: 4,
-    borderSkipped: 'start' as const,
-    categoryPercentage: 0.7,
-    barPercentage: 0.85,
-};
-
-const options: ChartOptions<'bar'> = {
-    responsive: true,
-    maintainAspectRatio: false,
-    interaction: { mode: 'index', intersect: false },
-    plugins: {
-        legend: {
-            position: 'top',
-            align: 'start',
-            labels: { color: INK_2, boxWidth: 10, boxHeight: 10, font: { size: 11 } },
-        },
-        tooltip: {
-            backgroundColor: '#ffffff',
-            titleColor: '#0b0b0b',
-            bodyColor: INK_2,
-            borderColor: 'rgba(11,11,11,0.15)',
-            borderWidth: 1,
-            padding: 8,
-            boxWidth: 10,
-            boxHeight: 10,
-        },
-    },
-    scales: {
-        x: {
-            grid: { display: false },
-            border: { display: true, color: '#c3c2b7' },
-            ticks: { color: MUTED, font: { size: 11 } },
-        },
-        y: {
-            beginAtZero: true,
-            grid: { color: '#e1e0d9' },
-            border: { display: false },
-            ticks: { color: MUTED, precision: 0, font: { size: 11 } },
-        },
-    },
-};
+ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip);
 
 function shortDate(date: string): string {
     return new Date(`${date}T00:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
 }
 
-/** Tasks created vs. done per day, with a table fallback for screen readers. */
-export default function TrendChart({ trend }: { trend: TrendDay[] }) {
+interface TrendChartProps {
+    trend: TrendDay[];
+    createdWeek: number;
+    doneWeek: number;
+    className?: string;
+}
+
+/** Tasks created vs. done per day, with a table for screen readers. */
+export default function TrendChart({ trend, createdWeek, doneWeek, className }: TrendChartProps) {
+    const options = useMemo(() => barOptions({ titles: trend.map((day) => day.label) }), [trend]);
+
     const data = {
         labels: trend.map((day) => shortDate(day.date)),
         datasets: [
-            { label: 'Created', data: trend.map((day) => day.created), backgroundColor: SERIES.created, ...barStyle },
-            { label: 'Done', data: trend.map((day) => day.done), backgroundColor: SERIES.done, ...barStyle },
+            { label: 'Created', data: trend.map((day) => day.created), backgroundColor: CHART.ochre, ...BAR_STYLE },
+            { label: 'Done', data: trend.map((day) => day.done), backgroundColor: CHART.brand, ...BAR_STYLE },
         ],
     };
 
     return (
-        <>
-            <div className="dash-chart">
+        <section className={clsx('rd-panel', className)} aria-labelledby="trend-title">
+            <div className="rd-panel__head">
+                <div>
+                    <h2 id="trend-title" className="rd-panel__title">
+                        Tasks created vs. done
+                    </h2>
+                    <p className="rd-panel__sub">
+                        Last 14 days &middot; {createdWeek} created and {doneWeek} done in the last 7
+                    </p>
+                </div>
+                <div className="rd-legend">
+                    <span>
+                        <span className="rd-swatch" style={{ background: CHART.ochre }} />
+                        Created
+                    </span>
+                    <span>
+                        <span className="rd-swatch" style={{ background: CHART.brand }} />
+                        Done
+                    </span>
+                </div>
+            </div>
+
+            <div className="rd-chart">
                 <Bar
                     data={data}
                     options={options}
@@ -76,9 +61,10 @@ export default function TrendChart({ trend }: { trend: TrendDay[] }) {
                     role="img"
                 />
             </div>
-            <details className="mt-2">
-                <summary className="dash-sub">Show as table</summary>
-                <table className="dash-table mt-1">
+
+            <details className="rd-chart-table">
+                <summary>Show as table</summary>
+                <table className="rd-table mt-2">
                     <thead>
                         <tr>
                             <th>Date</th>
@@ -97,6 +83,6 @@ export default function TrendChart({ trend }: { trend: TrendDay[] }) {
                     </tbody>
                 </table>
             </details>
-        </>
+        </section>
     );
 }

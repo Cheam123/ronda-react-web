@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ChangeEvent, type ReactNode } from 'react';
 import { useToast } from '@/Components/feedback/ToastProvider';
 import { formatFileSize } from '@/lib/files';
 import { errorMessage } from '@/lib/http';
 import { logActivity } from '@/lib/taskActivity';
 
 /** The composer grows with its text up to this height, then scrolls. */
-const MAX_HEIGHT = 140;
+const MAX_HEIGHT = 160;
 
 interface ActivityComposerProps {
     taskId: number;
@@ -17,9 +17,10 @@ interface ActivityComposerProps {
     children?: ReactNode;
 }
 
-/** "+ Log follow-up": a note and/or attachments posted to a task's timeline. */
+/** "Log a follow-up": a note and/or attachments posted to a task's timeline. */
 export default function ActivityComposer({ taskId, onSaved, extra, children }: ActivityComposerProps) {
     const toast = useToast();
+    const id = useId();
     const textRef = useRef<HTMLTextAreaElement>(null);
     const fileRef = useRef<HTMLInputElement>(null);
     const [message, setMessage] = useState('');
@@ -45,7 +46,7 @@ export default function ActivityComposer({ taskId, onSaved, extra, children }: A
     const save = async () => {
         const text = message.trim();
         if (text === '' && files.length === 0) {
-            setHint('Please type a follow-up note or attach a file.');
+            setHint('Type a note or attach a file first.');
             return;
         }
 
@@ -55,10 +56,10 @@ export default function ActivityComposer({ taskId, onSaved, extra, children }: A
             await logActivity(taskId, text, files, extra);
             setMessage('');
             setFiles([]);
-            toast('Follow-up activity saved successfully.');
+            toast('Follow-up saved.');
             onSaved();
         } catch (error) {
-            toast(errorMessage(error, 'Failed to save activity.'), 'error');
+            toast(errorMessage(error, 'The follow-up could not be saved.'), 'error');
         } finally {
             setSaving(false);
         }
@@ -66,31 +67,43 @@ export default function ActivityComposer({ taskId, onSaved, extra, children }: A
 
     return (
         <div className="composer">
-            <div className="composer-label">+ Log follow-up</div>
-            <textarea
-                ref={textRef}
-                rows={1}
-                aria-label="Follow-up note"
-                placeholder="e.g. NPU / Spoke 5 min, interested in Type B / Appt set 8/3 1pm"
-                value={message}
-                onChange={(event) => setMessage(event.target.value)}
-            />
-            <input ref={fileRef} type="file" multiple hidden onChange={addFiles} />
-            <button
-                type="button"
-                className="composer-attach"
-                title="Attach files — images, documents, video"
-                aria-label="Attach files"
-                onClick={() => fileRef.current?.click()}
-            >
-                <i className="mdi mdi-paperclip" />
-            </button>
-            <button type="button" className="composer-save" disabled={saving} onClick={save}>
-                {saving ? 'Saving...' : 'Save activity'}
-            </button>
-            {hint && <span className="composer-status text-danger">{hint}</span>}
+            <label htmlFor={`${id}-note`} className="rd-field__label">
+                Log a follow-up
+            </label>
+            <div className="composer__box">
+                <textarea
+                    id={`${id}-note`}
+                    ref={textRef}
+                    rows={2}
+                    placeholder="What happened? e.g. Spoke 5 min, interested in Type B, appointment 8 Oct 1 pm"
+                    aria-invalid={hint ? true : undefined}
+                    aria-describedby={hint ? `${id}-hint` : undefined}
+                    value={message}
+                    onChange={(event) => setMessage(event.target.value)}
+                />
+                <div className="composer__bar">
+                    <input ref={fileRef} type="file" multiple hidden onChange={addFiles} />
+                    <button
+                        type="button"
+                        className="rd-btn rd-btn--quiet"
+                        title="Attach photos, documents or video"
+                        onClick={() => fileRef.current?.click()}
+                    >
+                        <i className="mdi mdi-paperclip" aria-hidden="true" />
+                        Attach
+                    </button>
+                    <button type="button" className="rd-btn rd-btn--primary" disabled={saving} onClick={save}>
+                        {saving ? 'Saving...' : 'Save follow-up'}
+                    </button>
+                </div>
+            </div>
+            {hint && (
+                <p className="rd-field__error" id={`${id}-hint`} role="alert">
+                    {hint}
+                </p>
+            )}
             {files.length > 0 && (
-                <div className="composer-preview">
+                <div className="composer__files">
                     {files.map((file, index) => (
                         <FileChip
                             key={`${file.name}-${index}`}
@@ -116,22 +129,28 @@ function FileChip({ file, onRemove }: { file: File; onRemove: () => void }) {
     }, [file]);
 
     return (
-        <div className="composer-chip">
+        <div className="composer__file">
             {preview ? (
-                <img className="thumb" src={preview} alt="" />
+                <img className="composer__thumb" src={preview} alt="" />
             ) : (
-                <span className="thumb">
-                    <i className="mdi mdi-file-document-outline" />
+                <span className="composer__thumb">
+                    <i className="mdi mdi-file-document-outline" aria-hidden="true" />
                 </span>
             )}
-            <div className="meta">
-                <div className="fname" title={file.name}>
+            <span className="composer__meta">
+                <span className="composer__name" title={file.name}>
                     {file.name}
-                </div>
-                <div className="fsize">{formatFileSize(file.size)}</div>
-            </div>
-            <button type="button" className="rm" title="Remove" aria-label={`Remove ${file.name}`} onClick={onRemove}>
-                &times;
+                </span>
+                <span className="composer__size">{formatFileSize(file.size)}</span>
+            </span>
+            <button
+                type="button"
+                className="rd-btn rd-btn--icon rd-btn--icon-danger"
+                title="Remove"
+                aria-label={`Remove ${file.name}`}
+                onClick={onRemove}
+            >
+                <i className="mdi mdi-close" aria-hidden="true" />
             </button>
         </div>
     );

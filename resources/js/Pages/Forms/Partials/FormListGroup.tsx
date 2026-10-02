@@ -21,7 +21,7 @@ interface FormListGroupProps {
     children: ReactNode;
 }
 
-/** A group card of the Form List: its forms, and a drop zone for more. */
+/** A group of the forms list: its name, its forms, and a drop zone for more. */
 export default function FormListGroup({
     group,
     list,
@@ -39,43 +39,40 @@ export default function FormListGroup({
     // form out of every group, so it reappears mid-drag.
     if (!group && formIds.length === 0 && !dragging) return null;
 
-    const count = formIds.length === 0 ? 'empty' : pluralize(formIds.length, 'form');
-
     return (
-        <div
+        <section
             ref={group ? sortable.setNodeRef : undefined}
             style={
                 group
                     ? { transform: CSS.Transform.toString(sortable.transform), transition: sortable.transition }
                     : undefined
             }
-            className={clsx('fl-group', !group && 'fl-group--ungrouped', sortable.isDragging && 'is-dragging')}
+            className={clsx('forms-group', !group && 'forms-group--ungrouped', sortable.isDragging && 'is-dragging')}
+            aria-label={group ? group.name : 'Ungrouped'}
         >
-            <div className="fl-group-head">
+            <div className="forms-group__head">
                 {group && canArrange && (
                     <button
                         type="button"
                         ref={sortable.setActivatorNodeRef}
-                        className="fl-handle"
-                        aria-label={`Drag group ${group.name}`}
+                        className="forms-handle"
+                        aria-label={`Drag the group ${group.name}`}
                         {...sortable.attributes}
                         {...sortable.listeners}
                     >
-                        <i className="mdi mdi-drag-horizontal-variant" />
+                        <i className="mdi mdi-drag" aria-hidden="true" />
                     </button>
                 )}
-                <span className={clsx('fl-group-name', !group && 'text-muted')}>
-                    {group ? group.name : 'Ungrouped'}
-                </span>
-                <span className="fl-group-count">{count}</span>
-                {actions && <div className="fl-group-actions">{actions}</div>}
+                <h2 className="forms-group__name">{group ? group.name : 'Ungrouped'}</h2>
+                <span className="rd-count">{formIds.length === 0 ? 'Empty' : pluralize(formIds.length, 'form')}</span>
+                {actions && <div className="forms-group__actions">{actions}</div>}
             </div>
             <SortableContext items={formIds.map(formKey)} strategy={verticalListSortingStrategy}>
-                <div ref={setDropRef} className={clsx('fl-list', dragging && 'fl-drop-hint', isOver && 'is-over')}>
+                <div ref={setDropRef} className={clsx('forms-group__list', dragging && 'is-drop', isOver && 'is-over')}>
                     {children}
-                    {formIds.length === 0 && <div className="fl-empty-group">{emptyText}</div>}
+                    {formIds.length === 0 && <p className="forms-group__empty">{emptyText}</p>}
                 </div>
             </SortableContext>
-        </div>
+        </section>
     );
 }

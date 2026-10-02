@@ -1,29 +1,45 @@
-import Field from '@/Components/form/Field';
-import TextInput from '@/Components/form/TextInput';
+import type { ReactNode } from 'react';
+import { formatPhone, phoneHref } from '@/lib/phone';
 import type { User } from '../types';
 
-/** A user's details as read-only fields (the View page). */
-export default function UserDetails({ user }: { user: User }) {
-    const fields: [label: string, value: string | null | undefined, wide?: boolean][] = [
-        ['Name', user.name, true],
-        ['Username', user.username, true],
-        ['Team', user.team_label],
-        ['User Type', user.type_label],
-        ['Chat ID', user.telegram_chat_id],
-        ['Gender', user.gender_label],
-        ['Email', user.email],
-        ['Mobile', user.mobile],
-        ['Status', user.status === 1 ? 'Active' : 'Inactive'],
-        ['Enable Notification', user.enable_notification === 1 ? 'Yes' : 'No'],
-    ];
+function Fact({ label, children }: { label: string; children: ReactNode }) {
+    return (
+        <>
+            <dt>{label}</dt>
+            <dd>{children || <span className="rd-muted">—</span>}</dd>
+        </>
+    );
+}
+
+/** A user's contact and settings as label / value rows (their page and their profile). */
+export default function UserDetails({ user, settings = true }: { user: User; settings?: boolean }) {
+    const phone = phoneHref(user.mobile);
 
     return (
-        <div className="row">
-            {fields.map(([label, value, wide]) => (
-                <Field key={label} label={label} className={wide ? 'col-12' : 'col-md-6'}>
-                    <TextInput value={value ?? ''} readOnly />
-                </Field>
-            ))}
-        </div>
+        <dl className="rd-facts">
+            <Fact label="Email">{user.email && <a href={`mailto:${user.email}`}>{user.email}</a>}</Fact>
+            <Fact label="Mobile">
+                {user.mobile &&
+                    (phone ? (
+                        <a href={phone} className="rd-facts__phone">
+                            <i className="mdi mdi-phone-outline" aria-hidden="true" />
+                            {formatPhone(user.mobile)}
+                        </a>
+                    ) : (
+                        formatPhone(user.mobile)
+                    ))}
+            </Fact>
+            <Fact label="User type">{user.type_label}</Fact>
+            <Fact label="Team">{user.team_label}</Fact>
+            <Fact label="Gender">{user.gender_label}</Fact>
+            {settings && (
+                <>
+                    <Fact label="Telegram chat">
+                        {user.telegram_chat_id && <span className="rd-mono">{user.telegram_chat_id}</span>}
+                    </Fact>
+                    <Fact label="Task alerts">{user.enable_notification === 1 ? 'On' : 'Off'}</Fact>
+                </>
+            )}
+        </dl>
     );
 }

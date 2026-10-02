@@ -5,23 +5,28 @@ interface SwitchProps {
     checked: boolean;
     onChange: (checked: boolean) => void;
     label: ReactNode;
+    /** A line under the label saying what "on" means. */
+    description?: ReactNode;
     disabled?: boolean;
 }
 
-export default function Switch({ id, checked, onChange, label, disabled }: SwitchProps) {
+/** An on / off switch (a checkbox drawn as a toggle) with its label. */
+export default function Switch({ id, checked, onChange, label, description, disabled }: SwitchProps) {
     return (
-        <div className="form-check form-switch">
+        <label className="rd-toggle" htmlFor={id}>
             <input
                 id={id}
                 type="checkbox"
-                className="form-check-input"
+                role="switch"
+                className="rd-toggle__input"
                 checked={checked}
                 disabled={disabled}
                 onChange={(event) => onChange(event.target.checked)}
             />
-            <label className="form-check-label" htmlFor={id}>
-                {label}
-            </label>
-        </div>
+            <span className="rd-toggle__text">
+                <span className="rd-toggle__label">{label}</span>
+                {description && <span className="rd-toggle__description">{description}</span>}
+            </span>
+        </label>
     );
 }

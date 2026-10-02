@@ -5,11 +5,12 @@ namespace App\Http\Resources\Tasks;
 use App\Helpers\Helper;
 use App\Models\Tasks;
 use App\Models\User;
+use App\Services\TaskRisk;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * A row of the task triage list, with everything its "Lead & Task
- * Details" and "Activity" dialogs show.
+ * A row of the task list, with everything its activity panel (Activity
+ * and Details tabs) shows.
  *
  * ROLE: 1 creator, 2 subscriber, 3 checker, 4 owner, 5 viewer, 6 sub-subscriber
  *
@@ -17,7 +18,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class TaskListItemResource extends JsonResource
 {
-    private const DATE_TIME = 'Y-m-d, h:i A';
+    private const DATE_TIME = 'j M Y, g:i a';
 
     public function toArray($request): array
     {
@@ -39,7 +40,7 @@ class TaskListItemResource extends JsonResource
             'flagged'      => $this->alert == 2,
             'status'       => (int) $this->status,
             'status_label' => Tasks::getTaskStatus($this->status),
-            'due'          => $this->due_date ? $this->format($this->due_date . ' ' . $this->due_time) : null,
+            'due'          => $this->due(),
             'appointment'  => $this->format($this->appointment_date),
             'reminder'     => $reminder ? $this->format($reminder->reminder_date . ' ' . $reminder->reminder_time) : null,
             'created_at'   => $this->format($this->created_at),
@@ -47,6 +48,7 @@ class TaskListItemResource extends JsonResource
             'aging'        => $this->aging(),
             'sales'        => $this->sales > 0 ? 'RM ' . number_format($this->sales, 2) : null,
             'lead'         => [
+                'id'            => $this->lead_id,
                 'name'          => optional($this->lead)->name,
                 'mobile'        => optional($this->lead)->mobile,
                 'customer_id'   => optional($this->lead)->customer_id,
@@ -89,8 +91,8 @@ class TaskListItemResource extends JsonResource
     }
 
     /**
-     * How stale the task's last follow-up is: tone drives the colour strip
-     * and badge, label is what the badge says. A flagged task is always red.
+     * How stale the task's last follow-up is: tone picks the Last contact
+     * chip's colour, label is what it says. A flagged task is always red.
      */
     private function aging(): array
     {
@@ -114,6 +116,25 @@ class TaskListItemResource extends JsonResource
         }
 
         return ['tone' => $tone, 'label' => $label];
+    }
+
+    /**
+     * The due date and time apart, for the list's Due column. Overdue is
+     * TaskRisk's rule: past due while the task is still New or In Progress.
+     */
+    private function due(): ?array
+    {
+        $at = TaskRisk::combine($this->due_date, $this->due_time, '23:59:59');
+
+        if (!$at) {
+            return null;
+        }
+
+        return [
+            'date'    => $at->format('j M Y'),
+            'time'    => $this->due_time ? $at->format('g:i a') : null,
+            'overdue' => in_array((int) $this->status, TaskRisk::OPEN_STATUSES, true) && $at->isPast(),
+        ];
     }
 
     /** "Aiman Rahman" -> "AR" */

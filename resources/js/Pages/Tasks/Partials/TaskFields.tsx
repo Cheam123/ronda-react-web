@@ -1,9 +1,9 @@
-import clsx from 'clsx';
 import { lazy, Suspense } from 'react';
 import Field from '@/Components/form/Field';
 import SearchSelect, { MultiSearchSelect } from '@/Components/form/SearchSelect';
-import Select from '@/Components/form/Select';
 import TextInput from '@/Components/form/TextInput';
+import { Choices } from '@/Components/surface/Choices';
+import { FormRow, FormSection } from '@/Components/surface/FormSection';
 import SafeHtml from '@/Components/ui/SafeHtml';
 import type { SelectOption } from '@/types';
 
@@ -29,9 +29,10 @@ export interface TaskFormData {
 // The editor is heavy; the read-only view never loads it.
 const RichTextEditor = lazy(() => import('@/Components/editor/RichTextEditor'));
 
-const ALERT_OPTIONS = [
-    { value: '1', label: 'NO' },
-    { value: '2', label: 'YES' },
+// alertind: 2 alerts the people on the task, 1 does not.
+const ALERT_OPTIONS: SelectOption[] = [
+    { value: '2', label: 'Yes' },
+    { value: '1', label: 'No' },
 ];
 
 interface TaskFieldsProps {
@@ -49,7 +50,7 @@ interface TaskFieldsProps {
     names?: { subscriber: string | null; creator: string | null; checker: string | null };
 }
 
-/** Task Detail: who handles it, what it is, when it's due and the remark. */
+/** The task form's sections: who handles it, what and when, and the remark. */
 export default function TaskFields({
     mode,
     data,
@@ -67,170 +68,163 @@ export default function TaskFields({
     return (
         <>
             {showPeople && (
-                <div className="row">
-                    <Field
-                        label="Subscriber"
-                        htmlFor="subscriber"
-                        required={subscriberEditable}
-                        error={errors.subscriber}
-                        className="col-md-3"
-                    >
-                        {subscriberEditable && !readOnly ? (
-                            <SearchSelect
-                                id="subscriber"
+                <FormSection title="People" intro="Who does it, who helps, who signs it off and who can watch.">
+                    <FormRow>
+                        <Field
+                            label="Subscriber"
+                            htmlFor="subscriber"
+                            required={subscriberEditable && !readOnly}
+                            error={errors.subscriber}
+                            hint={subscriberEditable && !readOnly ? 'The one person doing the task.' : undefined}
+                        >
+                            {subscriberEditable && !readOnly ? (
+                                <SearchSelect
+                                    id="subscriber"
+                                    options={people}
+                                    placeholder="Choose a person"
+                                    invalid={!!errors.subscriber}
+                                    value={data.subscriber}
+                                    onChange={(value) => update('subscriber', value)}
+                                />
+                            ) : (
+                                <TextInput id="subscriber" large value={names?.subscriber ?? ''} readOnly />
+                            )}
+                        </Field>
+                        <Field label="Sub-subscribers" htmlFor="sub_subscriber">
+                            <MultiSearchSelect
+                                id="sub_subscriber"
                                 options={people}
-                                placeholder="-- Select Your Choice --"
-                                invalid={!!errors.subscriber}
-                                value={data.subscriber}
-                                onChange={(value) => update('subscriber', value)}
-                            />
-                        ) : (
-                            <TextInput id="subscriber" value={names?.subscriber ?? ''} readOnly />
-                        )}
-                    </Field>
-                    <Field label="Sub-Subscriber(s)" htmlFor="sub_subscriber" className="col-md-3">
-                        <MultiSearchSelect
-                            id="sub_subscriber"
-                            options={people}
-                            placeholder=""
-                            disabled={readOnly}
-                            value={data.sub_subscriber}
-                            onChange={(values) => update('sub_subscriber', values)}
-                        />
-                    </Field>
-                    <Field
-                        label="Owner(s)"
-                        htmlFor="owner"
-                        required={!readOnly}
-                        error={errors.owner}
-                        className="col-md-3"
-                    >
-                        <MultiSearchSelect
-                            id="owner"
-                            options={people}
-                            placeholder=""
-                            disabled={readOnly}
-                            invalid={!!errors.owner}
-                            value={data.owner}
-                            onChange={(values) => update('owner', values)}
-                        />
-                    </Field>
-                    <Field label="Viewer(s)" htmlFor="viewer" className="col-md-3">
-                        <MultiSearchSelect
-                            id="viewer"
-                            options={people}
-                            placeholder=""
-                            disabled={readOnly}
-                            value={data.viewer}
-                            onChange={(values) => update('viewer', values)}
-                        />
-                    </Field>
-                    {editing && (
-                        <>
-                            <Field label="Creator" htmlFor="creator" className="col-md-3">
-                                <TextInput id="creator" value={names?.creator ?? ''} readOnly />
-                            </Field>
-                            <Field label="Checker" htmlFor="checker" className="col-md-3">
-                                <TextInput id="checker" value={names?.checker ?? ''} readOnly />
-                            </Field>
-                        </>
-                    )}
-                    {mode === 'edit' && (
-                        <Field label="ALERT" htmlFor="alertind" className="col-md-3">
-                            <Select
-                                id="alertind"
-                                placeholder="-- Select Your Choice --"
-                                options={ALERT_OPTIONS}
-                                value={data.alertind}
-                                onChange={(event) => update('alertind', event.target.value)}
+                                placeholder={readOnly ? '—' : 'Anyone helping'}
+                                disabled={readOnly}
+                                value={data.sub_subscriber}
+                                onChange={(values) => update('sub_subscriber', values)}
                             />
                         </Field>
+                    </FormRow>
+                    <FormRow>
+                        <Field label="Owners" htmlFor="owner" required={!readOnly} error={errors.owner}>
+                            <MultiSearchSelect
+                                id="owner"
+                                options={people}
+                                placeholder={readOnly ? '—' : 'Who it answers to'}
+                                disabled={readOnly}
+                                invalid={!!errors.owner}
+                                value={data.owner}
+                                onChange={(values) => update('owner', values)}
+                            />
+                        </Field>
+                        <Field label="Viewers" htmlFor="viewer">
+                            <MultiSearchSelect
+                                id="viewer"
+                                options={people}
+                                placeholder={readOnly ? '—' : 'Anyone else who should see it'}
+                                disabled={readOnly}
+                                value={data.viewer}
+                                onChange={(values) => update('viewer', values)}
+                            />
+                        </Field>
+                    </FormRow>
+                    {editing && (
+                        <FormRow>
+                            <Field label="Created by" htmlFor="creator">
+                                <TextInput id="creator" large value={names?.creator ?? ''} readOnly />
+                            </Field>
+                            <Field label="Checker" htmlFor="checker">
+                                <TextInput id="checker" large value={names?.checker ?? ''} readOnly />
+                            </Field>
+                        </FormRow>
                     )}
-                </div>
+                    {mode === 'edit' && (
+                        <Choices
+                            legend="Alert the people on it"
+                            options={ALERT_OPTIONS}
+                            required
+                            value={data.alertind}
+                            onChange={(value) => update('alertind', value)}
+                        />
+                    )}
+                </FormSection>
             )}
 
-            <div className="row">
-                <Field label="Title" htmlFor="title" required={!readOnly} error={errors.title} className="col-12">
+            <FormSection title="Task" intro="What to do and by when.">
+                <Field label="Title" htmlFor="title" required={!readOnly} error={errors.title}>
                     <TextInput
                         id="title"
+                        large
+                        maxLength={255}
                         readOnly={readOnly}
                         invalid={!!errors.title}
                         value={data.title}
                         onChange={(event) => update('title', event.target.value)}
                     />
                 </Field>
-            </div>
-
-            <div className="row">
-                <DateTimeField
-                    label="Task Start"
-                    name="task_start"
-                    required={!readOnly}
-                    readOnly={readOnly}
-                    date={data.task_start_date}
-                    time={data.task_start_time}
-                    error={errors.task_start_date ?? errors.task_start_time}
-                    onDate={(value) => update('task_start_date', value)}
-                    onTime={(value) => update('task_start_time', value)}
-                />
-                <DateTimeField
-                    label="Task Due"
-                    name="task_due"
-                    required={!readOnly}
-                    readOnly={readOnly}
-                    date={data.task_due_date}
-                    time={data.task_due_time}
-                    error={errors.task_due_date ?? errors.task_due_time}
-                    onDate={(value) => update('task_due_date', value)}
-                    onTime={(value) => update('task_due_time', value)}
-                />
-                <DateTimeField
-                    label="Appointment Date Time"
-                    name="task_appointment"
-                    readOnly={readOnly}
-                    date={data.task_appointment_date}
-                    time={data.task_appointment_time}
-                    error={errors.task_appointment_date ?? errors.task_appointment_time}
-                    onDate={(value) => update('task_appointment_date', value)}
-                    onTime={(value) => update('task_appointment_time', value)}
-                />
-            </div>
-
-            {editing && (
-                <div className="row">
-                    <Field label="Invoice No" htmlFor="invoice_no" className="col-md-3">
-                        <TextInput
-                            id="invoice_no"
-                            maxLength={100}
-                            readOnly={readOnly}
-                            className={clsx(readOnly && data.invoice_no && 'is-recorded')}
-                            value={data.invoice_no}
-                            onChange={(event) => update('invoice_no', event.target.value)}
-                        />
-                    </Field>
-                    <Field label="Sales Amount" htmlFor="sales" className="col-md-3">
-                        {readOnly ? (
+                <FormRow columns="repeat(auto-fit, minmax(280px, 1fr))">
+                    <DateTimeField
+                        label="Starts"
+                        name="task_start"
+                        required={!readOnly}
+                        readOnly={readOnly}
+                        date={data.task_start_date}
+                        time={data.task_start_time}
+                        error={errors.task_start_date ?? errors.task_start_time}
+                        onDate={(value) => update('task_start_date', value)}
+                        onTime={(value) => update('task_start_time', value)}
+                    />
+                    <DateTimeField
+                        label="Due"
+                        name="task_due"
+                        required={!readOnly}
+                        readOnly={readOnly}
+                        date={data.task_due_date}
+                        time={data.task_due_time}
+                        error={errors.task_due_date ?? errors.task_due_time}
+                        onDate={(value) => update('task_due_date', value)}
+                        onTime={(value) => update('task_due_time', value)}
+                    />
+                    <DateTimeField
+                        label="Appointment"
+                        name="task_appointment"
+                        readOnly={readOnly}
+                        date={data.task_appointment_date}
+                        time={data.task_appointment_time}
+                        error={errors.task_appointment_date ?? errors.task_appointment_time}
+                        onDate={(value) => update('task_appointment_date', value)}
+                        onTime={(value) => update('task_appointment_time', value)}
+                    />
+                </FormRow>
+                {editing && (
+                    <FormRow columns="minmax(0, 1fr) minmax(0, 1fr)">
+                        <Field label="Invoice no." htmlFor="invoice_no">
                             <TextInput
-                                id="sales"
-                                className={clsx(Number(data.sales) > 0 && 'is-recorded')}
-                                value={`RM ${data.sales}`}
-                                readOnly
+                                id="invoice_no"
+                                large
+                                className="rd-input--mono"
+                                maxLength={100}
+                                readOnly={readOnly}
+                                value={data.invoice_no}
+                                onChange={(event) => update('invoice_no', event.target.value)}
                             />
-                        ) : (
-                            <TextInput
-                                id="sales"
-                                type="number"
-                                step="any"
-                                value={data.sales}
-                                onChange={(event) => update('sales', event.target.value)}
-                            />
-                        )}
-                    </Field>
-                </div>
-            )}
+                        </Field>
+                        <Field label="Sales amount" htmlFor="sales">
+                            <div className="rd-affix rd-affix--full">
+                                <span className="rd-affix__start">RM</span>
+                                <input
+                                    id="sales"
+                                    type="number"
+                                    step="any"
+                                    min={0}
+                                    readOnly={readOnly}
+                                    value={data.sales}
+                                    onChange={(event) => update('sales', event.target.value)}
+                                />
+                            </div>
+                        </Field>
+                    </FormRow>
+                )}
+            </FormSection>
 
-            <div className="row">
-                <Field label="Remark" htmlFor="remark" error={errors.remark} className="col-12">
+            <FormSection title="Remark" intro="What the subscriber needs to know.">
+                <Field label="Remark" htmlFor="remark" error={errors.remark}>
                     {readOnly ? (
                         <SafeHtml html={data.remark} className="rich-text rich-text__content rich-text--readonly" />
                     ) : (
@@ -243,7 +237,7 @@ export default function TaskFields({
                         </Suspense>
                     )}
                 </Field>
-            </div>
+            </FormSection>
         </>
     );
 }
@@ -260,32 +254,31 @@ interface DateTimeFieldProps {
     onTime: (value: string) => void;
 }
 
+/** A date and a time side by side under one label. */
 function DateTimeField({ label, name, date, time, required, readOnly, error, onDate, onTime }: DateTimeFieldProps) {
     return (
-        <Field label={label} htmlFor={`${name}_date`} required={required} error={error} className="col-md-4 col-xl-3">
-            <div className="row g-1">
-                <div className="col-6">
-                    <TextInput
-                        id={`${name}_date`}
-                        type="date"
-                        aria-label={`${label} date`}
-                        readOnly={readOnly}
-                        invalid={!!error}
-                        value={date}
-                        onChange={(event) => onDate(event.target.value)}
-                    />
-                </div>
-                <div className="col-6">
-                    <TextInput
-                        id={`${name}_time`}
-                        type="time"
-                        aria-label={`${label} time`}
-                        readOnly={readOnly}
-                        invalid={!!error}
-                        value={time}
-                        onChange={(event) => onTime(event.target.value)}
-                    />
-                </div>
+        <Field label={label} htmlFor={`${name}_date`} required={required} error={error}>
+            <div className="task-when">
+                <TextInput
+                    id={`${name}_date`}
+                    type="date"
+                    large
+                    aria-label={`${label}: date`}
+                    readOnly={readOnly}
+                    invalid={!!error}
+                    value={date}
+                    onChange={(event) => onDate(event.target.value)}
+                />
+                <TextInput
+                    id={`${name}_time`}
+                    type="time"
+                    large
+                    aria-label={`${label}: time`}
+                    readOnly={readOnly}
+                    invalid={!!error}
+                    value={time}
+                    onChange={(event) => onTime(event.target.value)}
+                />
             </div>
         </Field>
     );

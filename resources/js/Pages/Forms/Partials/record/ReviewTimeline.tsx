@@ -1,4 +1,5 @@
 import clsx from 'clsx';
+import type { ReactNode } from 'react';
 import type { RecordTimeline } from './types';
 
 interface ReviewTimelineProps {
@@ -9,120 +10,75 @@ interface ReviewTimelineProps {
     waitingFor: string[];
 }
 
-/** "Approval Progress": submitted, then each step with who acted and when. */
+type Tone = 'done' | 'rejected' | 'current' | 'later';
+
+function Step({ tone, mark, children }: { tone: Tone; mark: string; children: ReactNode }) {
+    return (
+        <li className={clsx('form-progress__step', `is-${tone}`)}>
+            <span className="form-progress__mark" aria-hidden="true">
+                {mark}
+            </span>
+            <span className="form-progress__text">{children}</span>
+        </li>
+    );
+}
+
+/** "Progress": submitted, then each step with who acted and when. */
 export default function ReviewTimeline({ timeline, submittedBy, canAct, waitingFor }: ReviewTimelineProps) {
     const { stages, current_id: currentId, legacy_reject: legacyReject, process_open: processOpen } = timeline;
-    const totalSteps = 1 + stages.length + (legacyReject ? 1 : 0) + (processOpen ? 1 : 0);
 
     return (
-        <div className="rs-timeline">
-            <div className="rs-step">
-                <div className="rs-step-rail">
-                    <div className="rs-step-dot rs-step-dot--done">✓</div>
-                    {totalSteps > 1 && <div className="rs-step-line rs-step-line--done" />}
-                </div>
-                <div className="rs-step-body">
-                    <div className="rs-step-title">Submitted</div>
-                    <div className="rs-step-sub rs-step-sub--muted">
-                        {submittedBy} &middot; {timeline.submitted_on}
-                    </div>
-                </div>
-            </div>
+        <ol className="form-progress">
+            <Step tone="done" mark="✓">
+                <span className="form-progress__name">Submitted</span>
+                <span className="form-progress__detail">
+                    {submittedBy}, {timeline.submitted_on}
+                </span>
+            </Step>
 
             {stages.map((stage, index) => {
                 const done = stage.status === 'approved' || stage.status === 'completed';
                 const rejected = stage.status === 'rejected';
                 const current = stage.id === currentId;
-                const last = index === stages.length - 1 && !legacyReject && !processOpen;
+                const tone: Tone = rejected ? 'rejected' : done ? 'done' : current ? 'current' : 'later';
+                const tags = [
+                    stage.is_fill ? 'fill in' : stage.approval_mode === 'all' ? 'everyone approves' : null,
+                    stage.iteration >= 2 ? `round ${stage.iteration}` : null,
+                ].filter(Boolean);
 
                 return (
-                    <div key={stage.id} className="rs-step">
-                        <div className="rs-step-rail">
-                            <div
-                                className={clsx(
-                                    'rs-step-dot',
-                                    rejected
-                                        ? 'rs-step-dot--rejected'
-                                        : done
-                                          ? 'rs-step-dot--done'
-                                          : current
-                                            ? 'rs-step-dot--current'
-                                            : 'rs-step-dot--pending',
-                                )}
-                            >
-                                {rejected ? '✕' : done ? '✓' : ''}
-                            </div>
-                            {!last && (
-                                <div
-                                    className={clsx(
-                                        'rs-step-line',
-                                        done ? 'rs-step-line--done' : 'rs-step-line--muted',
-                                    )}
-                                />
-                            )}
-                        </div>
-                        <div className="rs-step-body">
-                            <div className={clsx('rs-step-title', current && 'rs-step-title--current')}>
-                                {stage.name}
-                                {stage.is_fill ? (
-                                    <span className="rs-step-tag">handler</span>
-                                ) : (
-                                    stage.approval_mode === 'all' && <span className="rs-step-tag">everyone</span>
-                                )}
-                                {stage.iteration >= 2 && <span className="rs-step-tag">round {stage.iteration}</span>}
-                            </div>
-
-                            {done ? (
-                                <div className="rs-step-sub rs-step-sub--done">
-                                    {stage.acted_by ?? 'N/A'} &middot; {stage.acted_at} &middot;{' '}
-                                    {stage.is_fill ? 'Completed' : 'Approved'}
-                                </div>
-                            ) : rejected ? (
-                                <>
-                                    <div className="rs-step-sub rs-step-sub--rejected">
-                                        {stage.acted_by ?? 'N/A'} &middot; {stage.acted_at} &middot; Rejected
-                                    </div>
-                                    {stage.remark && <div className="rs-step-remark">&quot;{stage.remark}&quot;</div>}
-                                </>
-                            ) : current ? (
-                                <div className="rs-step-sub rs-step-sub--current">
-                                    In progress &mdash;{' '}
-                                    {canAct ? 'you' : waitingFor.length ? waitingFor.join(', ') : 'pending'}
-                                </div>
-                            ) : (
-                                <div className="rs-step-sub rs-step-sub--muted">Pending</div>
-                            )}
-                        </div>
-                    </div>
+                    <Step key={stage.id} tone={tone} mark={rejected ? '✕' : done ? '✓' : String(index + 2)}>
+                        <span className="form-progress__name">
+                            {stage.name}
+                            {tags.map((tag) => (
+                                <span key={tag} className="form-progress__tag">
+                                    {tag}
+                                </span>
+                            ))}
+                        </span>
+                        <span className="form-progress__detail">
+                            {done
+                                ? `${stage.is_fill ? 'Filled in' : 'Approved'} by ${stage.acted_by ?? 'someone'}, ${stage.acted_at}`
+                                : rejected
+                                  ? `Rejected by ${stage.acted_by ?? 'someone'}, ${stage.acted_at}`
+                                  : current
+                                    ? `Waiting on ${canAct ? 'you' : waitingFor.length ? waitingFor.join(', ') : 'the step'}`
+                                    : 'Not started'}
+                        </span>
+                        {rejected && stage.remark && <span className="form-progress__remark">{stage.remark}</span>}
+                    </Step>
                 );
             })}
 
             {legacyReject && (
-                <div className="rs-step">
-                    <div className="rs-step-rail">
-                        <div className="rs-step-dot rs-step-dot--rejected">✕</div>
-                    </div>
-                    <div className="rs-step-body">
-                        <div className="rs-step-title">Rejected</div>
-                        <div className="rs-step-sub rs-step-sub--rejected">By {legacyReject.by}</div>
-                        {legacyReject.remark && <div className="rs-step-remark">&quot;{legacyReject.remark}&quot;</div>}
-                    </div>
-                </div>
+                <Step tone="rejected" mark="✕">
+                    <span className="form-progress__name">Rejected</span>
+                    <span className="form-progress__detail">By {legacyReject.by ?? 'someone'}</span>
+                    {legacyReject.remark && <span className="form-progress__remark">{legacyReject.remark}</span>}
+                </Step>
             )}
 
-            {processOpen && (
-                <div className="rs-step">
-                    <div className="rs-step-rail">
-                        <div className="rs-step-dot rs-step-dot--pending rs-step-dot--tentative" />
-                    </div>
-                    <div className="rs-step-body">
-                        <div className="rs-step-title text-muted">More steps may follow</div>
-                        <div className="rs-step-sub rs-step-sub--muted">
-                            Decided by the answers as the flow continues
-                        </div>
-                    </div>
-                </div>
-            )}
-        </div>
+            {processOpen && <li className="form-progress__more">More steps may follow, depending on the answers.</li>}
+        </ol>
     );
 }

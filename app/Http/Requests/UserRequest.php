@@ -53,4 +53,18 @@ class UserRequest extends FormRequest
             'email' => 'required|email|unique:users,email,'.Auth::guard('web')->user()->id,
         ];
     }
+
+    /**
+     * How the fields read in messages, as the form labels them.
+     */
+    public function attributes()
+    {
+        return [
+            'name'             => 'full name',
+            'mobile'           => 'mobile number',
+            'statuss'          => 'status',
+            'type'             => 'user type',
+            'telegram_chat_id' => 'Telegram chat ID',
+        ];
+    }
 }

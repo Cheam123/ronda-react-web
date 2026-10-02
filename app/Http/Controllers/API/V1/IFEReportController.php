@@ -56,59 +56,89 @@ class IFEReportController extends Controller
         $salesperson = $salesperson::select('id','name')->orderBy('name','asc')->whereNotIn('id',[1])->get();
 
         $ifeareas   = IfeArea::get();
-        $ifereports = IFEReport::visibleTo(Auth::guard('web')->user());
+        $ifereports = $this->filteredReports($request);
 
-        if ($request->get('start') !== NULL) {
-            $from = Carbon::parse($request->get('start'))->startOfDay()->format('Y-m-d 00:00:00');
-            $to   = Carbon::parse($request->get('end'))->endOfDay()->format('Y-m-d 23:59:59');
+        // Each tab's count, with every other filter applied.
+        $counts = [
+            'all'  => (clone $ifereports)->count(),
+            'open' => (clone $ifereports)->whereNull('task_id')->count(),
+            'made' => (clone $ifereports)->whereNotNull('task_id')->count(),
+        ];
 
-            $ifereports = $ifereports->whereBetween('created_at', [$from, $to]);
-        } else {
-
-            $from = Carbon::parse(Carbon::now()->addDays(-30))->startOfDay()->format('Y-m-d 00:00:00');
-            $to   = Carbon::parse(Carbon::now())->endOfDay()->format('Y-m-d 23:59:59');
-
-            $request->merge(['start' => Carbon::parse($from)->format('Y-m-d')]);
-            $request->merge(['end' => Carbon::parse($to)->format('Y-m-d')]);
-
-            $ifereports = $ifereports->whereBetween('created_at', [$from, $to]);
-        }
-
-        if ($request->get('ifearea') !== NULL) {
-            $keyword    = $request->get('ifearea');
-            $ifereports = $ifereports->where('ife_area', $keyword);
-        }
-
-        if ($request->get('salesperson') !== NULL) {
-            $keyword  = $request->get('salesperson');
-            $ifereports = $ifereports->where('created_by', $keyword);
-        }
-
-        if ($request->get('mobile') !== NULL) {
-            $keyword  = $request->get('mobile');
-            $ifereports = $ifereports->where('mobile_number', 'like', '%'.$keyword.'%');
-        }
-
-        if ($request->get('company_name') !== NULL) {
-            $keyword  = $request->get('company_name');
-            $ifereports = $ifereports->where('company_name', $keyword);
-        }
-
-        if ($request->get('cafe_name') !== NULL) {
-            $keyword  = $request->get('cafe_name');
-            $ifereports = $ifereports->where('shop_name', $keyword);
-        }
-
-        $ifereports = $ifereports->orderBy('created_at','desc')
+        $ifereports = $this->forTaskTab($ifereports, $request->get('task'))
+                                ->orderBy('created_at','desc')
                                 ->paginate(10)
                                 ->withQueryString();
 
         return Inertia::render('IfeReports/Index', [
             'reports'     => $ifereports->through(fn (IFEReport $report) => IfeReportListResource::make($report)->resolve()),
+            'counts'      => $counts,
             'salespeople' => Options::fromCollection($salesperson),
             'ifeAreas'    => Options::fromCollection($ifeareas, 'id', 'area'),
-            'filters'     => $request->only(['start', 'end', 'ifearea', 'salesperson', 'mobile', 'company_name', 'cafe_name']),
+            'filters'     => $request->only(['start', 'end', 'ifearea', 'salesperson', 'search', 'task']),
         ]);
+    }
+
+    /**
+     * The reports the list's filters leave, for the page and its export:
+     * filed between start and end (the last 30 days unless chosen), the
+     * area, the salesperson and the search box. Not the task tab.
+     */
+    private function filteredReports(Request $request)
+    {
+        $ifereports = IFEReport::visibleTo(Auth::guard('web')->user());
+
+        if ($request->get('start') === null) {
+            $request->merge([
+                'start' => Carbon::now()->addDays(-30)->format('Y-m-d'),
+                'end'   => Carbon::now()->format('Y-m-d'),
+            ]);
+        }
+
+        $from = Carbon::parse($request->get('start'))->startOfDay();
+        $to   = Carbon::parse($request->get('end'))->endOfDay();
+
+        $ifereports = $ifereports->whereBetween('created_at', [$from, $to]);
+
+        if ($request->get('ifearea') !== null) {
+            $ifereports = $ifereports->where('ife_area', $request->get('ifearea'));
+        }
+
+        if ($request->get('salesperson') !== null) {
+            $ifereports = $ifereports->where('created_by', $request->get('salesperson'));
+        }
+
+        // One box for the shop, the company or the mobile number.
+        if ($request->filled('search')) {
+            $keyword = '%' . $request->get('search') . '%';
+            // A number typed as people read it ("012-345 6789") still finds the stored digits.
+            $digits = ltrim(preg_replace('/\D/', '', $request->get('search')), '0');
+
+            $ifereports = $ifereports->where(function ($query) use ($keyword, $digits) {
+                $query->where('shop_name', 'like', $keyword)
+                      ->orWhere('company_name', 'like', $keyword)
+                      ->orWhere('mobile_number', 'like', $keyword);
+                if (strlen($digits) >= 3) {
+                    $query->orWhere('mobile_number', 'like', '%' . $digits . '%');
+                }
+            });
+        }
+
+        return $ifereports;
+    }
+
+    /** The list's tabs: "open" has no task yet, "made" became one. */
+    private function forTaskTab($ifereports, ?string $tab)
+    {
+        if ($tab === 'open') {
+            return $ifereports->whereNull('task_id');
+        }
+
+        if ($tab === 'made') {
+            return $ifereports->whereNotNull('task_id');
+        }
+
+        return $ifereports;
     }
 
     public function export(Request $request)
@@ -117,46 +147,11 @@ class IFEReportController extends Controller
             return redirect()->back();
         }
 
-        $ifereports = IFEReport::visibleTo(Auth::guard('web')->user());
-
-        if ($request->get('start') !== NULL) {
-            $from = Carbon::parse($request->get('start'))->startOfDay()->format('Y-m-d 00:00:00');
-            $to   = Carbon::parse($request->get('end'))->endOfDay()->format('Y-m-d 23:59:59');
-            
-            $ifereports = $ifereports->whereBetween('created_at', [$from, $to]);
-        } else {
-            $from = Carbon::parse(Carbon::now()->addDays(-30))->startOfDay()->format('Y-m-d 00:00:00');
-            $to   = Carbon::parse(Carbon::now())->endOfDay()->format('Y-m-d 23:59:59');
-
-            $ifereports = $ifereports->whereBetween('created_at', [$from, $to]);
-        }
-
-        if ($request->get('ifearea') !== NULL) {
-            $keyword    = $request->get('ifearea');
-            $ifereports = $ifereports->where('ife_area', $keyword);
-        }
-
-        if ($request->get('salesperson') !== NULL) {
-            $keyword  = $request->get('salesperson');
-            $ifereports = $ifereports->where('created_by', $keyword);
-        }
-
-        if ($request->get('mobile') !== NULL) {
-            $keyword  = $request->get('mobile');
-            $ifereports = $ifereports->where('mobile_number', 'like', '%'.$keyword.'%');
-        }
-
-        if ($request->get('company_name') !== NULL) {
-            $keyword  = $request->get('company_name');
-            $ifereports = $ifereports->where('company_name', $keyword);
-        }
-
-        if ($request->get('cafe_name') !== NULL) {
-            $keyword  = $request->get('cafe_name');
-            $ifereports = $ifereports->where('shop_name', $keyword);
-        }
-
-        $ifereports = $ifereports->orderBy('created_at','desc')->with('documentUploads')->get();
+        // The same reports the list shows, every page of them.
+        $ifereports = $this->forTaskTab($this->filteredReports($request), $request->get('task'))
+                           ->orderBy('created_at','desc')
+                           ->with('documentUploads')
+                           ->get();
 
         $exportData = [];
         

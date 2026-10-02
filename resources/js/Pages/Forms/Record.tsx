@@ -3,7 +3,9 @@ import { useState } from 'react';
 import AssigneePicker from '@/Components/forms/AssigneePicker';
 import { ResponseSections, type ResponseSectionData } from '@/Components/forms/ResponseField';
 import StatusBadge from '@/Components/forms/StatusBadge';
-import Button from '@/Components/ui/Button';
+import Initials from '@/Components/surface/Initials';
+import PageHeader from '@/Components/surface/PageHeader';
+import SurfacePage from '@/Components/surface/SurfacePage';
 import ImageLightbox from '@/Components/ui/ImageLightbox';
 import AppLayout from '@/Layouts/AppLayout';
 import { pluralize } from '@/lib/format';
@@ -40,16 +42,13 @@ interface RecordPageProps {
     people: Person[];
 }
 
-const STATUS_PILLS: Record<string, { label: string; tone: string }> = {
-    pending: { label: 'In Review', tone: 'pending' },
-    approved: { label: 'Approved', tone: 'approved' },
-    rejected: { label: 'Rejected', tone: 'rejected' },
-    cancelled: { label: 'Cancelled', tone: 'cancelled' },
-};
-
 type Dialog = 'approve' | 'reject' | 'close' | 'cancel' | null;
 
-/** One case: its answers, progress, the viewer's part in it, and related cases. */
+/** "Ana and Ben", "Ana, Ben and Cy". */
+const listNames = (names: string[]) =>
+    names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}` : (names[0] ?? '');
+
+/** One record: its answers, its progress, the viewer's part in it, and related records. */
 export default function RecordPage({
     record,
     parentCase,
@@ -67,158 +66,108 @@ export default function RecordPage({
 }: RecordPageProps) {
     const [dialog, setDialog] = useState<Dialog>(null);
     const [photo, setPhoto] = useState<string | null>(null);
-    const status = STATUS_PILLS[record.status] ?? STATUS_PILLS.pending;
-    const waitingText =
-        review.waitingFor.length > 1
-            ? `${review.waitingFor.slice(0, -1).join(', ')} and ${review.waitingFor[review.waitingFor.length - 1]}`
-            : review.waitingFor[0];
     const hasEntryActions = entry.canEdit || entry.canCancel || entry.canClone;
+    // A branch or loop may still add steps the record does not have yet.
+    const afterApproving = review.nextStage
+        ? `Approving moves it on to ${review.nextStage}.`
+        : timeline.process_open
+          ? 'Approving moves it on; the next steps depend on the answers.'
+          : 'Approving completes it.';
 
     return (
-        <AppLayout title="Review Submission" breadcrumb={['Records', record.reference]}>
-            <div className="rs-page">
-                <div className="rs-topbar">
-                    <div>
-                        <Link href={route('form.records.index')} className="rs-back">
-                            <i className="mdi mdi-arrow-left" /> Back to records
-                        </Link>
-                        <div className="rs-title-row">
-                            <h1 className="rs-title">{record.title}</h1>
-                            <span className="rs-id-badge">{record.reference}</span>
-                            <span className={`rs-status-pill rs-status-pill--${status.tone}`}>
-                                <span className="rs-status-dot" />
-                                {status.label}
+        <AppLayout title={`${record.reference} ${record.title}`}>
+            <SurfacePage>
+                <PageHeader
+                    crumbs={[
+                        { label: 'Home', href: '/index' },
+                        { label: 'My records', href: route('form.records.index') },
+                        { label: record.reference },
+                    ]}
+                    title={record.title}
+                    meta={
+                        <>
+                            <StatusBadge status={record.open ? record.status : 'closed'} />
+                            <span className="rd-mono">{record.reference}</span>
+                            <span className="rd-chip">{record.form.name}</span>
+                            <span className="form-record__by">
+                                <Initials name={record.submitted_by} size="sm" />
+                                <span>
+                                    Submitted by <strong>{record.submitted_by}</strong>, {record.submitted_at}
+                                </span>
                             </span>
-                            {!record.open && (
-                                <span className="rs-status-pill rs-status-pill--cancelled">Record closed</span>
-                            )}
-                        </div>
-                        <div className="rs-form-desc">
-                            {record.form.name}
-                            {record.form.description && <> &middot; {record.form.description}</>}
-                        </div>
-                        {parentCase && (
-                            <div className="rs-form-desc mt-1">
-                                <i className="mdi mdi-subdirectory-arrow-right me-1" />
-                                Follows up on{' '}
-                                <Link href={route('form.records.show', parentCase.id)} className="fw-semibold">
-                                    {parentCase.reference} — {parentCase.title}
+                        </>
+                    }
+                    actions={
+                        <>
+                            {canFollowUp && (
+                                <Link
+                                    href={route('form.fill', { id: record.form.id, parent: record.id })}
+                                    className="rd-btn rd-btn--lg"
+                                >
+                                    <i className="mdi mdi-subdirectory-arrow-right" aria-hidden="true" />
+                                    Start a follow-up
                                 </Link>
-                            </div>
-                        )}
-                    </div>
-                    <div className="d-flex align-items-center gap-3 flex-wrap">
-                        {canFollowUp && (
-                            <Link
-                                href={route('form.fill', { id: record.form.id, parent: record.id })}
-                                className="btn btn-primary"
-                            >
-                                <i className="mdi mdi-plus me-1" /> Start follow-up case
-                            </Link>
-                        )}
-                        {canClose &&
-                            (record.open ? (
-                                <Button
-                                    variant="outline-secondary"
-                                    shadow={false}
-                                    icon="mdi mdi-lock-outline"
-                                    onClick={() => setDialog('close')}
-                                >
-                                    Close
-                                </Button>
-                            ) : (
-                                <Button
-                                    variant="outline-secondary"
-                                    shadow={false}
-                                    icon="mdi mdi-lock-open-variant-outline"
-                                    onClick={() => router.post(route('form.records.reopen', record.id))}
-                                >
-                                    Reopen
-                                </Button>
-                            ))}
-                        <div className="rs-submitter">
-                            <div className="rs-avatar">{record.submitted_by.charAt(0).toUpperCase()}</div>
-                            <div>
-                                <div className="rs-submitter-name">{record.submitted_by}</div>
-                                <div className="rs-submitter-date">Submitted {record.submitted_at}</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                            )}
+                            {canClose &&
+                                (record.open ? (
+                                    <button
+                                        type="button"
+                                        className="rd-btn rd-btn--danger-soft rd-btn--lg"
+                                        onClick={() => setDialog('close')}
+                                    >
+                                        <i className="mdi mdi-lock-outline" aria-hidden="true" />
+                                        Close record
+                                    </button>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        className="rd-btn rd-btn--lg"
+                                        onClick={() => router.post(route('form.records.reopen', record.id))}
+                                    >
+                                        <i className="mdi mdi-lock-open-variant-outline" aria-hidden="true" />
+                                        Reopen
+                                    </button>
+                                ))}
+                        </>
+                    }
+                />
 
                 {record.closed && (
-                    <div className="rs-closed-card">
-                        <div className="rs-closed-head">
-                            <i className="mdi mdi-lock-outline" />
-                            This record is closed
-                        </div>
-                        {record.closed.remark && <div className="rs-closed-remark">{record.closed.remark}</div>}
-                        {record.closed.at && (
-                            <div className="rs-closed-meta">
-                                Closed by {record.closed.by} on {record.closed.at}.
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {childCases.length > 0 && (
-                    <div className="rs-card mb-3">
-                        <div className="rs-card-head">
-                            <div className="rs-card-title">Follow-up cases</div>
-                            <span className="rs-card-meta">{childCases.length} opened from this one</span>
-                        </div>
-                        <div className="table-responsive">
-                            <table className="table table-hover align-middle mb-0">
-                                <tbody>
-                                    {childCases.map((child) => (
-                                        <tr key={child.id}>
-                                            <td className="text-muted small fw-semibold">{child.reference}</td>
-                                            <td>
-                                                {child.title}
-                                                <div className="text-muted small">
-                                                    {child.created_at} &middot; {child.submitted_by}
-                                                </div>
-                                            </td>
-                                            <td className="text-center">
-                                                <StatusBadge status={child.status} />
-                                            </td>
-                                            <td className="text-center">
-                                                <Link
-                                                    href={route('form.records.show', child.id)}
-                                                    className="btn btn-sm btn-outline-primary"
-                                                >
-                                                    Open
-                                                </Link>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                    <div className="form-record__closed">
+                        <i className="mdi mdi-lock-outline" aria-hidden="true" />
+                        <div>
+                            <strong>This record is closed.</strong>
+                            {record.closed.at && (
+                                <span>
+                                    {' '}
+                                    Closed by {record.closed.by}, {record.closed.at}.
+                                </span>
+                            )}
+                            {record.closed.remark && <p>{record.closed.remark}</p>}
                         </div>
                     </div>
                 )}
 
-                <div className="rs-grid">
-                    <div className="rs-left">
-                        <div className="rs-card">
-                            <div className="rs-card-head">
-                                <div className="rs-card-title">Responses</div>
-                                <div className="rs-card-meta">
+                <div className="form-record">
+                    <div className="form-record__main">
+                        <section className="rd-panel rd-panel--flush form-record__card" aria-labelledby="answers">
+                            <div className="form-record__card-head">
+                                <h2 id="answers" className="rd-panel__title">
+                                    Answers
+                                </h2>
+                                <span className="rd-muted">
                                     {pluralize(responses.fieldCount, 'field')}
-                                    {responses.sectionCount > 0 && ` · ${pluralize(responses.sectionCount, 'section')}`}
-                                </div>
+                                    {responses.sectionCount > 0 && ` in ${pluralize(responses.sectionCount, 'group')}`}
+                                </span>
                             </div>
-                            <div className="rs-card-body">
-                                {responses.sections.length > 0 ? (
+                            {responses.sections.length > 0 ? (
+                                <div className="form-record__answers">
                                     <ResponseSections sections={responses.sections} onImageClick={setPhoto} />
-                                ) : (
-                                    <div className="rs-empty">
-                                        <i className="mdi mdi-file-document-outline" />
-                                        <p className="mb-0">No field data visible for this submission.</p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
+                                </div>
+                            ) : (
+                                <p className="rd-list__empty">No answers you can see on this record.</p>
+                            )}
+                        </section>
 
                         {/* Read before the work starts. */}
                         <PreviousRoundsCard rounds={previousRounds} onImageClick={setPhoto} />
@@ -232,128 +181,161 @@ export default function RecordPage({
                                 onImageClick={setPhoto}
                             />
                         )}
+
+                        {childCases.length > 0 && (
+                            <section className="rd-panel" aria-labelledby="follow-ups">
+                                <div className="rd-panel__head">
+                                    <h2 id="follow-ups" className="rd-panel__title">
+                                        Follow-ups
+                                    </h2>
+                                    <span className="rd-muted">
+                                        {pluralize(childCases.length, 'record')} opened from this one
+                                    </span>
+                                </div>
+                                <ul className="form-record__links">
+                                    {childCases.map((child) => (
+                                        <li key={child.id}>
+                                            <CaseLinkRow link={child} />
+                                        </li>
+                                    ))}
+                                </ul>
+                            </section>
+                        )}
                     </div>
 
-                    <div className="rs-right">
-                        <div className="rs-card rs-sidebar-card">
-                            <div className="rs-sidebar-title">Approval Progress</div>
+                    <aside className="form-record__aside">
+                        {review.canApprove && (
+                            <section className="rd-panel form-record__turn" aria-labelledby="your-turn">
+                                <div>
+                                    <span className="form-record__eyebrow">Your turn</span>
+                                    <h2 id="your-turn" className="rd-panel__title">
+                                        {review.stageName ?? 'Approval'}
+                                    </h2>
+                                    <p className="rd-panel__sub">{afterApproving} Rejecting ends it.</p>
+                                </div>
+                                <div className="form-record__decide">
+                                    <button
+                                        type="button"
+                                        className="rd-btn rd-btn--danger-soft rd-btn--lg"
+                                        onClick={() => setDialog('reject')}
+                                    >
+                                        <i className="mdi mdi-close" aria-hidden="true" />
+                                        Reject
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="rd-btn rd-btn--primary rd-btn--lg"
+                                        onClick={() => setDialog('approve')}
+                                    >
+                                        <i className="mdi mdi-check" aria-hidden="true" />
+                                        Approve
+                                    </button>
+                                </div>
+                            </section>
+                        )}
+
+                        {fillStage && !review.canApprove && (
+                            <section className="rd-panel form-record__turn" aria-labelledby="your-fill-turn">
+                                <span className="form-record__eyebrow">Your turn</span>
+                                <h2 id="your-fill-turn" className="rd-panel__title">
+                                    {fillStage.name}
+                                </h2>
+                                <p className="rd-panel__sub">Fill in your part under the answers, then send it.</p>
+                                <a href="#your-part" className="rd-btn rd-btn--primary rd-btn--lg">
+                                    Go to my part
+                                </a>
+                            </section>
+                        )}
+
+                        {!review.canApprove && !fillStage && review.waitingFor.length > 0 && (
+                            <p className="form-record__waiting">
+                                <i className="mdi mdi-timer-sand" aria-hidden="true" />
+                                <span>
+                                    Waiting on <strong>{listNames(review.waitingFor)}</strong>
+                                    {review.stageName && <> for {review.stageName}</>}.
+                                </span>
+                            </p>
+                        )}
+
+                        <section className="rd-panel" aria-labelledby="progress">
+                            <h2 id="progress" className="rd-panel__title">
+                                Progress
+                            </h2>
                             <ReviewTimeline
                                 timeline={timeline}
                                 submittedBy={record.submitted_by}
                                 canAct={review.canApprove || fillStage !== null}
                                 waitingFor={review.waitingFor}
                             />
-                        </div>
+                        </section>
 
-                        {review.canApprove ? (
-                            <div className="rs-card rs-sidebar-card">
-                                <div className="rs-sidebar-title">{review.stageName ?? 'Actions'}</div>
-                                <div className="rs-actions">
-                                    <Button
-                                        variant="success"
-                                        shadow={false}
-                                        className="w-100"
-                                        icon="mdi mdi-check-circle-outline"
-                                        onClick={() => setDialog('approve')}
-                                    >
-                                        Approve Submission
-                                    </Button>
-                                    <Button
-                                        variant="outline-danger"
-                                        shadow={false}
-                                        className="w-100"
-                                        icon="mdi mdi-close-circle-outline"
-                                        onClick={() => setDialog('reject')}
-                                    >
-                                        Reject Submission
-                                    </Button>
-                                </div>
-                                <div className="rs-actions-help">
-                                    {review.nextStage ? (
-                                        <>
-                                            Approving advances the submission to <strong>{review.nextStage}</strong>.
-                                        </>
-                                    ) : (
-                                        'Approving completes the approval process.'
-                                    )}
-                                </div>
-                            </div>
-                        ) : (
-                            review.waitingFor.length > 0 && (
-                                <div className="rs-waiting-card">
-                                    <strong>Waiting on this stage.</strong>{' '}
-                                    <span>
-                                        {waitingText} still {review.waitingFor.length > 1 ? 'need' : 'needs'} to act
-                                        before you can review.
-                                    </span>
-                                </div>
-                            )
+                        {parentCase && (
+                            <section className="rd-panel" aria-labelledby="follows-up-on">
+                                <h2 id="follows-up-on" className="rd-panel__title">
+                                    Follows up on
+                                </h2>
+                                <CaseLinkRow link={parentCase} />
+                            </section>
                         )}
 
                         {hasEntryActions && (
-                            <div className="rs-card rs-sidebar-card">
-                                <div className="rs-sidebar-title">This entry</div>
-                                <div className="rs-actions">
+                            <section className="rd-panel" aria-labelledby="this-entry">
+                                <h2 id="this-entry" className="rd-panel__title">
+                                    Your entry
+                                </h2>
+                                <div className="form-record__entry">
                                     {entry.canEdit && (
                                         <Link
                                             href={route('form.submission.edit', record.id)}
-                                            className="btn btn-outline-primary w-100"
+                                            className="rd-btn rd-btn--lg"
                                         >
-                                            <i className="mdi mdi-pencil-outline me-1" />
+                                            <i className="mdi mdi-pencil-outline" aria-hidden="true" />
                                             Edit answers
                                         </Link>
                                     )}
                                     {entry.canClone && (
                                         <Link
                                             href={route('form.submission.clone', record.id)}
-                                            className="btn btn-outline-secondary w-100"
+                                            className="rd-btn rd-btn--lg"
                                         >
-                                            <i className="mdi mdi-content-copy me-1" />
+                                            <i className="mdi mdi-content-copy" aria-hidden="true" />
                                             Start a new record from this
                                         </Link>
                                     )}
                                     {entry.canCancel && (
-                                        <Button
-                                            variant="outline-danger"
-                                            shadow={false}
-                                            className="w-100"
-                                            icon="mdi mdi-cancel"
+                                        <button
+                                            type="button"
+                                            className="rd-btn rd-btn--danger-soft rd-btn--lg"
                                             onClick={() => setDialog('cancel')}
                                         >
-                                            Cancel entry
-                                        </Button>
+                                            <i className="mdi mdi-cancel" aria-hidden="true" />
+                                            Cancel it
+                                        </button>
                                     )}
                                 </div>
                                 {!entry.canEdit && (
-                                    <div className="rs-actions-help">
-                                        Answers can no longer be edited once someone has acted on this entry.
-                                    </div>
+                                    <p className="rd-panel__sub">
+                                        Answers can&rsquo;t be changed once someone has acted on the record.
+                                    </p>
                                 )}
-                            </div>
+                            </section>
                         )}
-                    </div>
+                    </aside>
                 </div>
-            </div>
+            </SurfacePage>
 
             <RecordActionModal
                 show={dialog === 'approve'}
                 onHide={() => setDialog(null)}
                 action={route('form.admin.approve', record.id)}
                 icon="mdi-check"
-                tone="success"
-                title="Approve submission?"
-                remark={{ label: 'Remark (optional)', placeholder: 'Add a remark...' }}
-                confirmLabel="Yes, Approve"
-                confirmVariant="success"
+                tone="good"
+                title="Approve this record?"
+                remark={{ label: 'Remark', placeholder: 'Anything the next person should know (optional)' }}
+                confirmLabel="Approve"
             >
-                You&apos;re approving <strong>{record.reference}</strong> from <strong>{record.submitted_by}</strong>
-                {review.stageName && (
-                    <>
-                        {' '}
-                        for the <strong>{review.stageName}</strong> stage
-                    </>
-                )}
-                .
+                {record.reference} from {record.submitted_by}
+                {review.stageName && <>, at {review.stageName}</>}. {afterApproving}
             </RecordActionModal>
 
             <RecordActionModal
@@ -361,18 +343,17 @@ export default function RecordPage({
                 onHide={() => setDialog(null)}
                 action={route('form.admin.reject', record.id)}
                 icon="mdi-close"
-                tone="danger"
-                title="Reject submission?"
+                tone="critical"
+                title="Reject this record?"
                 remark={{
-                    label: 'Reason for rejection *',
-                    placeholder: 'State the reason for rejection...',
-                    required: 'A rejection remark is required.',
+                    label: 'Reason',
+                    placeholder: 'Why it is rejected',
+                    required: 'Give a reason for rejecting it.',
                 }}
-                confirmLabel="Yes, Reject"
-                confirmVariant="danger"
+                confirmLabel="Reject"
+                danger
             >
-                The submitter will be notified with your reason. This ends the current approval flow for{' '}
-                <strong>{record.reference}</strong>.
+                It ends here, and {record.submitted_by} is told your reason.
             </RecordActionModal>
 
             <RecordActionModal
@@ -380,24 +361,23 @@ export default function RecordPage({
                 onHide={() => setDialog(null)}
                 action={route('form.records.close', record.id)}
                 icon="mdi-lock-outline"
-                tone="danger"
+                tone="neutral"
                 title="Close this record?"
                 remark={{
-                    label: 'Reason for closing *',
-                    placeholder: 'Why is this record being closed?',
-                    required: 'A reason is required to close a record.',
+                    label: 'Reason',
+                    placeholder: 'Why it is being closed',
+                    required: 'Give a reason for closing it.',
                 }}
-                confirmLabel="Yes, Close Record"
-                confirmVariant="danger"
+                confirmLabel="Close record"
+                danger
             >
-                <strong>{record.title}</strong> ({record.reference}) will be marked closed.
+                {record.title} ({record.reference}) is marked closed. It can still be followed up on later.
                 {record.status === 'pending' && (
-                    <div className="alert alert-warning py-2 px-3 small mt-3 mb-0">
-                        This case is <strong>still in progress</strong> and will be <strong>cancelled</strong>. Whoever
-                        is holding it will lose the task.
-                    </div>
+                    <p className="rd-notice form-record__warn">
+                        <i className="mdi mdi-alert-outline" aria-hidden="true" />
+                        It is still in review, so it is cancelled too. Whoever has it loses the task.
+                    </p>
                 )}
-                <div className="text-muted small mt-3">A closed case can still be followed up on later.</div>
             </RecordActionModal>
 
             <RecordActionModal
@@ -405,19 +385,36 @@ export default function RecordPage({
                 onHide={() => setDialog(null)}
                 action={route('form.submission.cancel', record.id)}
                 icon="mdi-cancel"
-                tone="danger"
-                title="Cancel this submission?"
-                confirmLabel="Yes, cancel it"
-                confirmVariant="danger"
+                tone="critical"
+                title="Cancel your entry?"
+                confirmLabel="Cancel it"
                 cancelLabel="Keep it"
+                danger
             >
-                <strong>{record.reference}</strong> will be withdrawn and removed from{' '}
-                {review.waitingFor.length > 0 ? 'the queue of whoever is reviewing it' : 'any pending queue'}. This
-                cannot be undone — you would have to submit the form again.
+                {record.reference} is withdrawn
+                {review.waitingFor.length > 0 ? ' and leaves the task list of whoever has it' : ''}. This can&rsquo;t be
+                undone: you would have to submit the form again.
             </RecordActionModal>
 
             <AssigneePicker people={people} />
             <ImageLightbox src={photo} onClose={() => setPhoto(null)} />
         </AppLayout>
+    );
+}
+
+/** A linked record: reference, title, status. */
+function CaseLinkRow({ link }: { link: CaseLink }) {
+    return (
+        <Link href={route('form.records.show', link.id)} className="form-record__link">
+            <span className="rd-mono">{link.reference}</span>
+            <span className="form-record__link-text">
+                <span className="form-record__link-title">{link.title}</span>
+                {(link.created_at || link.submitted_by) && (
+                    <span className="rd-muted">{[link.submitted_by, link.created_at].filter(Boolean).join(', ')}</span>
+                )}
+            </span>
+            <StatusBadge status={link.open ? link.status : 'closed'} />
+            <i className="mdi mdi-chevron-right" aria-hidden="true" />
+        </Link>
     );
 }

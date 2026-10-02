@@ -57,6 +57,26 @@ class DashboardService
             ->where('order_date', '>=', $month->toDateString())
             ->get(['id', 'created_by', 'order_date', 'total_amount']);
 
+        $weekOrders = Order::confirmed()
+            ->when($forUser, fn ($q) => $q->where('created_by', $forUser->id))
+            ->where('order_date', '>=', $weekStart->toDateString())
+            ->sum('total_amount');
+
+        // The same days of last month, capped at that month's end.
+        $previousFrom  = $month->copy()->subMonthNoOverflow();
+        $previousTo    = $previousFrom->copy()->addDays($now->day - 1)->min($previousFrom->copy()->endOfMonth());
+        $previousValue = (float) Order::confirmed()
+            ->when($forUser, fn ($q) => $q->where('created_by', $forUser->id))
+            ->whereBetween('order_date', [$previousFrom->toDateString(), $previousTo->toDateString()])
+            ->sum('total_amount');
+        $monthValue = round((float) $monthOrders->sum('total_amount'), 2);
+
+        $visitsByDay = $visits->countBy(fn ($visit) => $visit->created_at->toDateString());
+        $visitDays   = [];
+        for ($day = $weekStart->copy(); $day->lte($now); $day->addDay()) {
+            $visitDays[] = ['date' => $day->toDateString(), 'count' => (int) ($visitsByDay[$day->toDateString()] ?? 0)];
+        }
+
         return [
             'scope'        => $forUser ? 'personal' : 'team',
             'generated_at' => $now->toIso8601String(),
@@ -80,14 +100,28 @@ class DashboardService
             'visits'       => [
                 'last_7d' => $visits->count(),
                 'today'   => $visits->filter(fn ($visit) => $visit->created_at->toDateString() === $today)->count(),
+                'daily'   => $visitDays,
             ],
             'orders'       => [
                 'month_count' => $monthOrders->count(),
-                'month_value' => round((float) $monthOrders->sum('total_amount'), 2),
+                'month_value' => $monthValue,
+                'last_7d'     => round((float) $weekOrders, 2),
+                'change_pct'  => $previousValue > 0 ? round(($monthValue - $previousValue) / $previousValue * 100, 1) : null,
             ],
             'attention'    => $this->attentionList($open),
             'trend'        => $this->trend($forUser, $now),
             'team'         => $forUser ? [] : $this->teamActivity($open, $weekStart),
+        ];
+    }
+
+    /** How many open tasks are overdue and at risk, for badges outside the dashboard. */
+    public function riskCounts(?User $forUser = null, ?Carbon $now = null): array
+    {
+        $open = $this->openTasks($forUser, $now ? $now->copy() : Carbon::now());
+
+        return [
+            'overdue' => $open->where('risk.level', TaskRisk::OVERDUE)->count(),
+            'at_risk' => $open->where('risk.level', TaskRisk::AT_RISK)->count(),
         ];
     }
 

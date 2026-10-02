@@ -1,4 +1,5 @@
 import { usePage } from '@inertiajs/react';
+import { pluralize } from '@/lib/format';
 import type { PageProps } from '@/types';
 
 interface ErrorSummaryProps {
@@ -6,22 +7,28 @@ interface ErrorSummaryProps {
     errors?: Record<string, string>;
 }
 
-/** Every validation error in one box at the top of a form. */
+/** Every validation error in one box at the top of a form, each linking to its field. */
 export default function ErrorSummary({ errors }: ErrorSummaryProps) {
     const pageErrors = usePage<PageProps>().props.errors;
-    const messages = Object.values(errors ?? pageErrors);
+    const entries = Object.entries(errors ?? pageErrors);
 
-    if (messages.length === 0) {
+    if (entries.length === 0) {
         return null;
     }
 
     return (
-        <div className="alert alert-danger" role="alert">
-            <ul className="mb-0">
-                {messages.map((message, index) => (
-                    <li key={index}>{message}</li>
-                ))}
-            </ul>
+        <div className="rd-errors" role="alert">
+            <i className="mdi mdi-alert-circle-outline" aria-hidden="true" />
+            <div>
+                <p className="rd-errors__title">{pluralize(entries.length, 'thing')} to fix before saving</p>
+                <ul className="rd-errors__list">
+                    {entries.map(([field, message]) => (
+                        <li key={field}>
+                            <a href={`#${field}`}>{message}</a>
+                        </li>
+                    ))}
+                </ul>
+            </div>
         </div>
     );
 }

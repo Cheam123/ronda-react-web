@@ -9,17 +9,19 @@ interface AppointmentsModalProps {
 /** A subscriber's open appointments, from the task list. */
 export default function AppointmentsModal({ subscriber, onHide }: AppointmentsModalProps) {
     return (
-        <Modal show={subscriber !== null} onHide={onHide} title={`Appointment List of ${subscriber?.name ?? ''}`}>
+        <Modal show={subscriber !== null} onHide={onHide} title={`Open appointments: ${subscriber?.name ?? ''}`}>
             {subscriber && subscriber.appointments.length > 0 ? (
-                <ol className="appointment-list mb-0">
+                <ul className="rd-rows task-appointments">
                     {subscriber.appointments.map(([date, outlet], index) => (
                         <li key={`${date}-${index}`}>
-                            <span className="text-danger">{date}</span> ({outlet})
+                            <i className="mdi mdi-calendar-blank-outline" aria-hidden="true" />
+                            <span className="task-appointments__when">{date}</span>
+                            <span>{outlet}</span>
                         </li>
                     ))}
-                </ol>
+                </ul>
             ) : (
-                <div className="text-muted">No open appointments.</div>
+                <p className="rd-muted mb-0">No open appointments.</p>
             )}
         </Modal>
     );

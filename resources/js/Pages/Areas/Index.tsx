@@ -1,24 +1,18 @@
 import { useForm } from '@inertiajs/react';
 import type { FormEvent } from 'react';
+import Field from '@/Components/form/Field';
 import TextInput from '@/Components/form/TextInput';
-import Button from '@/Components/ui/Button';
-import Card from '@/Components/ui/Card';
-import DataTable, { EmptyRow } from '@/Components/ui/DataTable';
+import PageHeader from '@/Components/surface/PageHeader';
+import SurfacePage from '@/Components/surface/SurfacePage';
 import ErrorSummary from '@/Components/ui/ErrorSummary';
-import SectionHeader from '@/Components/ui/SectionHeader';
 import AppLayout from '@/Layouts/AppLayout';
-import { breadcrumbFrom } from '@/lib/breadcrumbs';
-import type { BreadcrumbProps } from '@/types';
+import { pluralize } from '@/lib/format';
 import type { IfeArea } from '@/types/catalogue';
 import AreaRow from './Partials/AreaRow';
 
-interface AreasIndexProps extends BreadcrumbProps {
-    areas: IfeArea[];
-}
-
 /** IFE areas, the territories leads and visit reports are filed under. */
-export default function AreasIndex({ areas, ...breadcrumb }: AreasIndexProps) {
-    const { data, setData, post, processing, reset } = useForm({ area: '', description: '' });
+export default function AreasIndex({ areas }: { areas: IfeArea[] }) {
+    const { data, setData, post, processing, reset, errors } = useForm({ area: '', description: '' });
 
     const add = (event: FormEvent) => {
         event.preventDefault();
@@ -26,60 +20,90 @@ export default function AreasIndex({ areas, ...breadcrumb }: AreasIndexProps) {
     };
 
     return (
-        <AppLayout title="IFE Areas" breadcrumb={breadcrumbFrom(breadcrumb)}>
-            <Card>
+        <AppLayout title="IFE areas">
+            <SurfacePage>
+                <PageHeader
+                    crumbs={[{ label: 'Admin' }, { label: 'IFE areas' }]}
+                    title="IFE areas"
+                    lede="The territories outlets and visit reports are filed under. An area with no outlets or visits can be deleted."
+                />
+
                 <ErrorSummary />
 
-                <SectionHeader title="Add Area" />
-                <form onSubmit={add} className="row g-2 m-1 mb-3">
-                    <div className="col-md-3">
-                        <TextInput
-                            aria-label="Area name"
-                            placeholder="Area name"
-                            maxLength={30}
-                            required
-                            value={data.area}
-                            onChange={(event) => setData('area', event.target.value)}
-                        />
-                    </div>
-                    <div className="col-md-7">
-                        <TextInput
-                            aria-label="Description"
-                            placeholder="Description (optional)"
-                            maxLength={500}
-                            value={data.description}
-                            onChange={(event) => setData('description', event.target.value)}
-                        />
-                    </div>
-                    <div className="col-md-2">
-                        <Button type="submit" size="sm" className="w-100" loading={processing}>
-                            Add
-                        </Button>
-                    </div>
-                </form>
+                <section className="rd-panel" aria-labelledby="add-area-title">
+                    <h2 id="add-area-title" className="rd-panel__title">
+                        Add an area
+                    </h2>
+                    <form onSubmit={add} className="area-add" noValidate>
+                        <Field label="Name" htmlFor="area" required error={errors.area}>
+                            <TextInput
+                                id="area"
+                                large
+                                maxLength={30}
+                                required
+                                invalid={Boolean(errors.area)}
+                                value={data.area}
+                                onChange={(event) => setData('area', event.target.value)}
+                            />
+                        </Field>
+                        <Field label="What it covers" htmlFor="description" error={errors.description}>
+                            <TextInput
+                                id="description"
+                                large
+                                maxLength={500}
+                                placeholder="Districts, towns or malls"
+                                value={data.description}
+                                onChange={(event) => setData('description', event.target.value)}
+                            />
+                        </Field>
+                        <button type="submit" className="rd-btn rd-btn--primary rd-btn--lg" disabled={processing}>
+                            <i className="mdi mdi-plus" aria-hidden="true" />
+                            Add area
+                        </button>
+                    </form>
+                </section>
 
-                <DataTable nowrap={false}>
-                    <thead>
-                        <tr>
-                            <th style={{ width: 200 }}>Area</th>
-                            <th>Description</th>
-                            <th className="num" style={{ width: 80 }}>
-                                Leads
-                            </th>
-                            <th className="num" style={{ width: 80 }}>
-                                Visits
-                            </th>
-                            <th style={{ width: 170 }} />
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {areas.map((area) => (
-                            <AreaRow key={area.id} area={area} />
-                        ))}
-                        {areas.length === 0 && <EmptyRow colSpan={5}>No areas yet. Add the first one above.</EmptyRow>}
-                    </tbody>
-                </DataTable>
-            </Card>
+                <section className="rd-panel rd-panel--flush rd-list rd-list--flush" aria-labelledby="areas-title">
+                    <div className="rd-list__head">
+                        <div className="rd-list__heading">
+                            <h2 id="areas-title" className="rd-list__title">
+                                All areas
+                            </h2>
+                            <span className="rd-count rd-count--label">{pluralize(areas.length, 'area')}</span>
+                        </div>
+                    </div>
+                    <div className="rd-scroll">
+                        <table className="rd-table rd-table--flush area-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Area and what it covers</th>
+                                    <th scope="col" className="num">
+                                        Outlets
+                                    </th>
+                                    <th scope="col" className="num">
+                                        Visits
+                                    </th>
+                                    <th scope="col" className="rd-col-actions">
+                                        <span className="visually-hidden">Actions</span>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {areas.map((area) => (
+                                    <AreaRow key={area.id} area={area} />
+                                ))}
+                                {areas.length === 0 && (
+                                    <tr>
+                                        <td colSpan={4} className="rd-list__empty">
+                                            No areas yet. Add the first one above.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </SurfacePage>
         </AppLayout>
     );
 }

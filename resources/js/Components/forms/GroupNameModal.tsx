@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import Field from '@/Components/form/Field';
 import TextInput from '@/Components/form/TextInput';
-import Button from '@/Components/ui/Button';
-import Modal from '@/Components/ui/Modal';
+import Dialog from '@/Components/surface/Dialog';
 import { errorMessage, postJson } from '@/lib/http';
 import type { FormGroupOption } from '@/types/forms';
 
@@ -55,7 +55,7 @@ export default function GroupNameModal({
     const submit = async (event?: FormEvent) => {
         event?.preventDefault();
         if (!name.trim()) {
-            setError('A group name is required.');
+            setError('Give the group a name.');
             return;
         }
 
@@ -64,60 +64,65 @@ export default function GroupNameModal({
             const reply = await postJson<GroupReply>(action, { name: name.trim() });
             onSaved({ message: reply.message, group: reply.group });
         } catch (reason) {
-            setError(errorMessage(reason, 'Could not save the group.'));
+            setError(errorMessage(reason, 'The group could not be saved.'));
         } finally {
             setSaving(false);
         }
     };
 
     return (
-        <Modal
+        <Dialog
             show={show}
             onHide={onHide}
             title={title}
+            icon="mdi-folder-outline"
+            tone="neutral"
             footer={
                 <>
-                    <Button variant="light" onClick={onHide}>
+                    <button type="button" className="rd-btn rd-btn--lg" onClick={onHide}>
                         Cancel
-                    </Button>
-                    <Button loading={saving} onClick={() => submit()}>
+                    </button>
+                    <button
+                        type="button"
+                        className="rd-btn rd-btn--primary rd-btn--lg"
+                        disabled={saving}
+                        onClick={() => submit()}
+                    >
+                        {saving && <span className="spinner-border spinner-border-sm" aria-hidden="true" />}
                         {submitLabel}
-                    </Button>
+                    </button>
                 </>
             }
         >
             <form onSubmit={submit}>
-                <label className="form-label small fw-semibold" htmlFor="group-name">
-                    Group name <span className="text-danger">*</span>
-                </label>
-                <TextInput
-                    id="group-name"
-                    large
-                    maxLength={120}
-                    placeholder="e.g. Reports, Sales, Claims"
-                    invalid={!!error}
-                    autoFocus
-                    value={name}
-                    onChange={(event) => {
-                        setName(event.target.value);
-                        setError(null);
-                    }}
-                />
-                {error && <div className="invalid-feedback d-block">{error}</div>}
-                {hint && <div className="form-text">{hint}</div>}
+                <Field label="Group name" htmlFor="group-name" required error={error ?? undefined} hint={hint}>
+                    <TextInput
+                        id="group-name"
+                        large
+                        maxLength={120}
+                        placeholder="e.g. Outlet visits, Requests, Staff"
+                        invalid={!!error}
+                        autoFocus
+                        value={name}
+                        onChange={(event) => {
+                            setName(event.target.value);
+                            setError(null);
+                        }}
+                    />
+                </Field>
             </form>
             {existing.length > 0 && (
-                <div className="group-chips">
-                    <div className="group-chips__label">Already in use</div>
-                    <div className="group-chips__list">
+                <div className="rd-dialog__box">
+                    <span className="rd-label">Already in use</span>
+                    <div className="rd-choices">
                         {existing.map((existingName) => (
-                            <span key={existingName} className="group-chips__chip">
+                            <span key={existingName} className="rd-chip">
                                 {existingName}
                             </span>
                         ))}
                     </div>
                 </div>
             )}
-        </Modal>
+        </Dialog>
     );
 }

@@ -26,7 +26,7 @@ export interface NavGroup {
 export const NAVIGATION: NavGroup[] = [
     {
         label: 'Dashboard',
-        icon: 'uil-home-alt',
+        icon: 'mdi mdi-home-outline',
         href: () => '/index',
         active: ['/', 'index'],
         abilities: ['dashboard'],
@@ -40,41 +40,41 @@ export const NAVIGATION: NavGroup[] = [
     },
     {
         label: 'Task',
-        icon: 'uil-graph-bar',
+        icon: 'mdi mdi-format-list-checks',
         href: () => route('tasks.index2', { status: 1 }),
         active: ['v1/task/manage/*'],
         abilities: ['manage_task'],
     },
     {
         label: 'IFE Report',
-        icon: 'uil-clipboard-notes',
+        icon: 'mdi mdi-clipboard-text-outline',
         href: () => route('ifereport.index'),
         active: ['v1/ifereport*'],
         abilities: ['ife_report'],
     },
     {
-        // Everyone gets the menu: My Records and My Tasks are scoped to the
+        // Everyone gets the menu: My records and My tasks are scoped to the
         // caller by the controller. The items inside carry their own gates.
         label: 'Form',
-        icon: 'uil-clipboard-notes',
+        icon: 'mdi mdi-file-document-outline',
         active: ['v1/form*'],
         children: [
             {
-                label: 'Form Creation',
+                label: 'Forms',
                 href: () => route('form.index'),
                 active: ['v1/form', 'v1/form/create*', 'v1/form/edit*', 'v1/form/preview*'],
                 abilities: ['form_creation', 'form_admin'],
             },
-            { label: 'Available Forms', href: () => route('form.entry'), active: ['v1/form/entry*', 'v1/form/fill*'] },
-            { label: 'My Records', href: () => route('form.records.index'), active: ['v1/form/records'] },
+            { label: 'Start a form', href: () => route('form.entry'), active: ['v1/form/entry*', 'v1/form/fill*'] },
+            { label: 'My records', href: () => route('form.records.index'), active: ['v1/form/records'] },
             {
-                label: 'My Tasks',
+                label: 'My tasks',
                 href: () => route('form.tasks'),
                 active: ['v1/form/tasks*'],
                 badge: 'formTaskCount',
             },
             {
-                label: 'All Records',
+                label: 'All records',
                 href: () => route('form.records.all'),
                 active: ['v1/form/records/all*'],
                 abilities: ['form_admin'],
@@ -83,7 +83,7 @@ export const NAVIGATION: NavGroup[] = [
     },
     {
         label: 'Admin',
-        icon: 'uil-users-alt',
+        icon: 'mdi mdi-tune-variant',
         active: ['v1/users*', 'v1/product*', 'v1/area*'],
         abilities: ['manage_user', 'manage_product', 'manage_area'],
         children: [

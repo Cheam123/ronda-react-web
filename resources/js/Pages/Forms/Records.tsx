@@ -1,16 +1,15 @@
 import { Link } from '@inertiajs/react';
 import clsx from 'clsx';
-import { useState, type FormEvent } from 'react';
-import Collapse from 'react-bootstrap/Collapse';
+import type { FormEvent } from 'react';
 import StatusBadge from '@/Components/forms/StatusBadge';
 import SearchSelect from '@/Components/form/SearchSelect';
-import Select from '@/Components/form/Select';
-import TextInput from '@/Components/form/TextInput';
-import Button, { ButtonLink } from '@/Components/ui/Button';
-import DataTable from '@/Components/ui/DataTable';
-import Pagination from '@/Components/ui/Pagination';
+import DateRangeMenu from '@/Components/surface/DateRangeMenu';
+import PageHeader from '@/Components/surface/PageHeader';
+import Pager from '@/Components/surface/Pager';
+import SurfacePage from '@/Components/surface/SurfacePage';
 import { useFilters } from '@/hooks/useFilters';
 import AppLayout from '@/Layouts/AppLayout';
+import { formatNumber } from '@/lib/format';
 import { compactParams } from '@/lib/input';
 import type { Paginated, QueryParams, SelectOption } from '@/types';
 
@@ -35,15 +34,15 @@ interface RecordsProps {
     users: SelectOption<number>[];
     /** Records per status, counted before the status filter. */
     statusCounts: Record<string, number | string>;
-    /** "All Records" (form admins) rather than "My Records". */
+    /** "All records" (form admins) rather than "My records". */
     isAdmin: boolean;
     filters: QueryParams;
 }
 
 // Read left to right the way a record travels: still moving, then the ways it ends.
-const PILLS = [
+const TABS = [
     { value: '', label: 'All' },
-    { value: 'pending', label: 'Pending' },
+    { value: 'pending', label: 'In review' },
     { value: 'approved', label: 'Approved' },
     { value: 'rejected', label: 'Rejected' },
     { value: 'cancelled', label: 'Cancelled' },
@@ -51,20 +50,15 @@ const PILLS = [
 ];
 
 const SORT_BY = [
-    { value: 'created_at', label: 'Sort By Submission Date' },
-    { value: 'updated_at', label: 'Sort By Last Activity' },
-    { value: 'record_title', label: 'Sort By Record Title' },
+    { value: 'created_at', label: 'Submitted' },
+    { value: 'updated_at', label: 'Last activity' },
+    { value: 'record_title', label: 'Title' },
 ];
 
-const SORT_MODE = [
-    { value: 'desc', label: '🔽 Desc' },
-    { value: 'asc', label: '🔼 Asc' },
-];
-
-/** My Records / All Records: every case the user opened or took part in. */
+/** My records / All records: every record the user opened or took part in. */
 export default function Records({ records, forms, users, statusCounts, isAdmin, filters }: RecordsProps) {
     const url = isAdmin ? route('form.records.all') : route('form.records.index');
-    const { values, set, apply, reset } = useFilters(url, {
+    const { values, set, apply, choose } = useFilters(url, {
         search: filters.search ?? '',
         form_id: filters.form_id ?? '',
         submitted_by: filters.submitted_by ?? '',
@@ -74,16 +68,15 @@ export default function Records({ records, forms, users, statusCounts, isAdmin, 
         sortby: filters.sortby ?? 'created_at',
         sortmode: filters.sortmode ?? 'desc',
     });
-    const [expanded, setExpanded] = useState(Boolean(filters.submitted_by || filters.date_start || filters.date_end));
-    const title = isAdmin ? 'All Records' : 'My Records';
+    const title = isAdmin ? 'All records' : 'My records';
+    const descending = values.sortmode !== 'asc';
+    const byTitle = values.sortby === 'record_title';
 
     const count = (status: string) =>
         status === ''
             ? Object.values(statusCounts).reduce<number>((total, n) => total + Number(n), 0)
             : Number(statusCounts[status] ?? 0);
-    const filtered = ['search', 'form_id', 'status', 'submitted_by', 'date_start', 'date_end'].some(
-        (key) => filters[key],
-    );
+    const filtered = ['search', 'form_id', 'submitted_by', 'date_start', 'date_end'].some((key) => filters[key]);
 
     const search = (event: FormEvent) => {
         event.preventDefault();
@@ -91,248 +84,228 @@ export default function Records({ records, forms, users, statusCounts, isAdmin, 
     };
 
     return (
-        <AppLayout title={title} breadcrumb={['Forms', title]}>
-            <div className="page-title-box d-flex align-items-center justify-content-between flex-wrap gap-2">
-                <h4 className="mb-0">{title}</h4>
-                <div className="d-flex gap-2">
-                    {isAdmin && (
-                        <a href={route('form.records.export', compactParams(filters))} className="btn btn-success">
-                            <i className="mdi mdi-file-excel me-1" /> Export
-                        </a>
-                    )}
-                    <ButtonLink href={route('form.entry')} icon="mdi mdi-plus">
-                        Start a form
-                    </ButtonLink>
-                </div>
-            </div>
-
-            <div className="card card3 custom-font-small">
-                <div className="card-body">
-                    <form onSubmit={search}>
-                        <div className="row g-2 align-items-end">
-                            <div className="col-lg-4">
-                                <label htmlFor="search" className="custom-font-xsmall mb-1">
-                                    Search:
-                                </label>
-                                <TextInput
-                                    id="search"
-                                    maxLength={255}
-                                    placeholder="Record title or form name..."
-                                    value={values.search}
-                                    onChange={(event) => set('search', event.target.value)}
-                                />
-                            </div>
-                            <div className="col-lg-4">
-                                <label htmlFor="form_id" className="custom-font-xsmall mb-1">
-                                    Form:
-                                </label>
-                                <SearchSelect
-                                    id="form_id"
-                                    placeholder="All forms"
-                                    options={forms}
-                                    value={values.form_id}
-                                    onChange={(value) => set('form_id', value)}
-                                />
-                            </div>
-                            <div className="col-lg-4 d-flex justify-content-lg-end gap-1">
-                                <Button
-                                    variant="light"
-                                    size="sm"
-                                    icon={
-                                        expanded ? 'mdi mdi-unfold-less-horizontal' : 'mdi mdi-unfold-more-horizontal'
-                                    }
-                                    title="More filters"
-                                    aria-expanded={expanded}
-                                    onClick={() => setExpanded((open) => !open)}
-                                />
-                                <Button
-                                    type="submit"
-                                    variant="light"
-                                    size="sm"
-                                    icon="mdi mdi-magnify"
-                                    title="Search"
-                                    aria-label="Search"
-                                />
-                                <Button
-                                    variant="light"
-                                    size="sm"
-                                    icon="mdi mdi-broom"
-                                    title="Clear filters"
-                                    aria-label="Clear filters"
-                                    onClick={reset}
-                                />
-                            </div>
-                        </div>
-                        <Collapse in={expanded}>
-                            <div>
-                                <div className="row g-2 pt-2">
-                                    <div className="col-lg-4">
-                                        <label htmlFor="submitted_by" className="custom-font-xsmall mb-1">
-                                            Submitted By:
-                                        </label>
-                                        <SearchSelect
-                                            id="submitted_by"
-                                            placeholder="Anyone"
-                                            options={users}
-                                            value={values.submitted_by}
-                                            onChange={(value) => set('submitted_by', value)}
-                                        />
-                                    </div>
-                                    <div className="col-lg-4">
-                                        <label htmlFor="date_start" className="custom-font-xsmall mb-1">
-                                            Submission Date:
-                                        </label>
-                                        <div className="input-group input-group-sm">
-                                            <TextInput
-                                                id="date_start"
-                                                type="date"
-                                                aria-label="Submitted from"
-                                                value={values.date_start}
-                                                onChange={(event) => set('date_start', event.target.value)}
-                                            />
-                                            <TextInput
-                                                type="date"
-                                                aria-label="Submitted to"
-                                                value={values.date_end}
-                                                onChange={(event) => set('date_end', event.target.value)}
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </Collapse>
-                    </form>
-
-                    <hr />
-
-                    <div className="task-tabs">
-                        <div className="nav nav-pills task-tabs__pills" role="tablist">
-                            {PILLS.map((pill) => (
-                                <button
-                                    key={pill.value || 'all'}
-                                    type="button"
-                                    role="tab"
-                                    aria-selected={values.status === pill.value}
-                                    className={clsx(
-                                        'btn btn-sm nav-link',
-                                        values.status === pill.value ? 'active' : 'inactive',
-                                    )}
-                                    onClick={() => {
-                                        set('status', pill.value);
-                                        apply({ status: pill.value });
-                                    }}
+        <AppLayout title={title}>
+            <SurfacePage>
+                <PageHeader
+                    crumbs={[{ label: 'Home', href: '/index' }, { label: title }]}
+                    title={title}
+                    lede={isAdmin ? 'Every record made from every form.' : 'Everything you submitted or took part in.'}
+                    actions={
+                        <>
+                            {isAdmin && (
+                                <a
+                                    href={route('form.records.export', compactParams(filters))}
+                                    className="rd-btn rd-btn--lg"
+                                    download
                                 >
-                                    {pill.label}
-                                    {count(pill.value) > 0 && ` ( ${count(pill.value)} )`}
+                                    <i className="mdi mdi-download" aria-hidden="true" />
+                                    Export to Excel
+                                </a>
+                            )}
+                            <Link href={route('form.entry')} className="rd-btn rd-btn--primary rd-btn--lg">
+                                <i className="mdi mdi-plus" aria-hidden="true" />
+                                Start a form
+                            </Link>
+                        </>
+                    }
+                />
+
+                <section className="rd-panel rd-list records-list" aria-label="Records">
+                    <nav className="rd-tabs records-list__tabs" aria-label="Status">
+                        {TABS.map((tab) => {
+                            const active = values.status === tab.value;
+
+                            return (
+                                <button
+                                    key={tab.label}
+                                    type="button"
+                                    className={clsx('rd-tabs__tab', active && 'is-active')}
+                                    aria-current={active ? 'true' : undefined}
+                                    onClick={() => choose({ status: tab.value })}
+                                >
+                                    {tab.label} <span className="rd-count">{formatNumber(count(tab.value))}</span>
                                 </button>
-                            ))}
+                            );
+                        })}
+                    </nav>
+
+                    <div className="records-list__toolbar">
+                        <div className="records-list__filters">
+                            <form role="search" onSubmit={search}>
+                                <label className="rd-search">
+                                    <i className="mdi mdi-magnify" aria-hidden="true" />
+                                    <input
+                                        type="search"
+                                        className="rd-input"
+                                        aria-label="Search records"
+                                        placeholder="Search title or form"
+                                        maxLength={255}
+                                        value={values.search}
+                                        onChange={(event) => set('search', event.target.value)}
+                                    />
+                                </label>
+                            </form>
+                            <SearchSelect
+                                compact
+                                ariaLabel="Form"
+                                options={[{ value: '', label: 'All forms' }, ...forms]}
+                                clearable={false}
+                                value={values.form_id}
+                                onChange={(value) => choose({ form_id: value })}
+                            />
+                            <SearchSelect
+                                compact
+                                ariaLabel="Submitted by"
+                                options={[{ value: '', label: 'Anyone' }, ...users]}
+                                clearable={false}
+                                value={values.submitted_by}
+                                onChange={(value) => choose({ submitted_by: value })}
+                            />
+                            <DateRangeMenu
+                                label="Submitted"
+                                start={values.date_start}
+                                end={values.date_end}
+                                onApply={(start, end) => choose({ date_start: start, date_end: end })}
+                            />
                         </div>
-                        <div className="task-tabs__sort">
-                            <Select
-                                aria-label="Sort by"
+                        <div className="records-list__sort">
+                            <label htmlFor="records-sort">Sort by</label>
+                            <SearchSelect
+                                id="records-sort"
+                                compact
                                 options={SORT_BY}
+                                clearable={false}
+                                searchable={false}
                                 value={values.sortby}
-                                onChange={(event) => {
-                                    set('sortby', event.target.value);
-                                    apply({ sortby: event.target.value });
-                                }}
+                                onChange={(value) => choose({ sortby: value })}
                             />
-                            <Select
-                                aria-label="Sort order"
-                                options={SORT_MODE}
-                                value={values.sortmode}
-                                onChange={(event) => {
-                                    set('sortmode', event.target.value);
-                                    apply({ sortmode: event.target.value });
-                                }}
-                            />
+                            <button
+                                type="button"
+                                className="rd-btn"
+                                title="Change the order"
+                                onClick={() => choose({ sortmode: descending ? 'asc' : 'desc' })}
+                            >
+                                <i className={`mdi mdi-arrow-${descending ? 'down' : 'up'}`} aria-hidden="true" />
+                                {byTitle
+                                    ? descending
+                                        ? 'Z to A'
+                                        : 'A to Z'
+                                    : descending
+                                      ? 'Newest first'
+                                      : 'Oldest first'}
+                            </button>
                         </div>
                     </div>
 
-                    {records.data.length === 0 ? (
-                        <div className="text-center py-5">
-                            <i className="mdi mdi-file-document-outline empty-icon" />
-                            <h5 className="mt-3 text-muted">
-                                {filtered ? 'No records match this filter' : 'No records yet'}
-                            </h5>
-                            <p className="text-muted mb-0">Anything you submit or take part in appears here.</p>
-                        </div>
-                    ) : (
-                        <>
-                            <DataTable className="table-hover align-middle mb-0" nowrap={false}>
-                                <thead>
-                                    <tr>
-                                        <th>Reference</th>
-                                        <th>Record</th>
-                                        <th>Waiting on</th>
-                                        <th className="text-center">Status</th>
-                                        <th>Last activity</th>
-                                        <th className="text-center">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {records.data.map((row) => (
-                                        <tr key={row.id}>
-                                            <td className="small fw-semibold text-nowrap">{row.reference}</td>
-                                            <td>
-                                                <Link
-                                                    href={route('form.records.show', row.id)}
-                                                    className="fw-semibold text-body"
-                                                >
-                                                    {row.title}
-                                                </Link>
-                                                <div className="text-muted small">
-                                                    {row.form_name} &middot; {row.submitted_by} &middot;{' '}
-                                                    {row.created_at}
-                                                    {row.closed && (
-                                                        <span className="badge bg-secondary ms-1">Closed</span>
-                                                    )}
-                                                    {row.parent_reference && (
-                                                        <span
-                                                            className="badge bg-light text-dark border ms-1"
-                                                            title={`Follows up on ${row.parent_reference}`}
-                                                        >
-                                                            <i className="mdi mdi-subdirectory-arrow-right" />{' '}
-                                                            {row.parent_reference}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </td>
-                                            <td>
-                                                {row.stage_name ? (
-                                                    <>
-                                                        <div className="small fw-semibold">{row.stage_name}</div>
-                                                        <div className="text-muted small">
-                                                            {row.waiting_on.length
-                                                                ? row.waiting_on.join(', ')
-                                                                : 'pending'}
-                                                        </div>
-                                                    </>
-                                                ) : (
-                                                    <span className="text-muted small">—</span>
+                    <div className="rd-scroll">
+                        <table className="rd-table rd-table--band records-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Record</th>
+                                    <th scope="col">Status</th>
+                                    <th scope="col">Waiting on</th>
+                                    <th scope="col">Submitted</th>
+                                    <th scope="col">Last activity</th>
+                                    <th scope="col" className="rd-col-actions">
+                                        <span className="visually-hidden">Open</span>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {records.data.map((row) => (
+                                    <tr key={row.id}>
+                                        <td className="records-table__record">
+                                            <Link
+                                                href={route('form.records.show', row.id)}
+                                                className="records-table__title"
+                                            >
+                                                {row.title}
+                                            </Link>
+                                            <span className="records-table__sub">
+                                                <span className="rd-mono">{row.reference}</span>
+                                                {row.form_name}
+                                                {row.parent_reference && (
+                                                    <span
+                                                        className="rd-chip"
+                                                        title={`Follows up on ${row.parent_reference}`}
+                                                    >
+                                                        <i
+                                                            className="mdi mdi-subdirectory-arrow-right"
+                                                            aria-hidden="true"
+                                                        />
+                                                        {row.parent_reference}
+                                                    </span>
                                                 )}
-                                            </td>
-                                            <td className="text-center">
-                                                <StatusBadge status={row.status} />
-                                            </td>
-                                            <td className="small text-muted text-nowrap">{row.updated_at}</td>
-                                            <td className="text-center">
+                                            </span>
+                                        </td>
+                                        <td className="records-table__status">
+                                            <StatusBadge status={row.closed ? 'closed' : row.status} />
+                                        </td>
+                                        <td className="records-table__waiting">
+                                            {row.stage_name ? (
+                                                <>
+                                                    <span className="records-table__stage">{row.stage_name}</span>
+                                                    <span className="records-table__sub">
+                                                        {row.waiting_on.length
+                                                            ? row.waiting_on.join(', ')
+                                                            : 'Anyone on the step'}
+                                                    </span>
+                                                </>
+                                            ) : (
+                                                <span className="rd-muted">Nobody</span>
+                                            )}
+                                        </td>
+                                        <td className="records-table__when">
+                                            <span>{row.created_at ?? '—'}</span>
+                                            <span className="records-table__sub">{row.submitted_by}</span>
+                                        </td>
+                                        <td className="records-table__when">{row.updated_at ?? '—'}</td>
+                                        <td className="rd-col-actions">
+                                            <div className="rd-actions">
                                                 <Link
                                                     href={route('form.records.show', row.id)}
-                                                    className="btn btn-sm btn-outline-primary"
+                                                    className="rd-btn rd-btn--icon"
+                                                    aria-label={`Open ${row.title}`}
+                                                    title="Open"
                                                 >
-                                                    Open
+                                                    <i className="mdi mdi-chevron-right" aria-hidden="true" />
                                                 </Link>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </DataTable>
-                            <Pagination links={records.links} className="mt-3" />
-                        </>
-                    )}
-                </div>
-            </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                                {records.data.length === 0 && (
+                                    <tr>
+                                        <td colSpan={6} className="rd-list__empty">
+                                            {filtered
+                                                ? 'No records match.'
+                                                : 'Nothing yet. Anything you submit or take part in appears here.'}
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div className="rd-list__foot">
+                        <span>
+                            {records.total > 0 ? (
+                                <>
+                                    Showing{' '}
+                                    <strong>
+                                        {records.from}–{records.to}
+                                    </strong>{' '}
+                                    of <strong>{formatNumber(records.total)}</strong>{' '}
+                                    {records.total === 1 ? 'record' : 'records'}
+                                </>
+                            ) : (
+                                'No records'
+                            )}
+                        </span>
+                        <Pager links={records.links} />
+                    </div>
+                </section>
+            </SurfacePage>
         </AppLayout>
     );
 }

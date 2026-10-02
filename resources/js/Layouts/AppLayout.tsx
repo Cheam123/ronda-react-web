@@ -1,22 +1,21 @@
 import { Head, Link, router } from '@inertiajs/react';
-import clsx from 'clsx';
 import { useEffect, useState, type ReactNode } from 'react';
 import FlashMessages from '@/Components/feedback/FlashMessages';
 import { useBodyAttributes } from '@/hooks/useBodyAttributes';
 import Breadcrumbs, { type BreadcrumbTrail } from './partials/Breadcrumbs';
-import NavMenu from './partials/NavMenu';
+import { NavBar, NavSheet } from './partials/NavMenu';
 import ScrollToTop from './partials/ScrollToTop';
-import UserMenu from './partials/UserMenu';
+import UserMenu, { UserSheet } from './partials/UserMenu';
 
 interface AppLayoutProps {
     /** The browser tab title. */
     title: string;
-    /** Header breadcrumb after "Home"; omit to show none. */
+    /** A breadcrumb after "Home" for pages without a PageHeader; omit to show none. */
     breadcrumb?: BreadcrumbTrail | null;
     children: ReactNode;
 }
 
-/** The signed-in shell: header, top navigation and page container. */
+/** The signed-in shell: one top bar (a menu sheet on phones) over the page. */
 export default function AppLayout({ title, breadcrumb, children }: AppLayoutProps) {
     const [menuOpen, setMenuOpen] = useState(false);
 
@@ -30,58 +29,48 @@ export default function AppLayout({ title, breadcrumb, children }: AppLayoutProp
             <Head title={title} />
             <FlashMessages />
 
-            <div id="layout-wrapper">
-                <header id="page-topbar">
-                    <div className="navbar-header">
-                        <div className="d-flex align-items-center">
-                            <div className="navbar-brand-box ms-3">
-                                <Link href="/index" className="logo logo-dark">
-                                    <span className="logo-sm">
-                                        <img src="/assets/brand/ronda-logo.svg" alt="Ronda" height={26} />
-                                    </span>
-                                    <span className="logo-lg">
-                                        <img src="/assets/brand/ronda-logo.svg" alt="Ronda" height={26} />
-                                    </span>
-                                </Link>
-                            </div>
+            <a href="#main" className="rd-skip">
+                Skip to the page
+            </a>
 
+            <div className="rd-shell">
+                <header className="rd-topbar">
+                    <div className="rd-topbar__inner">
+                        <Link href="/index" className="rd-topbar__brand">
+                            <img src="/assets/brand/ronda-logo.svg" alt="Ronda, home" height={26} />
+                        </Link>
+
+                        <NavBar />
+
+                        <div className="rd-topbar__end">
+                            <UserMenu />
                             <button
                                 type="button"
-                                className="btn btn-sm px-3 font-size-16 d-lg-none header-item"
-                                aria-label="Toggle navigation"
+                                className="rd-topbar__toggle"
+                                aria-label={menuOpen ? 'Close the menu' : 'Open the menu'}
                                 aria-expanded={menuOpen}
+                                aria-controls="rd-sheet"
                                 onClick={() => setMenuOpen((open) => !open)}
                             >
-                                <i className="fa fa-fw fa-bars" />
+                                <i className={menuOpen ? 'mdi mdi-close' : 'mdi mdi-menu'} aria-hidden="true" />
                             </button>
-
-                            {breadcrumb && <Breadcrumbs trail={breadcrumb} />}
-                        </div>
-
-                        <div className="d-flex">
-                            <UserMenu />
                         </div>
                     </div>
 
-                    <div className="container-fluid">
-                        <div className="topnav">
-                            <nav className="navbar navbar-light navbar-expand-lg topnav-menu">
-                                <div
-                                    className={clsx('collapse navbar-collapse', menuOpen && 'show')}
-                                    id="topnav-menu-content"
-                                >
-                                    <NavMenu />
-                                </div>
-                            </nav>
+                    {menuOpen && (
+                        <div id="rd-sheet" className="rd-sheet">
+                            <NavSheet />
+                            <UserSheet />
                         </div>
-                    </div>
+                    )}
                 </header>
 
-                <div className="main-content">
-                    <div className="page-content">
-                        <div className="container-fluid">{children}</div>
+                <main id="main" className="rd-shell__main main-content" tabIndex={-1}>
+                    <div className="rd-shell__page">
+                        {breadcrumb && <Breadcrumbs trail={breadcrumb} />}
+                        {children}
                     </div>
-                </div>
+                </main>
             </div>
 
             <ScrollToTop />

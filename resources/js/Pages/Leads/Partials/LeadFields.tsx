@@ -1,9 +1,11 @@
 import Field from '@/Components/form/Field';
 import GpsStampField from '@/Components/form/GpsStampField';
 import SearchSelect from '@/Components/form/SearchSelect';
-import Select from '@/Components/form/Select';
 import TextArea from '@/Components/form/TextArea';
 import TextInput from '@/Components/form/TextInput';
+import { Choices } from '@/Components/surface/Choices';
+import { FormRow, FormSection } from '@/Components/surface/FormSection';
+import PhoneInput from '@/Components/surface/PhoneInput';
 import { digitsOnly } from '@/lib/input';
 import type { LeadFormOptions } from '@/types/leads';
 
@@ -29,223 +31,245 @@ export interface LeadFormData {
     remark: string;
 }
 
+const REMARK_MAX = 255;
+
 interface LeadFieldsProps {
     data: LeadFormData;
-    setData?: <K extends keyof LeadFormData>(key: K, value: LeadFormData[K]) => void;
+    setData: <K extends keyof LeadFormData>(key: K, value: LeadFormData[K]) => void;
     errors?: Partial<Record<keyof LeadFormData, string>>;
     options: LeadFormOptions;
-    readOnly?: boolean;
 }
 
-/** Lead/Customer detail and outlet profile, editable or read-only. */
-export default function LeadFields({ data, setData, errors = {}, options, readOnly = false }: LeadFieldsProps) {
-    const update = <K extends keyof LeadFormData>(key: K, value: LeadFormData[K]) => setData?.(key, value);
+/** The lead form's sections: the outlet, its address, its profile and a remark. */
+export default function LeadFields({ data, setData, errors = {}, options }: LeadFieldsProps) {
     const cities = options.cities.filter((city) => String(city.state_id) === data.state_id);
+    const area = options.ifeAreas.find((option) => String(option.value) === data.ifearea);
 
     return (
         <>
-            <div className="row">
-                <Field label="Company Name" htmlFor="name" required error={errors.name} className="col-md-9">
-                    <TextInput
-                        id="name"
-                        maxLength={255}
-                        readOnly={readOnly}
-                        value={data.name}
-                        onChange={(event) => update('name', event.target.value)}
-                    />
-                </Field>
-                <Field
-                    label="Receiving Date"
-                    htmlFor="receive_date"
-                    required
-                    error={errors.receive_date}
-                    className="col-md-3"
-                >
-                    <TextInput
-                        id="receive_date"
-                        type="date"
-                        readOnly={readOnly}
-                        value={data.receive_date}
-                        onChange={(event) => update('receive_date', event.target.value)}
-                    />
-                </Field>
-            </div>
+            <FormSection title="Outlet" intro="Who they are and how the team reaches them.">
+                <FormRow columns="minmax(0, 1fr) 190px">
+                    <Field label="Company name" htmlFor="name" required error={errors.name}>
+                        <TextInput
+                            id="name"
+                            large
+                            maxLength={255}
+                            invalid={Boolean(errors.name)}
+                            value={data.name}
+                            onChange={(event) => setData('name', event.target.value)}
+                        />
+                    </Field>
+                    <Field label="Received on" htmlFor="receive_date" required error={errors.receive_date}>
+                        <TextInput
+                            id="receive_date"
+                            type="date"
+                            large
+                            invalid={Boolean(errors.receive_date)}
+                            value={data.receive_date}
+                            onChange={(event) => setData('receive_date', event.target.value)}
+                        />
+                    </Field>
+                </FormRow>
+                <FormRow>
+                    <Field
+                        label="Shop name"
+                        htmlFor="business_name"
+                        error={errors.business_name}
+                        hint="What the outlet is called on the street. The list shows this first."
+                    >
+                        <TextInput
+                            id="business_name"
+                            large
+                            maxLength={255}
+                            value={data.business_name}
+                            onChange={(event) => setData('business_name', event.target.value)}
+                        />
+                    </Field>
+                    <Field
+                        label="Customer ID"
+                        htmlFor="customer_id"
+                        error={errors.customer_id}
+                        hint="Leave it empty while they are a prospect."
+                    >
+                        <TextInput
+                            id="customer_id"
+                            large
+                            className="rd-input--mono"
+                            maxLength={20}
+                            value={data.customer_id}
+                            onChange={(event) => setData('customer_id', event.target.value)}
+                        />
+                    </Field>
+                </FormRow>
+                <FormRow>
+                    <Field
+                        label="Mobile"
+                        htmlFor="mobile"
+                        required
+                        error={errors.mobile}
+                        hint="Type it any way; the spacing is added for you."
+                    >
+                        <PhoneInput
+                            id="mobile"
+                            required
+                            invalid={Boolean(errors.mobile)}
+                            value={data.mobile}
+                            onChange={(value) => setData('mobile', value)}
+                        />
+                    </Field>
+                    <Field label="Email" htmlFor="email" error={errors.email}>
+                        <TextInput
+                            id="email"
+                            type="email"
+                            large
+                            maxLength={255}
+                            placeholder="name@company.com"
+                            invalid={Boolean(errors.email)}
+                            value={data.email}
+                            onChange={(event) => setData('email', event.target.value)}
+                        />
+                    </Field>
+                </FormRow>
+                <FormRow>
+                    <Field label="How they found us" htmlFor="leadsource" error={errors.leadsource}>
+                        <SearchSelect
+                            id="leadsource"
+                            placeholder="Choose a source"
+                            options={options.sources}
+                            invalid={Boolean(errors.leadsource)}
+                            value={data.leadsource}
+                            onChange={(value) => setData('leadsource', value)}
+                        />
+                    </Field>
+                    <Field label="Business category" htmlFor="businesscat" error={errors.businesscat}>
+                        <SearchSelect
+                            id="businesscat"
+                            placeholder="Choose a category"
+                            options={options.businessCategories}
+                            searchable={false}
+                            invalid={Boolean(errors.businesscat)}
+                            value={data.businesscat}
+                            onChange={(value) => setData('businesscat', value)}
+                        />
+                    </Field>
+                </FormRow>
+            </FormSection>
 
-            <div className="row">
-                <Field label="Shop Name" htmlFor="business_name" className="col-md-9">
-                    <TextInput
-                        id="business_name"
-                        maxLength={255}
-                        readOnly={readOnly}
-                        value={data.business_name}
-                        onChange={(event) => update('business_name', event.target.value)}
-                    />
-                </Field>
-                <Field label="Customer ID" htmlFor="customer_id" className="col-md-3">
-                    <TextInput
-                        id="customer_id"
-                        maxLength={20}
-                        readOnly={readOnly}
-                        value={data.customer_id}
-                        onChange={(event) => update('customer_id', event.target.value)}
-                    />
-                </Field>
-            </div>
-
-            <div className="row">
-                <Field label="Mobile" htmlFor="mobile" required error={errors.mobile} className="col-md-3">
-                    <TextInput
-                        id="mobile"
-                        type="tel"
-                        maxLength={12}
-                        onKeyDown={digitsOnly}
-                        readOnly={readOnly}
-                        value={data.mobile}
-                        onChange={(event) => update('mobile', event.target.value)}
-                    />
-                </Field>
-                <Field label="Email" htmlFor="email" error={errors.email} className="col-md-3">
-                    <TextInput
-                        id="email"
-                        type="email"
-                        maxLength={255}
-                        readOnly={readOnly}
-                        value={data.email}
-                        onChange={(event) => update('email', event.target.value)}
-                    />
-                </Field>
-                <Field label="Source of Lead/Customer" htmlFor="leadsource" className="col-md-3">
-                    <Select
-                        id="leadsource"
-                        placeholder="-- Select Source --"
-                        options={options.sources}
-                        disabled={readOnly}
-                        value={data.leadsource}
-                        onChange={(event) => update('leadsource', event.target.value)}
-                    />
-                </Field>
-                <Field label="Business Category" htmlFor="businesscat" className="col-md-3">
-                    <Select
-                        id="businesscat"
-                        placeholder="-- Select Category --"
-                        options={options.businessCategories}
-                        disabled={readOnly}
-                        value={data.businesscat}
-                        onChange={(event) => update('businesscat', event.target.value)}
-                    />
-                </Field>
-            </div>
-
-            <div className="row">
-                <Field label="Address" htmlFor="address" error={errors.address} className="col-12">
+            <FormSection title="Address" intro="Where the outlet is. The IFE area decides who covers it.">
+                <Field label="Street address" htmlFor="address" error={errors.address}>
                     <TextArea
                         id="address"
                         maxLength={500}
-                        readOnly={readOnly}
+                        invalid={Boolean(errors.address)}
                         value={data.address}
-                        onChange={(event) => update('address', event.target.value)}
+                        onChange={(event) => setData('address', event.target.value)}
                     />
                 </Field>
-                <Field label="State" htmlFor="state_id" error={errors.state_id} className="col-md-3">
-                    <SearchSelect
-                        id="state_id"
-                        placeholder="-- Select State --"
-                        options={options.states}
-                        disabled={readOnly}
-                        value={data.state_id}
-                        onChange={(value) => {
-                            update('state_id', value);
-                            update('city_id', '');
-                        }}
-                    />
-                </Field>
-                <Field label="City" htmlFor="city_id" error={errors.city_id} className="col-md-3">
-                    <SearchSelect
-                        id="city_id"
-                        placeholder="-- Select City --"
-                        options={cities}
-                        disabled={readOnly}
-                        value={data.city_id}
-                        onChange={(value) => update('city_id', value)}
-                    />
-                </Field>
-                <Field label="Postcode" htmlFor="postcode" error={errors.postcode} className="col-md-3">
-                    <TextInput
-                        id="postcode"
-                        type="tel"
-                        maxLength={5}
-                        onKeyDown={digitsOnly}
-                        readOnly={readOnly}
-                        value={data.postcode}
-                        onChange={(event) => update('postcode', event.target.value)}
-                    />
-                </Field>
-                <Field label="IFE Area" htmlFor="ifearea" error={errors.ifearea} className="col-md-3">
-                    <SearchSelect
-                        id="ifearea"
-                        placeholder="-- Select IFE Area --"
-                        options={options.ifeAreas}
-                        disabled={readOnly}
-                        value={data.ifearea}
-                        onChange={(value) => update('ifearea', value)}
-                    />
-                </Field>
-            </div>
+                <FormRow columns="minmax(0, 1fr) minmax(0, 1fr) 160px">
+                    <Field label="State" htmlFor="state_id" error={errors.state_id}>
+                        <SearchSelect
+                            id="state_id"
+                            placeholder="Choose a state"
+                            options={options.states}
+                            invalid={Boolean(errors.state_id)}
+                            value={data.state_id}
+                            onChange={(value) => {
+                                setData('state_id', value);
+                                setData('city_id', '');
+                            }}
+                        />
+                    </Field>
+                    <Field label="City" htmlFor="city_id" error={errors.city_id}>
+                        <SearchSelect
+                            id="city_id"
+                            placeholder={data.state_id ? 'Choose a city' : 'Choose the state first'}
+                            options={cities}
+                            disabled={!data.state_id}
+                            invalid={Boolean(errors.city_id)}
+                            value={data.city_id}
+                            onChange={(value) => setData('city_id', value)}
+                        />
+                    </Field>
+                    <Field label="Postcode" htmlFor="postcode" error={errors.postcode}>
+                        <TextInput
+                            id="postcode"
+                            large
+                            inputMode="numeric"
+                            maxLength={5}
+                            onKeyDown={digitsOnly}
+                            invalid={Boolean(errors.postcode)}
+                            value={data.postcode}
+                            onChange={(event) => setData('postcode', event.target.value)}
+                        />
+                    </Field>
+                </FormRow>
+                <FormRow columns="minmax(0, 420px)">
+                    <Field label="IFE area" htmlFor="ifearea" error={errors.ifearea} hint={area?.description}>
+                        <SearchSelect
+                            id="ifearea"
+                            placeholder="Choose an area"
+                            options={options.ifeAreas}
+                            invalid={Boolean(errors.ifearea)}
+                            value={data.ifearea}
+                            onChange={(value) => setData('ifearea', value)}
+                        />
+                    </Field>
+                </FormRow>
+            </FormSection>
 
-            {/* Outlet profile: what the recommendation engine compares outlets on. */}
-            <div className="row">
-                <Field label="Outlet Size" htmlFor="size_band" error={errors.size_band} className="col-md-3">
-                    <Select
-                        id="size_band"
-                        placeholder="-- Select Size --"
-                        options={options.sizeBands}
-                        disabled={readOnly}
-                        value={data.size_band}
-                        onChange={(event) => update('size_band', event.target.value)}
-                    />
+            <FormSection title="Outlet profile" intro="What suggested orders compare outlets on.">
+                <Choices
+                    legend="Size"
+                    options={options.sizeBands}
+                    value={data.size_band}
+                    error={errors.size_band}
+                    onChange={(value) => setData('size_band', value)}
+                />
+                <Field label="Seats" htmlFor="seats" error={errors.seats} hint="0 for a kiosk with no seating.">
+                    <div className={errors.seats ? 'rd-affix is-invalid' : 'rd-affix'} style={{ width: 200 }}>
+                        <input
+                            id="seats"
+                            type="number"
+                            min={0}
+                            max={5000}
+                            value={data.seats}
+                            onChange={(event) => setData('seats', event.target.value)}
+                        />
+                        <span className="rd-affix__end">seats</span>
+                    </div>
                 </Field>
-                <Field label="Seats" htmlFor="seats" error={errors.seats} className="col-md-3">
-                    <TextInput
-                        id="seats"
-                        type="number"
-                        min={0}
-                        max={5000}
-                        readOnly={readOnly}
-                        value={data.seats}
-                        onChange={(event) => update('seats', event.target.value)}
-                    />
-                </Field>
-                <Field label="Segment" htmlFor="segment" error={errors.segment} className="col-md-3">
-                    <Select
-                        id="segment"
-                        placeholder="-- Select Segment --"
-                        options={options.segments}
-                        disabled={readOnly}
-                        value={data.segment}
-                        onChange={(event) => update('segment', event.target.value)}
-                    />
-                </Field>
+                <Choices
+                    legend="Segment"
+                    options={options.segments}
+                    value={data.segment}
+                    error={errors.segment}
+                    onChange={(value) => setData('segment', value)}
+                />
                 {/* Manual only: editing at the office must not stamp the office. */}
                 <Field
-                    label="Outlet Location"
+                    label="Location"
                     error={errors.gps}
-                    hint={readOnly ? undefined : 'Stamp this while you are at the outlet.'}
-                    className="col-12"
+                    hint="Stamp it while you are at the outlet. It never stamps by itself, so editing at the office is safe."
                 >
-                    <GpsStampField value={data.gps} onChange={(value) => update('gps', value)} readOnly={readOnly} />
+                    <GpsStampField value={data.gps} onChange={(value) => setData('gps', value)} />
                 </Field>
-            </div>
+            </FormSection>
 
-            <Field label="Remark" htmlFor="remark" error={errors.remark}>
-                <TextArea
-                    id="remark"
-                    rows={10}
-                    maxLength={255}
-                    readOnly={readOnly}
-                    value={data.remark}
-                    onChange={(event) => update('remark', event.target.value)}
-                />
-            </Field>
+            <FormSection title="Remark" intro="Anything the next visitor should know.">
+                <Field label="Remark" htmlFor="remark" error={errors.remark}>
+                    <TextArea
+                        id="remark"
+                        rows={4}
+                        maxLength={REMARK_MAX}
+                        invalid={Boolean(errors.remark)}
+                        value={data.remark}
+                        onChange={(event) => setData('remark', event.target.value)}
+                    />
+                    <span className="rd-form__counter">
+                        {data.remark.length} / {REMARK_MAX}
+                    </span>
+                </Field>
+            </FormSection>
         </>
     );
 }

@@ -11,6 +11,8 @@ interface GpsStampFieldProps {
     autoCapture?: boolean;
 }
 
+const WHEN = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+
 /**
  * A "Stamp location" field. In auto mode it captures once when it mounts; a
  * failed auto capture is not retried on its own, the button offers "Retry".
@@ -45,43 +47,46 @@ export default function GpsStampField({ value, onChange, readOnly = false, autoC
     const details = stamp
         ? [
               typeof stamp.accuracy === 'number' ? `±${Math.round(stamp.accuracy)} m` : null,
-              stamp.captured_at ? new Date(stamp.captured_at).toLocaleString() : null,
+              stamp.captured_at ? `stamped ${WHEN.format(new Date(stamp.captured_at))}` : null,
           ].filter(Boolean)
         : [];
 
     return (
-        <div className="gps-field border rounded p-2">
-            <div className="d-flex flex-wrap align-items-center gap-2">
-                <div className={clsx('flex-grow-1 small', !stamp && 'text-muted')}>
+        <div className="gps-field">
+            <div className="gps-field__card">
+                <span className={clsx('gps-field__icon', stamp && 'is-stamped')} aria-hidden="true">
+                    <i className={stamp ? 'mdi mdi-map-marker-outline' : 'mdi mdi-map-marker-off-outline'} />
+                </span>
+                <span className="gps-field__text">
                     {stamp ? (
                         <>
-                            <i className="mdi mdi-map-marker text-success me-1" />
-                            <span className="fw-semibold">
+                            <span className="gps-field__coords">
                                 {stamp.lat.toFixed(6)}, {stamp.lng.toFixed(6)}
                             </span>
-                            {details.length > 0 && <span className="text-muted"> · {details.join(' · ')}</span>}
-                            <a href={mapsUrl(stamp)} target="_blank" rel="noopener noreferrer" className="ms-1">
-                                Open in Maps
-                            </a>
+                            <span className="gps-field__meta">
+                                {details.join(' · ')}
+                                {details.length > 0 && ' · '}
+                                <a href={mapsUrl(stamp)} target="_blank" rel="noopener noreferrer">
+                                    Open in Maps
+                                </a>
+                            </span>
                         </>
                     ) : (
-                        <>
-                            <i className="mdi mdi-map-marker-off-outline me-1" />
-                            Location not stamped yet.
-                        </>
+                        <span className="gps-field__empty">Location not stamped yet.</span>
                     )}
-                </div>
+                </span>
                 {!readOnly && (
-                    <button type="button" className="btn btn-sm btn-outline-primary" onClick={capture} disabled={busy}>
-                        <i className="mdi mdi-crosshairs-gps me-1" />
-                        {buttonLabel}
+                    <button type="button" className="rd-btn" onClick={capture} disabled={busy}>
+                        <i className="mdi mdi-crosshairs-gps" aria-hidden="true" />
+                        {busy ? 'Stamping…' : buttonLabel}
                     </button>
                 )}
             </div>
-            {(busy || error) && (
-                <div className={clsx('small mt-1', error ? 'text-danger' : 'text-muted')}>
-                    {busy ? 'Stamping your location…' : error}
-                </div>
+            {error && (
+                <span className="rd-field__error" role="alert">
+                    <i className="mdi mdi-alert-circle-outline" aria-hidden="true" />
+                    {error}
+                </span>
             )}
         </div>
     );

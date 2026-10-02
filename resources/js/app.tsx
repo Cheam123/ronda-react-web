@@ -22,8 +22,9 @@ createInertiaApp({
             </ToastProvider>,
         );
     },
+    // A bar across the top of the window while a page loads; no corner spinner.
     progress: {
         color: '#f78b17',
-        showSpinner: true,
+        showSpinner: false,
     },
 });

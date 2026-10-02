@@ -1,9 +1,9 @@
 import { Link } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
-import TextInput from '@/Components/form/TextInput';
-import { ButtonLink } from '@/Components/ui/Button';
+import PageHeader from '@/Components/surface/PageHeader';
+import SurfacePage from '@/Components/surface/SurfacePage';
 import AppLayout from '@/Layouts/AppLayout';
-import { truncate } from '@/lib/format';
+import { pluralize } from '@/lib/format';
 import type { FormSummary } from '@/types/forms';
 
 interface FormsEntryProps {
@@ -11,7 +11,7 @@ interface FormsEntryProps {
     sections: { name: string | null; forms: FormSummary[] }[];
 }
 
-/** "Available Forms": every form the user may submit, to start one. */
+/** "Start a form": every form the user may submit, to start one. */
 export default function FormsEntry({ sections }: FormsEntryProps) {
     const [query, setQuery] = useState('');
     const term = query.trim().toLowerCase();
@@ -35,88 +35,83 @@ export default function FormsEntry({ sections }: FormsEntryProps) {
     const hasForms = sections.some((section) => section.forms.length > 0);
 
     return (
-        <AppLayout title="Available Forms" breadcrumb={['Forms']}>
-            <div className="page-title-box d-flex align-items-center justify-content-between">
-                <h4 className="mb-0">Available Forms</h4>
-                <ButtonLink
-                    href={route('form.records.index')}
-                    variant="outline-primary"
-                    icon="mdi mdi-clipboard-list-outline"
-                >
-                    My Records
-                </ButtonLink>
-            </div>
+        <AppLayout title="Start a form">
+            <SurfacePage>
+                <PageHeader
+                    crumbs={[{ label: 'Home', href: '/index' }, { label: 'Start a form' }]}
+                    title="Start a form"
+                    lede="The forms you can fill in. What you submit shows in My records."
+                    actions={
+                        <>
+                            {hasForms && (
+                                <label className="rd-search form-start__search">
+                                    <i className="mdi mdi-magnify" aria-hidden="true" />
+                                    <input
+                                        type="search"
+                                        className="rd-input"
+                                        aria-label="Search forms"
+                                        placeholder="Search forms"
+                                        value={query}
+                                        onChange={(event) => setQuery(event.target.value)}
+                                    />
+                                </label>
+                            )}
+                            <Link href={route('form.records.index')} className="rd-btn rd-btn--lg">
+                                <i className="mdi mdi-clipboard-text-outline" aria-hidden="true" />
+                                My records
+                            </Link>
+                        </>
+                    }
+                />
 
-            <div className="row mb-3">
-                <div className="col-md-5">
-                    <div className="input-group">
-                        <span className="input-group-text">
-                            <i className="mdi mdi-magnify" />
-                        </span>
-                        <TextInput
-                            large
-                            placeholder="Search forms..."
-                            aria-label="Search forms"
-                            value={query}
-                            onChange={(event) => setQuery(event.target.value)}
-                        />
-                    </div>
-                    {term && (
-                        <small className="text-muted ms-1 mt-1 d-block">
-                            {total} form{total === 1 ? '' : 's'} found
-                        </small>
-                    )}
-                </div>
-            </div>
+                {term && hasForms && (
+                    <p className="form-start__found" role="status">
+                        {total === 0 ? 'No forms match.' : `${pluralize(total, 'form')} found`}
+                    </p>
+                )}
 
-            {shown.map((section) => (
-                <div key={section.name ?? 'forms'} className="form-entry-section mb-2">
-                    {section.name && (
-                        <div className="form-entry-section__head">
-                            <h6>{section.name}</h6>
-                            <div className="form-entry-section__rule" />
-                            <small className="text-muted">{section.forms.length}</small>
-                        </div>
-                    )}
-                    <div className="row">
-                        {section.forms.map((form) => (
-                            <div key={form.id} className="col-md-4 mb-4">
-                                <div className="card h-100 mb-0 form-entry-card">
-                                    <div className="card-body d-flex flex-column">
-                                        <h6 className="fw-bold mb-1">{form.name}</h6>
-                                        <p className="text-muted mb-3 flex-grow-1 small">
-                                            {truncate(form.description, 80)}
-                                        </p>
-                                        <div className="d-flex justify-content-between align-items-center mt-auto">
-                                            <small className="text-muted">
-                                                <i className="mdi mdi-format-list-bulleted" /> {form.field_count}{' '}
-                                                field(s)
-                                            </small>
-                                            <Link href={route('form.fill', form.id)} className="btn btn-primary btn-sm">
-                                                Start
-                                            </Link>
-                                        </div>
-                                    </div>
-                                </div>
+                {shown.map((section) => (
+                    <section key={section.name ?? 'forms'} className="form-start" aria-label={section.name ?? 'Forms'}>
+                        {section.name && (
+                            <div className="form-start__head">
+                                <h2>{section.name}</h2>
+                                <span className="rd-count">{section.forms.length}</span>
                             </div>
-                        ))}
-                    </div>
-                </div>
-            ))}
+                        )}
+                        <div className="form-start__grid">
+                            {section.forms.map((form) => (
+                                <Link key={form.id} href={route('form.fill', form.id)} className="form-card">
+                                    <span className="form-card__icon" aria-hidden="true">
+                                        <i className="mdi mdi-file-document-outline" />
+                                    </span>
+                                    <span className="form-card__text">
+                                        <span className="form-card__name">{form.name}</span>
+                                        {form.description && (
+                                            <span className="form-card__desc">{form.description}</span>
+                                        )}
+                                    </span>
+                                    <span className="form-card__foot">
+                                        <span className="rd-muted">{pluralize(form.field_count, 'field')}</span>
+                                        <span className="form-card__start">
+                                            Start
+                                            <i className="mdi mdi-arrow-right" aria-hidden="true" />
+                                        </span>
+                                    </span>
+                                </Link>
+                            ))}
+                        </div>
+                    </section>
+                ))}
 
-            {shown.length === 0 && (
-                <div className="card form-entry-card">
-                    <div className="card-body text-center py-5">
-                        <i className={`mdi ${hasForms ? 'mdi-magnify' : 'mdi-file-document-outline'} empty-icon`} />
-                        <h5 className="mt-3 text-muted">{hasForms ? 'No Forms Found' : 'No Forms Available'}</h5>
-                        <p className="text-muted mb-0">
-                            {hasForms
-                                ? 'No forms match your search criteria.'
-                                : 'There are no forms you can submit right now.'}
-                        </p>
-                    </div>
-                </div>
-            )}
+                {!hasForms && (
+                    <section className="rd-panel form-start__empty">
+                        <span className="rd-icon rd-icon--lg rd-icon--neutral">
+                            <i className="mdi mdi-file-document-outline" aria-hidden="true" />
+                        </span>
+                        <p>There are no forms you can fill in right now.</p>
+                    </section>
+                )}
+            </SurfacePage>
         </AppLayout>
     );
 }

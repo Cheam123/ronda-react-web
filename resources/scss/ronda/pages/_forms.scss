@@ -1,353 +1,871 @@
 //
-// Forms: the form list, "start a form", filling a form, records and previews.
+// Forms: the forms list, Start a form, filling a form (and its preview),
+// answers as read back, My records / All records and My tasks.
 //
 
-// ----- Form list (grouped, drag to arrange) --------------------------------
+// ----- Forms list (grouped, drag to arrange) -----------------------------------
 
-.fl-toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 16px;
-    margin-bottom: 20px;
-}
+// Handle, form, status, fields, created, actions.
+$forms-columns: 40px minmax(0, 1fr) 96px 96px 132px 136px;
 
-.fl-search {
-    flex: 1 1 240px;
-    max-width: 340px;
-}
-
-.fl-group {
-    margin-bottom: 18px;
-    overflow: hidden;
-    border: 1px solid #e3e8f0;
-    border-radius: 12px;
-    background: #fff;
-    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
-
-    &.is-dragging {
-        opacity: 0.6;
+.forms-list {
+    &__toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px 16px;
+        padding: 20px 24px;
     }
 
-    &--ungrouped {
-        border-style: dashed;
-    }
-}
+    &__search {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
 
-.fl-group-head {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 13px 18px;
-    border-bottom: 1px solid #eceff5;
-    background: #f7f8fb;
-}
-
-.fl-group-name {
-    flex: 1;
-    font-size: 14.5px;
-    font-weight: 700;
-    color: #16203a;
-}
-
-.fl-group-count {
-    font-size: 12px;
-    color: #8a93a8;
-    font-weight: 600;
-}
-
-.fl-group-actions,
-.fl-actions {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    flex-shrink: 0;
-}
-
-.fl-list {
-    min-height: 8px;
-
-    &.fl-drop-hint {
-        outline: 2px dashed #b9c6f0;
-        outline-offset: -6px;
+        .rd-search {
+            width: 300px;
+            max-width: 100%;
+        }
     }
 
-    &.is-over {
-        background: #f5f7ff;
+    &__count {
+        color: $rd-ink-2;
+        font-size: 14px;
+
+        strong {
+            color: $rd-ink;
+            font-weight: 600;
+        }
+
+        i {
+            font-size: 16px;
+            vertical-align: -2px;
+        }
+    }
+
+    &__head {
+        display: grid;
+        grid-template-columns: $forms-columns;
+        align-items: center;
+        gap: 12px;
+        height: 40px;
+        padding: 0 24px;
+        border-top: 1px solid $rd-line;
+        border-bottom: 1px solid $rd-line;
+        background: $rd-row-alt;
+        color: $rd-ink-2;
+        font-size: 13px;
+        font-weight: 500;
+    }
+
+    // "Saving the order" while an arrangement posts.
+    &__saving {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 24px;
+        color: $rd-muted;
+        font-size: 13px;
     }
 }
 
-.fl-row {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 13px 18px;
-    border-bottom: 1px solid #f1f4f9;
-    background: #fff;
+.forms-group {
+    border-bottom: 1px solid $rd-line;
+    background: $rd-panel;
 
-    &:last-child {
+    &:last-of-type {
         border-bottom: 0;
-    }
-
-    &:hover {
-        background: #fafbfe;
+        border-radius: 0 0 16px 16px;
     }
 
     &.is-dragging {
         position: relative;
         z-index: 2;
-        opacity: 0.6;
+        box-shadow: 0 12px 32px -8px rgba(16, 24, 40, 0.18);
+        opacity: 0.9;
+    }
+
+    &__head {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 56px;
+        padding: 8px 24px;
+        background: $rd-panel;
+    }
+
+    &--ungrouped &__head {
+        padding-left: 24px;
+    }
+
+    .forms-group__name {
+        margin: 0;
+        color: $rd-ink;
+        font-size: 15px;
+        font-weight: 600;
+    }
+
+    &__actions {
+        display: flex;
+        gap: 2px;
+        margin-left: auto;
+    }
+
+    &__list {
+        min-height: 8px;
+        transition: background-color 0.15s;
+
+        &.is-drop {
+            background: $rd-row-alt;
+        }
+
+        &.is-over {
+            background: $rd-brand-tint;
+        }
+    }
+
+    &__empty {
+        margin: 0;
+        padding: 14px 24px 18px 76px;
+        color: $rd-muted;
+        font-size: 13px;
     }
 }
 
-.fl-handle {
-    flex-shrink: 0;
+.forms-handle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
     padding: 0;
     border: 0;
-    background: none;
-    color: #c3cad8;
-    font-size: 17px;
+    border-radius: 8px;
+    background: transparent;
+    color: $rd-muted;
     cursor: grab;
     touch-action: none;
+
+    i {
+        font-size: 20px;
+        line-height: 1;
+    }
+
+    &:hover {
+        background: $rd-track;
+        color: $rd-ink;
+    }
+
+    &:focus-visible {
+        outline: 2px solid $rd-brand;
+        outline-offset: 1px;
+    }
 
     &:active {
         cursor: grabbing;
     }
 }
 
-.fl-main {
-    flex: 1;
-    min-width: 0;
-}
-
-.fl-name {
-    font-weight: 600;
-    color: #16203a;
-    font-size: 13.5px;
-}
-
-.fl-desc {
-    margin-top: 2px;
-    font-size: 12px;
-    color: #8a93a8;
-}
-
-.fl-meta {
-    font-size: 12px;
-    color: #8a93a8;
-    white-space: nowrap;
-}
-
-.fl-empty-group {
-    padding: 18px;
-    text-align: center;
-    color: #b6bec7;
-    font-size: 12.5px;
-    font-style: italic;
-}
-
-.fl-saving {
-    position: fixed;
-    right: 22px;
-    bottom: 22px;
-    z-index: 1080;
-    padding: 9px 16px;
-    border-radius: 8px;
-    background: #16203a;
-    color: #fff;
-    font-size: 12.5px;
-    pointer-events: none;
-}
-
-.group-chips {
-    margin-top: 18px;
-    padding-top: 14px;
-    border-top: 1px solid #eceff5;
-
-    &__label {
-        margin-bottom: 8px;
-        font-size: 11px;
-        font-weight: 800;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: #8a93a8;
-    }
-
-    &__list {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-        max-height: 96px;
-        overflow-y: auto;
-    }
-
-    &__chip {
-        padding: 3px 11px;
-        border: 1px solid #e3e8f0;
-        border-radius: 999px;
-        background: #f1f4f9;
-        color: #3a445c;
-        font-size: 12px;
-        font-weight: 600;
-    }
-}
-
-// ----- "Start a form" ----------------------------------------------------------
-
-.form-entry-section__head {
-    display: flex;
+.forms-row {
+    display: grid;
+    grid-template-columns: $forms-columns;
     align-items: center;
-    gap: 8px;
-    margin: 4px 0 8px;
+    gap: 12px;
+    min-height: 72px;
+    padding: 10px 24px;
+    border-top: 1px solid $rd-line-soft;
+    background: $rd-panel;
+    font-size: 14px;
 
-    h6 {
-        margin: 0;
-        font-size: 11.5px;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: $gray-600;
-    }
-}
-
-.form-entry-section__rule {
-    flex-grow: 1;
-    height: 1px;
-    background: #e3e8f0;
-}
-
-.form-entry-card {
-    box-shadow: 1px 1px 3px 1px rgb(183, 183, 183);
-}
-
-.empty-icon {
-    font-size: 64px;
-    color: #ccc;
-    opacity: 0.8;
-}
-
-// ----- Filling a form -------------------------------------------------------
-
-.form-render {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-
-    &--grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 20px 28px;
-
-        > .form-element--wide,
-        > .form-section-card {
-            grid-column: 1 / -1;
-        }
-
-        .form-section-card {
-            border: none;
-            background: transparent;
-        }
-
-        .form-section-card__head {
-            padding: 0 0 12px;
-            border-bottom: 1px solid #eceff5;
-            background: transparent;
-            color: #7a56d1;
-            font-size: 11.5px;
-            letter-spacing: 0.09em;
-            text-transform: uppercase;
-            font-weight: 800;
-        }
-
-        .form-section-card__body {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px 28px;
-            padding: 14px 0 0;
-
-            > .form-element--wide {
-                grid-column: 1 / -1;
-            }
-        }
-
-        @media (max-width: 575.98px) {
-            grid-template-columns: 1fr;
-
-            .form-section-card__body {
-                grid-template-columns: 1fr;
-            }
-        }
-    }
-}
-
-.form-section-card {
-    overflow: hidden;
-    border: 1px solid $border-color;
-    border-radius: 0.25rem;
-
-    &__head {
-        padding: 0.5rem 1rem;
-        background-color: #fdf3e7;
-        color: #b06f24;
-        font-weight: 700;
+    &.is-dragging {
+        position: relative;
+        z-index: 3;
+        box-shadow: 0 12px 32px -8px rgba(16, 24, 40, 0.18);
     }
 
-    &__body {
+    &__form {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+    }
+
+    &__icon {
+        display: inline-flex;
+        flex-shrink: 0;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        background: $rd-brand-tint;
+        color: $rd-brand;
+        font-size: 18px;
+    }
+
+    &__text {
         display: flex;
         flex-direction: column;
-        gap: 1.5rem;
-        padding: 1rem 1rem 0.25rem;
+        gap: 2px;
+        min-width: 0;
+    }
+
+    &__name {
+        overflow: hidden;
+        color: $rd-ink;
+        font-weight: 600;
+        text-decoration: none;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    @at-root a#{&}__name:hover {
+        color: $rd-brand-ink;
+    }
+
+    &__desc {
+        display: -webkit-box;
+        overflow: hidden;
+        color: $rd-muted;
+        font-size: 13px;
+        line-height: 18px;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 1;
+    }
+
+    &__meta {
+        color: $rd-ink-2;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .rd-actions {
+        justify-content: flex-end;
     }
 }
 
-.form-description {
-    white-space: pre-wrap;
+// Phones and tablets: the form and its actions, status and counts under it.
+@media (max-width: 991.98px) {
+    .forms-list__head {
+        display: none;
+    }
+
+    .forms-row {
+        grid-template-columns: 32px minmax(0, 1fr) auto;
+        row-gap: 6px;
+        padding: 12px 16px;
+
+        &__handle {
+            grid-row: 1 / span 2;
+        }
+
+        &__form {
+            grid-column: 2;
+            grid-row: 1;
+        }
+
+        // The status chip.
+        > span:nth-child(3) {
+            grid-column: 2;
+            grid-row: 2;
+        }
+
+        // Room for the name: no icon tile, and the name may wrap.
+        &__icon {
+            display: none;
+        }
+
+        &__name {
+            white-space: normal;
+        }
+
+        &__meta {
+            display: none;
+        }
+
+        .rd-actions {
+            grid-column: 3;
+            grid-row: 1 / span 2;
+        }
+    }
+
+    .forms-group__head,
+    .forms-list__toolbar {
+        padding-right: 16px;
+        padding-left: 16px;
+    }
+
+    .forms-group__empty {
+        padding-left: 24px;
+    }
 }
 
-.previous-answer {
-    margin-top: 7px;
-    padding: 8px 11px;
-    border: 1px solid #e7e1f7;
-    border-radius: 9px;
-    background: #f7f5fd;
+// ----- Start a form ---------------------------------------------------------------
+
+.form-start__search {
+    width: 280px;
+    max-width: 100%;
+}
+
+.form-start__found {
+    margin: -8px 0 0;
+    color: $rd-ink-2;
+    font-size: 14px;
+}
+
+.form-start {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
 
     &__head {
         display: flex;
         align-items: center;
-        gap: 6px;
-        margin-bottom: 3px;
-        font-size: 11.5px;
-        font-weight: 600;
-        color: #7a56d1;
+        gap: 10px;
+
+        h2 {
+            margin: 0;
+            color: $rd-ink;
+            font-size: 17px;
+            font-weight: 600;
+        }
     }
 
-    &__value {
-        font-size: 13px;
-        color: #3a445c;
-        white-space: pre-wrap;
-        word-break: break-word;
+    &__grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 16px;
+    }
+
+    &__empty {
+        align-items: center;
+        padding: 48px 24px;
+        color: $rd-ink-2;
+        text-align: center;
     }
 }
 
+.form-card {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 20px;
+    border: 1px solid $rd-line;
+    border-radius: 16px;
+    background: $rd-panel;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+    color: $rd-ink;
+    text-decoration: none;
+    transition:
+        border-color 0.15s,
+        box-shadow 0.15s;
+
+    &:hover {
+        border-color: $rd-brand-soft;
+        box-shadow: 0 8px 20px -8px rgba(16, 24, 40, 0.14);
+        color: $rd-ink;
+
+        .form-card__start {
+            gap: 10px;
+        }
+    }
+
+    &:focus-visible {
+        outline: 2px solid $rd-brand;
+        outline-offset: 2px;
+    }
+
+    &__icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: $rd-brand-tint;
+        color: $rd-brand;
+        font-size: 20px;
+    }
+
+    &__text {
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+        gap: 4px;
+    }
+
+    &__name {
+        font-size: 16px;
+        font-weight: 600;
+        line-height: 22px;
+    }
+
+    &__desc {
+        display: -webkit-box;
+        overflow: hidden;
+        color: $rd-ink-2;
+        font-size: 14px;
+        line-height: 20px;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 3;
+    }
+
+    &__foot {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding-top: 14px;
+        border-top: 1px solid $rd-line-soft;
+        font-size: 13px;
+    }
+
+    &__start {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: $rd-brand-ink;
+        font-size: 14px;
+        font-weight: 600;
+        transition: gap 0.15s;
+    }
+}
+
+// ----- Filling a form -------------------------------------------------------------
+
+.form-fill {
+    // "Some parts are filled in by other people", at the top of the form.
+    &__note {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 0;
+        padding: 14px 32px;
+        border-bottom: 1px solid $rd-line-soft;
+        border-radius: 16px 16px 0 0;
+        background: $rd-brand-tint;
+        color: $rd-brand-ink;
+        font-size: 14px;
+
+        i {
+            font-size: 18px;
+        }
+    }
+
+    &__parent {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px 10px;
+        min-height: 44px;
+        padding: 8px 12px;
+        border: 1px solid $rd-line;
+        border-radius: 8px;
+        background: $rd-row-alt;
+        color: $rd-ink;
+        font-size: 15px;
+
+        .rd-mono {
+            color: $rd-ink-2;
+        }
+    }
+
+    &__aside-note {
+        margin: 0;
+        padding-top: 14px;
+        border-top: 1px solid $rd-line-soft;
+        color: $rd-muted;
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    @media (max-width: 991.98px) {
+        &__note {
+            padding: 12px 24px;
+        }
+    }
+}
+
+// The fields of a section, two to a row; long answers take the whole row.
+.form-render {
+    &__grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 20px 16px;
+    }
+
+    &__field {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        min-width: 0;
+
+        &.is-wide {
+            grid-column: 1 / -1;
+        }
+    }
+
+    // A Description element: text the person reads, not a field.
+    &__note {
+        grid-column: 1 / -1;
+        margin: 0;
+        color: $rd-ink-2;
+        font-size: 14px;
+        line-height: 1.55;
+        white-space: pre-line;
+    }
+
+    // One block per group on the record page's "Your turn" card.
+    &__stack {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+
+        & + & {
+            padding-top: 20px;
+            border-top: 1px solid $rd-line-soft;
+        }
+    }
+
+    &__title {
+        margin: 0;
+        color: $rd-ink;
+        font-size: 15px;
+        font-weight: 600;
+    }
+
+    @media (max-width: 767.98px) {
+        &__grid {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+}
+
+// Ticks for multiple-choice and checkbox fields.
+.form-choices {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px;
+}
+
+.form-choice {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    margin: 0;
+    padding: 10px 12px;
+    border: 1px solid $rd-control;
+    border-radius: 10px;
+    background: $rd-panel;
+    color: $rd-ink;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+
+    &:hover {
+        border-color: $rd-control-hover;
+    }
+
+    &:has(input:checked) {
+        border-color: $rd-brand;
+        background: #f5fafc;
+        box-shadow: inset 0 0 0 1px $rd-brand;
+    }
+
+    &:has(input:disabled) {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+}
+
+.form-categories {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+
+    &__group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    &__name {
+        color: $rd-ink-2;
+        font-size: 13px;
+        font-weight: 600;
+    }
+}
+
+.form-files {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    &__saved {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+}
+
+// What was filled in last round, above the field being filled again.
+.previous-answer {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 12px;
+    border-left: 3px solid $rd-brand-soft;
+    border-radius: 0 8px 8px 0;
+    background: $rd-row-alt;
+    font-size: 13px;
+
+    &__head {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: $rd-muted;
+        font-weight: 500;
+
+        i {
+            font-size: 15px;
+        }
+    }
+
+    &__value {
+        color: $rd-ink;
+        white-space: pre-line;
+    }
+}
+
+// ----- "After you submit": the process in words -------------------------------------
+
+.process-summary {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+
+    &__item {
+        position: relative;
+        display: flex;
+        gap: 12px;
+        padding-bottom: 16px;
+
+        // The line joining one step to the next.
+        &:not(:last-child)::before {
+            content: "";
+            position: absolute;
+            top: 34px;
+            bottom: 2px;
+            left: 15px;
+            width: 2px;
+            background: $rd-line;
+        }
+
+        &:last-child {
+            padding-bottom: 0;
+        }
+    }
+
+    &__icon {
+        display: inline-flex;
+        flex-shrink: 0;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border-radius: 8px;
+        font-size: 17px;
+    }
+
+    &__text {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+        padding-top: 5px;
+    }
+
+    &__name {
+        color: $rd-ink;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    &__who {
+        color: $rd-ink-2;
+        font-size: 13px;
+        line-height: 1.45;
+    }
+
+    &__paths {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 8px;
+    }
+
+    &__path {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        padding: 12px;
+        border: 1px dashed #99d5c9;
+        border-radius: 12px;
+        background: rgba(240, 253, 249, 0.5);
+    }
+
+    &__when {
+        color: #107569;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    &__none {
+        margin: 0;
+        color: $rd-ink-2;
+        font-size: 14px;
+    }
+}
+
+// ----- Answers, read back (record page, earlier rounds) ------------------------------
+
+.rs-section {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+
+    & + & {
+        padding-top: 20px;
+        border-top: 1px solid $rd-line-soft;
+    }
+
+    .rs-section__title {
+        margin: 0;
+        color: $rd-ink;
+        font-size: 15px;
+        font-weight: 600;
+    }
+}
+
+.rs-answers {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px 24px;
+    margin: 0;
+
+    @media (max-width: 767.98px) {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.rs-answer {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+
+    &.is-wide {
+        grid-column: 1 / -1;
+    }
+
+    &__label {
+        color: $rd-muted;
+        font-size: 13px;
+        font-weight: 500;
+    }
+
+    &__value {
+        margin: 0;
+        color: $rd-ink;
+        font-size: 15px;
+        line-height: 1.5;
+        overflow-wrap: anywhere;
+    }
+
+    &__tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    &__link {
+        font-weight: 500;
+    }
+}
+
+.rs-field-value {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+
+    > i {
+        color: $rd-muted;
+        font-size: 16px;
+    }
+}
+
+.rs-field-text {
+    margin: 0;
+    white-space: pre-line;
+}
+
+.rs-check-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.rs-check-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+}
+
+.rs-check-icon {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border: 1.5px solid $rd-control;
+    border-radius: 5px;
+    color: #fff;
+    font-size: 13px;
+
+    &-on {
+        border-color: $rd-ink;
+        background: $rd-ink;
+    }
+}
+
+// Files in an answer: photos as thumbnails, other files as chips.
 .file-answers {
     display: flex;
     flex-wrap: wrap;
-    align-items: flex-start;
-    gap: 0.5rem;
-    margin-top: 0.25rem;
+    align-items: center;
+    gap: 8px;
 
     &__thumb {
+        width: 72px;
+        height: 72px;
         padding: 0;
-        border: 0;
-        background: none;
+        overflow: hidden;
+        border: 1px solid $rd-line;
+        border-radius: 10px;
+        background: $rd-row-alt;
         cursor: zoom-in;
 
         img {
-            max-width: 200px;
-            max-height: 130px;
-            border: 1px solid $border-color;
-            border-radius: 0.25rem;
+            width: 100%;
+            height: 100%;
             object-fit: cover;
         }
     }
@@ -355,65 +873,167 @@
     &__chip {
         display: inline-flex;
         align-items: center;
-        padding: 0.4rem 1rem;
+        gap: 4px;
+        height: 32px;
+        padding: 0 12px;
+        border: 1px solid $rd-line;
         border-radius: 999px;
-        background: #e8eeff;
-        color: #3a5bd9;
-        font-size: 0.8rem;
+        background: $rd-panel;
+        color: $rd-body;
+        font-size: 13px;
+        font-weight: 500;
         text-decoration: none;
 
         &:hover {
-            color: #3a5bd9;
-            text-decoration: underline;
+            border-color: $rd-control-hover;
+            color: $rd-ink;
         }
     }
 }
 
-.assignee-hint {
-    padding: 8px 10px;
-    border: 1px solid #e2d9f5;
-    border-radius: 6px;
-    background: #f5f2fc;
-    font-size: 0.8rem;
-    color: #6b7280;
+// ----- My records, All records, My tasks -------------------------------------------
 
-    strong {
-        color: #5b3fa8;
+.records-list {
+    gap: 16px;
+    padding-top: 8px;
+
+    &__tabs {
+        gap: 24px;
+    }
+
+    &__toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px 16px;
+    }
+
+    &__filters {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+
+        .rd-search {
+            width: 240px;
+            max-width: 100%;
+        }
+
+        .search-select {
+            width: 170px;
+        }
+    }
+
+    &__sort {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        label {
+            margin: 0;
+            color: $rd-ink-2;
+            white-space: nowrap;
+        }
+
+        .search-select {
+            width: 160px;
+        }
+    }
+
+    &__note {
+        margin: 0;
+        font-size: 13px;
+    }
+
+    @media (max-width: 767.98px) {
+        &__toolbar,
+        &__filters,
+        &__sort {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            width: 100%;
+        }
+
+        &__toolbar {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        &__filters form {
+            grid-column: 1 / -1;
+        }
+
+        &__filters .rd-search,
+        &__filters .search-select,
+        &__filters .rd-btn,
+        &__sort .search-select,
+        &__sort .rd-btn {
+            width: 100%;
+            max-width: none;
+        }
+
+        &__sort label {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            overflow: hidden;
+            clip: rect(0 0 0 0);
+            white-space: nowrap;
+        }
     }
 }
 
-// ----- Status and stage badges ------------------------------------------------
-
-.record-badge--closed {
-    background: #495057;
+// Holds the header's visually hidden "Open" label, which would otherwise
+// sit outside the scroll box and widen the page on phones.
+.records-list .rd-scroll {
+    position: relative;
 }
 
-.record-badge--cancelled {
-    background: #6c757d;
-}
+.records-table {
+    min-width: 880px;
 
-.stage-badge--fill {
-    background-color: #7a56d1;
-}
+    &__record {
+        width: 38%;
+    }
 
-.stage-badge--approval {
-    background-color: #e8871e;
-}
+    &__title {
+        display: -webkit-box;
+        overflow: hidden;
+        color: $rd-ink;
+        font-weight: 600;
+        line-height: 20px;
+        text-decoration: none;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
 
-// ----- Preview: the process in a side card -------------------------------------
+        &:hover {
+            color: $rd-brand-ink;
+        }
+    }
 
-.process-preview {
-    margin-bottom: 0.5rem;
-    padding: 0.5rem;
-    border: 1px solid $border-color;
-    border-radius: 0.25rem;
+    &__sub {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 4px 10px;
+        margin-top: 2px;
+        color: $rd-muted;
+        font-size: 13px;
+        line-height: 18px;
 
-    &--approval { background: #fdf3e7; }
-    &--fill { background: #f1ecfb; }
-    &--cc { background: #f2fbf4; }
+        .rd-mono {
+            color: $rd-ink-2;
+        }
+    }
 
-    &--branch {
-        border-style: dashed;
-        background: #fff8ec;
+    &__stage {
+        display: block;
+        color: $rd-body;
+        font-weight: 500;
+    }
+
+    &__when {
+        color: $rd-body;
+        white-space: nowrap;
     }
 }

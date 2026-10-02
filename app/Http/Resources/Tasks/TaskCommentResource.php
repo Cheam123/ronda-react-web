@@ -25,7 +25,7 @@ class TaskCommentResource extends JsonResource
             'id'          => $this->id,
             'author'      => optional($this->submitBy)->name ?: 'User',
             'mine'        => $user && $this->submit_by == $user->id,
-            'created_at'  => $created->format('d/m/y · h:i A'),
+            'created_at'  => $created->format('j M Y, g:i a'),
             'created_iso' => $created->toIso8601String(),
             'can_modify'  => $user
                 && $this->submit_by == $user->id

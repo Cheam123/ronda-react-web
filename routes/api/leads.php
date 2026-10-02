@@ -16,6 +16,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::post('/store', 'API\V1\LeadController@store')->name('lead.store');
 
     Route::post('/delete', 'API\V1\LeadController@delete')->name('lead.delete');
+    Route::post('/delete-many', 'API\V1\LeadController@deleteMany')->name('lead.delete.many');
 
     # Orders placed by the outlet
     Route::get('/{id}/orders/create', 'API\V1\OrderController@create')->name('lead.orders.create');

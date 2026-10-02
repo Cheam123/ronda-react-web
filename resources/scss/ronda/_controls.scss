@@ -1,0 +1,1053 @@
+//
+// Form controls and shared page pieces in the surface look, for every page:
+// Components/form (Field, SearchSelect, Switch, FileDropzone, GpsStampField,
+// FormActions), Components/ui (ErrorSummary, SectionHeader, DataTable, Pill)
+// and the form layout of Components/surface/FormSection.
+//
+
+// Chip hues for task status (lib/taskStatus.ts); good, serious and critical
+// come from .rd-chip itself.
+.rd-chip {
+    $hues: (
+        "blue": (#175cd3, #eff8ff, #2e90fa),
+        "indigo": (#3538cd, #eef4ff, #6172f3),
+        "teal": (#107569, #f0fdf9, #15b79e),
+        "violet": (#5925dc, #f4f3ff, #7a5af8),
+    );
+
+    @each $name, $set in $hues {
+        &--#{$name} {
+            --rd-chip-dot: #{nth($set, 3)};
+
+            background: nth($set, 2);
+            color: nth($set, 1);
+        }
+    }
+}
+
+// ------------------------------------------------------------------ Fields
+
+.rd-field {
+    &__label {
+        margin: 0;
+        color: $rd-ink;
+        font: 600 14px/1.4 $rd-sans;
+    }
+
+    &__hint {
+        font-family: $rd-sans;
+        line-height: 1.45;
+    }
+
+    &__error {
+        display: flex;
+        align-items: flex-start;
+        gap: 6px;
+        font-family: $rd-sans;
+        line-height: 1.4;
+
+        i {
+            font-size: 15px;
+            line-height: 1.1;
+        }
+    }
+}
+
+// Field inside a Bootstrap .row (forms not yet laid out with FormRow).
+.form-field {
+    margin-bottom: 18px;
+    font-family: $rd-sans;
+}
+
+.rd-input {
+    box-shadow: $rd-shadow-xs;
+
+    &:disabled,
+    &[readonly] {
+        background: $rd-row-alt;
+        color: $rd-body;
+        box-shadow: none;
+    }
+
+    &.is-invalid,
+    &[aria-invalid="true"] {
+        border-color: $rd-critical;
+
+        &:focus {
+            box-shadow: 0 0 0 3px rgba(180, 35, 24, 0.12);
+        }
+    }
+}
+
+.rd-fieldset {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+
+    > legend {
+        float: none;
+        margin: 0 0 4px;
+        padding: 0;
+    }
+}
+
+// An input that grows to its column (the +60 phone input).
+.rd-affix--full {
+    max-width: none;
+    box-shadow: $rd-shadow-xs;
+}
+
+.rd-affix input:read-only {
+    background: $rd-row-alt;
+}
+
+// One answer per card, each with a line explaining it (user type).
+.rd-radio-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+}
+
+.rd-radio-card {
+    display: flex;
+    gap: 12px;
+    margin: 0;
+    padding: 16px;
+    border: 1px solid $rd-control;
+    border-radius: 12px;
+    background: $rd-panel;
+    cursor: pointer;
+
+    input {
+        flex-shrink: 0;
+        width: 16px;
+        height: 16px;
+        margin: 2px 0 0;
+        accent-color: $rd-brand;
+    }
+
+    &__text {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    &__label {
+        color: $rd-ink;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    &__description {
+        color: $rd-muted;
+        font-size: 13px;
+        line-height: 1.45;
+    }
+
+    &:has(input:checked) {
+        border-color: $rd-brand;
+        background: #f5fafc;
+        box-shadow: inset 0 0 0 1px $rd-brand;
+
+        .rd-radio-card__label {
+            color: $rd-brand-ink;
+        }
+    }
+
+    &:has(input:focus-visible) {
+        outline: 2px solid $rd-brand;
+        outline-offset: 2px;
+    }
+}
+
+// Switch: a checkbox drawn as a toggle.
+.rd-toggle {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 14px;
+    margin: 0;
+    font-family: $rd-sans;
+    cursor: pointer;
+
+    &__input {
+        position: relative;
+        flex-shrink: 0;
+        width: 48px;
+        height: 28px;
+        margin: 0;
+        border-radius: 14px;
+        background: $rd-control;
+        appearance: none;
+        cursor: pointer;
+        transition: background-color 0.15s;
+
+        &::after {
+            content: "";
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #fff;
+            box-shadow: 0 1px 2px rgba(16, 24, 40, 0.2);
+            transition: left 0.15s;
+        }
+
+        &:checked {
+            background: $rd-brand;
+
+            &::after {
+                left: 23px;
+            }
+        }
+
+        &:focus-visible {
+            outline: 2px solid $rd-brand;
+            outline-offset: 2px;
+        }
+
+        &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    }
+
+    &__text {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        padding-top: 3px;
+    }
+
+    &__label {
+        color: $rd-ink;
+        font-size: 14px;
+        font-weight: 600;
+        line-height: 1.4;
+    }
+
+    &__description {
+        color: $rd-muted;
+        font-size: 13px;
+        line-height: 1.45;
+    }
+}
+
+// SearchSelect (react-select), drawn like .rd-input.
+.search-select {
+    font-family: $rd-sans;
+    font-size: 15px;
+
+    .rs__control {
+        min-height: 44px;
+        border-color: $rd-control;
+        border-radius: 10px;
+        background: $rd-panel;
+        box-shadow: $rd-shadow-xs;
+
+        &:hover {
+            border-color: $rd-control-hover;
+        }
+
+        &--is-focused,
+        &--is-focused:hover {
+            border-color: $rd-brand;
+            box-shadow: $rd-focus;
+        }
+
+        &--is-disabled {
+            background: $rd-row-alt;
+        }
+    }
+
+    .rs__value-container {
+        padding: 0 12px;
+    }
+
+    .rs__placeholder {
+        color: $rd-muted;
+    }
+
+    .rs__single-value {
+        color: $rd-ink;
+    }
+
+    .rs__indicator-separator {
+        display: none;
+    }
+
+    .rs__indicator {
+        padding: 8px;
+        color: $rd-muted;
+    }
+
+    .rs__input-container {
+        margin: 0;
+        padding: 0;
+    }
+
+    .rs__multi-value {
+        border-radius: 999px;
+        background: $rd-track;
+    }
+
+    &.is-invalid .rs__control {
+        border-color: $rd-critical;
+    }
+
+    // Toolbars, filter rows and table cells: 40px, like .rd-input--md.
+    &--compact {
+        font-size: 14px;
+
+        .rs__control {
+            min-height: 40px;
+        }
+
+        .rs__single-value {
+            color: $rd-body;
+            font-weight: 500;
+        }
+
+        .rs__indicator {
+            padding: 6px 8px;
+        }
+    }
+}
+
+.rs__menu {
+    overflow: hidden;
+    border: 1px solid $rd-line;
+    border-radius: 10px !important;
+    box-shadow: 0 12px 24px -4px rgba(16, 24, 40, 0.12) !important;
+    font-family: $rd-sans;
+    font-size: 14px;
+}
+
+.rs__group-heading {
+    color: $rd-ink-2 !important;
+    font-size: 12px !important;
+    font-weight: 600;
+    text-transform: none !important;
+}
+
+.rs__option {
+    color: $rd-body !important;
+
+    &--is-focused {
+        background: $rd-track !important;
+    }
+
+    &--is-selected {
+        background: $rd-brand-tint !important;
+        color: $rd-brand-ink !important;
+        font-weight: 600;
+    }
+
+    &--is-disabled {
+        color: $rd-muted !important;
+    }
+}
+
+// FileDropzone
+.file-dropzone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 24px;
+    border: 1.5px dashed $rd-control;
+    border-radius: 12px;
+    background: $rd-panel;
+    color: $rd-ink-2;
+    font-family: $rd-sans;
+    font-size: 14px;
+    text-align: center;
+    cursor: pointer;
+    transition:
+        border-color 0.15s,
+        background-color 0.15s;
+
+    &:hover,
+    &:focus-visible {
+        border-color: $rd-control-hover;
+        background: $rd-row-alt;
+        outline: none;
+    }
+
+    &.is-active {
+        border-color: $rd-brand;
+        background: $rd-brand-tint;
+    }
+
+    &.is-busy {
+        cursor: progress;
+    }
+
+    &__icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border: 1px solid $rd-line;
+        border-radius: 10px;
+        background: $rd-panel;
+        box-shadow: $rd-shadow-xs;
+        color: $rd-ink-2;
+        font-size: 20px;
+    }
+
+    &__text strong {
+        color: $rd-brand-ink;
+        font-weight: 600;
+    }
+
+    &__hint {
+        color: $rd-muted;
+        font-size: 12px;
+    }
+}
+
+// GpsStampField
+.gps-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-family: $rd-sans;
+
+    &__card {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 14px;
+        border: 1px solid $rd-line;
+        border-radius: 12px;
+        background: $rd-row-alt;
+    }
+
+    &__icon {
+        display: flex;
+        flex-shrink: 0;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: $rd-track;
+        color: $rd-muted;
+        font-size: 20px;
+
+        &.is-stamped {
+            background: $rd-good-tint;
+            color: $rd-good;
+        }
+    }
+
+    &__text {
+        display: flex;
+        flex: 1 1 200px;
+        flex-direction: column;
+        min-width: 0;
+    }
+
+    &__coords {
+        color: $rd-ink;
+        font-family: $rd-mono;
+        font-size: 13px;
+    }
+
+    &__meta,
+    &__empty {
+        color: $rd-muted;
+        font-size: 13px;
+
+        a {
+            font-weight: 600;
+            text-decoration: none;
+        }
+    }
+}
+
+// ErrorSummary
+.rd-errors {
+    display: flex;
+    gap: 12px;
+    padding: 16px 20px;
+    border: 1px solid $rd-critical-line;
+    border-radius: 12px;
+    background: #fffbfa;
+    color: $rd-critical;
+    font-family: $rd-sans;
+    font-size: 14px;
+
+    > i {
+        font-size: 20px;
+        line-height: 1.1;
+    }
+
+    &__title {
+        margin: 0 0 4px;
+        color: #7a271a;
+        font-weight: 600;
+    }
+
+    &__list {
+        margin: 0;
+        padding-left: 18px;
+
+        a {
+            color: $rd-critical;
+            font-weight: 500;
+        }
+    }
+}
+
+// FormActions: Back / Save floating at the foot of the window.
+.form-actions-float {
+    position: fixed;
+    right: 84px;
+    bottom: 20px;
+    z-index: 99;
+    display: flex;
+    gap: 8px;
+    padding: 8px;
+    border: 1px solid $rd-line;
+    border-radius: 14px;
+    background: $rd-panel;
+    box-shadow:
+        0 16px 32px -6px rgba(16, 24, 40, 0.16),
+        0 4px 8px -2px rgba(16, 24, 40, 0.06);
+}
+
+// ------------------------------------------------------------ Form layout
+
+// A form in a flush panel: sections of intro + fields, and a foot bar.
+.rd-form {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    border: 1px solid $rd-line;
+    border-radius: 16px;
+    background: $rd-panel;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+    font-family: $rd-sans;
+    color: $rd-ink;
+
+    &__section {
+        display: grid;
+        grid-template-columns: 220px minmax(0, 1fr);
+        gap: 16px 32px;
+        padding: 28px 32px;
+        border-bottom: 1px solid $rd-line-soft;
+
+        &:last-of-type {
+            border-bottom: 0;
+        }
+    }
+
+    // Title above, fields across the whole panel (a table of lines).
+    &__section--wide {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    &__intro {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+
+        h2 {
+            margin: 0;
+            color: $rd-ink;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        p {
+            margin: 0;
+            color: $rd-muted;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+    }
+
+    &__fields {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        min-width: 0;
+
+        .form-field {
+            margin-bottom: 0;
+        }
+    }
+
+    &__row {
+        display: grid;
+        grid-template-columns: var(--rd-form-columns, repeat(2, minmax(0, 1fr)));
+        align-items: start;
+        gap: 16px;
+    }
+
+    &__counter {
+        align-self: flex-end;
+        color: $rd-muted;
+        font-size: 12px;
+        font-variant-numeric: tabular-nums;
+    }
+
+    &__foot {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: auto;
+        padding: 20px 32px;
+        border-top: 1px solid $rd-line;
+        border-radius: 0 0 16px 16px;
+        background: $rd-row-alt;
+    }
+
+    @media (max-width: 991.98px) {
+        &__section {
+            grid-template-columns: minmax(0, 1fr);
+            padding: 24px;
+        }
+
+        &__foot {
+            padding: 16px 24px;
+        }
+    }
+
+    @media (max-width: 767.98px) {
+        &__row {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+}
+
+// A form page: the form, and notes beside it on wide screens.
+.rd-form-page {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    align-items: start;
+    gap: 24px;
+
+    &__aside {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+    }
+
+    @media (max-width: 1199.98px) {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+// ----------------------------------------------------- Legacy page pieces
+
+// SectionHeader: a quiet heading with a rule under it.
+.section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding: 0 0 10px;
+    border-bottom: 1px solid $rd-line;
+    color: $rd-ink;
+    font: 600 16px/1.4 $rd-sans;
+
+    &__actions {
+        display: flex;
+        gap: 6px;
+    }
+}
+
+// DataTable: a grey header band and a rule under every row.
+.data-table-scroll {
+    overflow-x: auto;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: $rd-sans;
+    font-size: 13px;
+
+    > thead th {
+        padding: 10px 12px;
+        border-bottom: 1px solid $rd-line;
+        background: $rd-row-alt;
+        color: $rd-ink-2;
+        font-size: 12px;
+        font-weight: 500;
+        white-space: nowrap;
+    }
+
+    > tbody > tr > td {
+        padding: 10px 12px;
+        border-bottom: 1px solid $rd-line-soft;
+        color: $rd-body;
+        vertical-align: top;
+    }
+
+    .num {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+    }
+
+    &__caption {
+        padding: 10px 0 0;
+        color: $rd-muted;
+    }
+}
+
+// Pill: a tinted label, like .rd-chip.
+.pill {
+    display: inline-block;
+    width: fit-content;
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: $rd-track;
+    color: $rd-body;
+    font-family: $rd-sans;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.5;
+    white-space: nowrap;
+
+    &--navy {
+        background: #eef4ff;
+        color: #3538cd;
+    }
+
+    &--blue {
+        background: #eff8ff;
+        color: #175cd3;
+    }
+
+    &--green {
+        background: $rd-good-tint;
+        color: $rd-good;
+    }
+
+    &--purple {
+        background: #f4f3ff;
+        color: #5925dc;
+    }
+
+    &--orange {
+        background: $rd-serious-tint;
+        color: $rd-serious;
+    }
+
+    &--grey {
+        background: $rd-track;
+        color: $rd-body;
+    }
+
+    &--red {
+        background: $rd-critical-tint;
+        color: $rd-critical;
+    }
+}
+
+// A page header with an avatar beside the title (PageHeader `leading`).
+.rd-head__main {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    min-width: 0;
+}
+
+// DocumentList: a file per row.
+.rd-docs {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-family: $rd-sans;
+
+    &__item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 8px 8px 10px;
+        border: 1px solid $rd-line;
+        border-radius: 12px;
+        background: $rd-panel;
+    }
+
+    &__type {
+        display: flex;
+        flex-shrink: 0;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: $rd-track;
+        color: $rd-body;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+
+        &--pdf {
+            background: $rd-critical-tint;
+            color: $rd-critical;
+        }
+
+        &--image {
+            background: #eff8ff;
+            color: #175cd3;
+        }
+
+        &--audio,
+        &--video {
+            background: #f4f3ff;
+            color: #5925dc;
+        }
+    }
+
+    &__text {
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+        gap: 2px;
+        min-width: 0;
+    }
+
+    &__name {
+        overflow: hidden;
+        color: $rd-ink;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    @at-root a#{&}__name:hover {
+        color: $rd-brand-ink;
+    }
+
+    &__meta {
+        color: $rd-muted;
+        font-size: 12px;
+    }
+
+    &__audio {
+        width: 100%;
+        max-width: 320px;
+        height: 36px;
+        margin-top: 6px;
+    }
+
+    &__empty {
+        margin: 0;
+        color: $rd-muted;
+        font-family: $rd-sans;
+        font-size: 14px;
+    }
+}
+
+// Label / value rows in a panel (an outlet's or a user's details).
+.rd-facts {
+    display: grid;
+    grid-template-columns: 112px minmax(0, 1fr);
+    gap: 14px 12px;
+    margin: 0;
+    font-size: 14px;
+    line-height: 20px;
+
+    dt {
+        color: $rd-muted;
+        font-weight: 400;
+    }
+
+    dd {
+        min-width: 0;
+        margin: 0;
+        overflow-wrap: anywhere;
+        color: $rd-ink;
+    }
+
+    &__phone {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-weight: 600;
+        text-decoration: none;
+        font-variant-numeric: tabular-nums;
+
+        i {
+            font-size: 16px;
+        }
+    }
+}
+
+// A short form on its own (change password).
+.rd-form--narrow {
+    max-width: 880px;
+}
+
+// Card (Components/ui/Card) on the pages not yet redrawn: a quiet panel.
+.rd-shell .card {
+    border: 1px solid $rd-line;
+    border-radius: 16px;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+
+    > .card-header {
+        border-bottom-color: $rd-line;
+        border-radius: 16px 16px 0 0;
+        background: $rd-panel;
+    }
+}
+
+// ------------------------------------------------------------------ Drawer
+
+// A panel that slides in from the right over a list (react-bootstrap
+// Offcanvas with className="rd-drawer"): the task list's activity and its
+// More filters. Half the window, never under 560px, the whole width on phones.
+.offcanvas.rd-drawer {
+    --bs-offcanvas-width: max(50vw, 560px);
+
+    max-width: 100vw;
+    border-left: 1px solid $rd-line;
+    box-shadow: -24px 0 48px -12px rgba(16, 24, 40, 0.18);
+    color: $rd-ink;
+    font-family: $rd-sans;
+    font-size: 14px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+
+    h2,
+    h3 {
+        font-family: $rd-sans;
+        color: $rd-ink;
+    }
+
+    p {
+        margin: 0;
+    }
+}
+
+.offcanvas-backdrop.rd-drawer-backdrop {
+    background: $rd-ink;
+
+    &.show {
+        opacity: 0.32;
+    }
+}
+
+.rd-drawer {
+    &__form {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        min-height: 0;
+    }
+
+    &__head {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 20px 24px;
+        box-shadow: inset 0 -1px 0 $rd-line;
+    }
+
+    // Room for the close button in the corner.
+    &__meta,
+    &__title,
+    &__lede {
+        padding-right: 48px;
+    }
+
+    &__meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px 10px;
+
+        .rd-mono {
+            color: $rd-ink-2;
+            font-size: 13px;
+        }
+    }
+
+    .rd-drawer__title {
+        margin: 0;
+        font-size: 20px;
+        font-weight: 600;
+        line-height: 28px;
+        letter-spacing: -0.01em;
+    }
+
+    &__lede {
+        color: $rd-ink-2;
+        font-size: 14px;
+    }
+
+    &__close {
+        position: absolute;
+        top: 14px;
+        right: 16px;
+    }
+
+    // Tabs sit on the head's bottom rule.
+    &__tabs {
+        gap: 24px;
+        margin: 4px -24px -20px;
+        padding: 0 24px;
+    }
+
+    &__body {
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+        gap: 20px;
+        min-height: 0;
+        padding: 20px 24px 24px;
+        overflow-y: auto;
+    }
+
+    &__foot {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 10px;
+        padding: 16px 24px;
+        border-top: 1px solid $rd-line;
+        background: $rd-row-alt;
+    }
+
+    @media (max-width: 575.98px) {
+        &__head {
+            padding: 16px;
+        }
+
+        &__tabs {
+            margin: 4px -16px -16px;
+            padding: 0 16px;
+        }
+
+        &__body {
+            padding: 16px;
+        }
+
+        &__foot {
+            padding: 12px 16px;
+        }
+    }
+}

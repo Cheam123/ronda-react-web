@@ -1,8 +1,9 @@
 import { router, usePage } from '@inertiajs/react';
 import clsx from 'clsx';
 import { useEffect, useState, type ReactNode } from 'react';
-import BootstrapModal from 'react-bootstrap/Modal';
-import Button, { type ButtonVariant } from '@/Components/ui/Button';
+import Field from '@/Components/form/Field';
+import TextArea from '@/Components/form/TextArea';
+import Dialog from '@/Components/surface/Dialog';
 import type { PageProps } from '@/types';
 
 interface RecordActionModalProps {
@@ -11,13 +12,14 @@ interface RecordActionModalProps {
     /** Where the action posts. */
     action: string;
     icon: string;
-    tone: 'success' | 'danger';
+    tone: 'good' | 'critical' | 'neutral';
     title: string;
     children: ReactNode;
     /** Ask for a remark; `required` holds the message shown when it is missing. */
     remark?: { label: string; placeholder: string; required?: string };
-    confirmLabel: ReactNode;
-    confirmVariant: ButtonVariant;
+    confirmLabel: string;
+    /** The confirm button: the page's main action, or a destructive one. */
+    danger?: boolean;
     cancelLabel?: string;
 }
 
@@ -32,7 +34,7 @@ export default function RecordActionModal({
     children,
     remark,
     confirmLabel,
-    confirmVariant,
+    danger = false,
     cancelLabel = 'Cancel',
 }: RecordActionModalProps) {
     const [text, setText] = useState('');
@@ -63,43 +65,50 @@ export default function RecordActionModal({
     };
 
     return (
-        <BootstrapModal show={show} onHide={onHide} centered contentClassName="rs-modal">
-            <BootstrapModal.Body>
-                <div className={clsx('rs-modal-icon', `rs-modal-icon--${tone}`)}>
-                    <i className={`mdi ${icon}`} />
-                </div>
-                <div className="rs-modal-title">{title}</div>
-                <div className="rs-modal-desc">{children}</div>
-                {remark && (
-                    <div className="mt-3">
-                        <label className="form-label small fw-semibold" htmlFor="record-remark">
-                            {remark.label}
-                        </label>
-                        <textarea
-                            id="record-remark"
-                            className={clsx('form-control', (invalid || serverError) && 'is-invalid')}
-                            rows={3}
-                            placeholder={remark.placeholder}
-                            value={text}
-                            onChange={(event) => {
-                                setText(event.target.value);
-                                setInvalid(false);
-                            }}
-                        />
-                        {(invalid || serverError) && (
-                            <div className="invalid-feedback">{invalid ? remark.required : serverError}</div>
-                        )}
-                    </div>
-                )}
-            </BootstrapModal.Body>
-            <BootstrapModal.Footer>
-                <Button variant="light" shadow={false} onClick={onHide}>
-                    {cancelLabel}
-                </Button>
-                <Button variant={confirmVariant} shadow={false} loading={sending} onClick={submit}>
-                    {confirmLabel}
-                </Button>
-            </BootstrapModal.Footer>
-        </BootstrapModal>
+        <Dialog
+            show={show}
+            onHide={onHide}
+            title={title}
+            text={children}
+            icon={icon}
+            tone={tone}
+            footer={
+                <>
+                    <button type="button" className="rd-btn rd-btn--lg" onClick={onHide}>
+                        {cancelLabel}
+                    </button>
+                    <button
+                        type="button"
+                        className={clsx('rd-btn rd-btn--lg', danger ? 'rd-btn--danger' : 'rd-btn--primary')}
+                        disabled={sending}
+                        onClick={submit}
+                    >
+                        {sending && <span className="spinner-border spinner-border-sm" aria-hidden="true" />}
+                        {confirmLabel}
+                    </button>
+                </>
+            }
+        >
+            {remark && (
+                <Field
+                    label={remark.label}
+                    htmlFor="record-remark"
+                    required={Boolean(remark.required)}
+                    error={invalid ? remark.required : serverError}
+                >
+                    <TextArea
+                        id="record-remark"
+                        rows={3}
+                        placeholder={remark.placeholder}
+                        invalid={invalid || Boolean(serverError)}
+                        value={text}
+                        onChange={(event) => {
+                            setText(event.target.value);
+                            setInvalid(false);
+                        }}
+                    />
+                </Field>
+            )}
+        </Dialog>
     );
 }

@@ -1,12 +1,15 @@
-import { useState } from 'react';
-import GroupNameModal from '@/Components/forms/GroupNameModal';
-import SearchSelect from '@/Components/form/SearchSelect';
-import Select from '@/Components/form/Select';
+import { useState, type ReactNode } from 'react';
+import Field from '@/Components/form/Field';
+import SearchSelect, { MultiSearchSelect } from '@/Components/form/SearchSelect';
+import Switch from '@/Components/form/Switch';
 import TextArea from '@/Components/form/TextArea';
 import TextInput from '@/Components/form/TextInput';
 import { useToast } from '@/Components/feedback/ToastProvider';
+import GroupNameModal from '@/Components/forms/GroupNameModal';
+import { RadioCards } from '@/Components/surface/Choices';
+import { FormRow, FormSection } from '@/Components/surface/FormSection';
+import { pluralize } from '@/lib/format';
 import type { FormGroupOption, FormSettings, Person } from '@/types/forms';
-import AccessPicker from './AccessPicker';
 
 export interface BasicInfo {
     name: string;
@@ -17,6 +20,9 @@ export interface BasicInfo {
 
 export type Access = FormSettings['access'];
 
+/** What the last Next found missing: a detail, or nobody picked under "Selected". */
+export type InfoProblem = keyof BasicInfo | 'access';
+
 interface BasicInfoStepProps {
     info: BasicInfo;
     onInfo: (patch: Partial<BasicInfo>) => void;
@@ -26,11 +32,19 @@ interface BasicInfoStepProps {
     onGroupCreated: (group: FormGroupOption) => void;
     users: Person[];
     types: Person[];
-    /** Fields the last Next flagged. */
-    invalid: (keyof BasicInfo)[];
+    invalid: InfoProblem[];
+    /** Who can submit, in words ("Everyone", "2 people and 1 user type"). */
+    submitters: string;
+    /** For "This form so far". */
+    fieldCount: number;
+    stepCount: number;
+    /** Cancel and Next, at the foot of the form. */
+    foot: ReactNode;
 }
 
-/** Step 1, Basic Info: name, status, description, who can submit, and the group it is filed in. */
+const DESCRIPTION_MAX = 255;
+
+/** Step 1, Details: name, description, group, status and who can submit. */
 export default function BasicInfoStep({
     info,
     onInfo,
@@ -41,215 +55,197 @@ export default function BasicInfoStep({
     users,
     types,
     invalid,
+    submitters,
+    fieldCount,
+    stepCount,
+    foot,
 }: BasicInfoStepProps) {
     const toast = useToast();
-    const [picker, setPicker] = useState<{ open: boolean; key: number }>({ open: false, key: 0 });
     const [creatingGroup, setCreatingGroup] = useState(false);
-    const selectedCount = access.user_ids.length + access.user_types.length;
+    const group = groups.find((option) => String(option.id) === info.form_group_id);
 
-    const openPicker = () => setPicker((current) => ({ open: true, key: current.key + 1 }));
+    const pick = (key: 'user_ids' | 'user_types', values: string[]) =>
+        onAccess({ ...access, [key]: values.map(Number) });
 
-    // Closing the picker with nobody chosen falls back to Everyone.
-    const cancelPicker = () => {
-        setPicker((current) => ({ ...current, open: false }));
-        if (selectedCount === 0) onAccess({ ...access, submit_scope: 'everyone' });
-    };
-
-    const applyPicker = ({ users: userIds, types: typeIds }: { users: number[]; types: number[] }) => {
-        setPicker((current) => ({ ...current, open: false }));
-        onAccess({
-            submit_scope: userIds.length + typeIds.length > 0 ? 'selected' : 'everyone',
-            user_ids: userIds,
-            user_types: typeIds,
-        });
-    };
-
-    const removePill = (key: 'user_ids' | 'user_types', id: number) => {
-        const next = { ...access, [key]: access[key].filter((existing) => existing !== id) };
-        onAccess(next.user_ids.length + next.user_types.length === 0 ? { ...next, submit_scope: 'everyone' } : next);
-    };
-
-    const pill = (key: 'user_ids' | 'user_types', id: number, name: string) => (
-        <span
-            key={`${key}-${id}`}
-            className={`badge p-2 access-pill access-pill--${key === 'user_ids' ? 'user' : 'type'}`}
-        >
-            {name}
-            <button
-                type="button"
-                className="access-pill__remove"
-                aria-label={`Remove ${name}`}
-                onClick={() => removePill(key, id)}
-            >
-                <i className="mdi mdi-close" />
-            </button>
-        </span>
-    );
+    const summary = [
+        {
+            label: 'Details',
+            text: [
+                group ? `In the ${group.name} group` : 'No group yet',
+                submitters === 'Everyone' ? 'open to everyone' : `open to ${submitters}`,
+            ].join(', '),
+        },
+        { label: 'Fields', text: fieldCount > 0 ? pluralize(fieldCount, 'field') : 'None yet' },
+        {
+            label: 'Process',
+            text:
+                stepCount > 0
+                    ? pluralize(stepCount, 'step')
+                    : 'No steps yet, so a submission is approved straight away',
+        },
+    ];
 
     return (
-        <div className="card mt-3">
-            <div className="card-body">
-                <h4 className="card-title mb-4">Basic Info</h4>
-
-                <div className="row">
-                    <div className="col-md-6 mb-3">
-                        <label className="form-label" htmlFor="form_name">
-                            Name <span className="text-danger">*</span>
-                        </label>
+        <div className="rd-form-page form-builder__details">
+            <form className="rd-form" noValidate onSubmit={(event) => event.preventDefault()}>
+                <FormSection title="About the form" intro="How it shows in the forms list and on Start a form.">
+                    <Field
+                        label="Name"
+                        htmlFor="form_name"
+                        required
+                        error={invalid.includes('name') ? 'Give the form a name.' : undefined}
+                    >
                         <TextInput
                             id="form_name"
                             large
-                            placeholder="Enter form name"
+                            placeholder="e.g. Discount approval"
                             invalid={invalid.includes('name')}
                             value={info.name}
                             onChange={(event) => onInfo({ name: event.target.value })}
                         />
-                        {invalid.includes('name') && <div className="invalid-feedback">Please enter a name.</div>}
-                    </div>
-                    <div className="col-md-3 mb-3">
-                        <label className="form-label" htmlFor="is_enabled">
-                            Status <span className="text-danger">*</span>
-                        </label>
-                        <Select
-                            id="is_enabled"
-                            options={[
-                                { value: '1', label: 'Enable' },
-                                { value: '0', label: 'Disable' },
-                            ]}
-                            value={info.is_enabled}
-                            onChange={(event) => onInfo({ is_enabled: event.target.value === '1' ? '1' : '0' })}
-                        />
-                    </div>
-                </div>
-
-                <div className="row">
-                    <div className="col-md-6 mb-3">
-                        <label className="form-label" htmlFor="description">
-                            Description <span className="text-danger">*</span>
-                        </label>
+                    </Field>
+                    <Field
+                        label="Description"
+                        htmlFor="description"
+                        required
+                        error={invalid.includes('description') ? 'Say what the form is for.' : undefined}
+                    >
                         <TextArea
                             id="description"
-                            rows={2}
-                            maxLength={255}
-                            placeholder="Max 255 characters"
+                            rows={3}
+                            maxLength={DESCRIPTION_MAX}
+                            placeholder="What it is for, and who looks at it"
                             invalid={invalid.includes('description')}
                             value={info.description}
                             onChange={(event) => onInfo({ description: event.target.value })}
                         />
-                    </div>
-                </div>
-
-                <div className="row">
-                    <div className="col-md-6 mb-3">
-                        <label className="form-label" htmlFor="submit_scope">
-                            Who can submit this form?
-                        </label>
-                        <Select
-                            id="submit_scope"
-                            options={[
-                                { value: 'everyone', label: 'Everyone' },
-                                { value: 'selected', label: 'Selected Members Only' },
-                            ]}
-                            value={access.submit_scope === 'selected' && selectedCount > 0 ? 'selected' : 'everyone'}
-                            onChange={(event) => {
-                                if (event.target.value === 'selected') {
-                                    openPicker();
-                                } else {
-                                    onAccess({ submit_scope: 'everyone', user_ids: [], user_types: [] });
-                                }
-                            }}
-                        />
-                        {access.submit_scope === 'selected' && selectedCount > 0 && (
-                            <div className="mt-2">
-                                <div className="d-flex flex-wrap gap-2 align-items-center">
-                                    {access.user_ids.map((id) =>
-                                        pill(
-                                            'user_ids',
-                                            id,
-                                            users.find((user) => user.id === id)?.name ?? `User #${id}`,
-                                        ),
-                                    )}
-                                    {access.user_types.map((id) =>
-                                        pill(
-                                            'user_types',
-                                            id,
-                                            types.find((type) => type.id === id)?.name ?? `Type #${id}`,
-                                        ),
-                                    )}
-                                    <button
-                                        type="button"
-                                        className="btn btn-sm btn-outline-secondary"
-                                        onClick={openPicker}
-                                    >
-                                        <i className="mdi mdi-pencil-outline me-1" />
-                                        Edit
-                                    </button>
-                                </div>
-                                <div className="form-text small mt-2">
-                                    A user may submit if they are selected individually <strong>or</strong> are one of
-                                    the selected user types.
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                <div className="row">
-                    <div className="col-md-6 mb-3">
-                        <label className="form-label" htmlFor="form_group_id">
-                            Group <span className="text-danger">*</span>
-                        </label>
-                        <div className="group-picker">
+                        <span className="rd-form__counter">
+                            {info.description.length} / {DESCRIPTION_MAX}
+                        </span>
+                    </Field>
+                    <FormRow>
+                        <Field
+                            label="Group"
+                            htmlFor="form_group_id"
+                            required
+                            error={invalid.includes('form_group_id') ? 'Choose a group for this form.' : undefined}
+                        >
                             <SearchSelect
                                 id="form_group_id"
-                                className="flex-grow-1"
-                                placeholder="Select a group…"
+                                placeholder="Choose a group"
                                 invalid={invalid.includes('form_group_id')}
-                                options={groups.map((group) => ({ value: group.id, label: group.name }))}
+                                options={groups.map((option) => ({ value: option.id, label: option.name }))}
                                 value={info.form_group_id}
                                 onChange={(value) => onInfo({ form_group_id: value })}
                             />
-                            <button
-                                type="button"
-                                className="btn btn-outline-primary group-picker__new"
-                                onClick={() => setCreatingGroup(true)}
-                            >
-                                <i className="mdi mdi-folder-plus-outline me-1" />
+                            <button type="button" className="form-builder__link" onClick={() => setCreatingGroup(true)}>
                                 New group
                             </button>
+                        </Field>
+                        <div className="rd-field">
+                            <span className="rd-field__label">Status</span>
+                            <Switch
+                                id="is_enabled"
+                                checked={info.is_enabled === '1'}
+                                onChange={(checked) => onInfo({ is_enabled: checked ? '1' : '0' })}
+                                label="Open for submissions"
+                                description="Turn off to hide it from Start a form without deleting it."
+                            />
                         </div>
-                        {invalid.includes('form_group_id') && (
-                            <div className="invalid-feedback d-block">Choose a group for this form.</div>
-                        )}
-                        <div className="form-text small mt-2">
-                            Groups organise the form list. They do not affect who can submit.
-                        </div>
-                    </div>
-                </div>
-            </div>
+                    </FormRow>
+                </FormSection>
 
-            <AccessPicker
-                key={picker.key}
-                show={picker.open}
-                users={users}
-                types={types}
-                initial={{ users: access.user_ids, types: access.user_types }}
-                onApply={applyPicker}
-                onCancel={cancelPicker}
-            />
+                <FormSection title="Who can submit" intro="Everyone, or only the people and user types you pick.">
+                    <RadioCards
+                        legend={<span className="visually-hidden">Who can submit</span>}
+                        name="submit_scope"
+                        options={[
+                            { value: 'everyone', label: 'Everyone', description: 'Anyone who signs in to Ronda.' },
+                            {
+                                value: 'selected',
+                                label: 'Selected people and user types',
+                                description: 'Only the ones you pick below.',
+                            },
+                        ]}
+                        value={access.submit_scope}
+                        onChange={(value) =>
+                            onAccess(
+                                value === 'selected'
+                                    ? { ...access, submit_scope: 'selected' }
+                                    : { submit_scope: 'everyone', user_ids: [], user_types: [] },
+                            )
+                        }
+                    />
+                    {access.submit_scope === 'selected' && (
+                        <>
+                            <Field label="People" htmlFor="access_users">
+                                <MultiSearchSelect
+                                    id="access_users"
+                                    placeholder="Add people"
+                                    invalid={invalid.includes('access')}
+                                    options={users.map((user) => ({ value: user.id, label: user.name }))}
+                                    value={access.user_ids}
+                                    onChange={(values) => pick('user_ids', values)}
+                                />
+                            </Field>
+                            <Field
+                                label="User types"
+                                htmlFor="access_types"
+                                error={
+                                    invalid.includes('access') ? 'Pick at least one person or user type.' : undefined
+                                }
+                                hint="Someone may submit if they are picked by name or are one of these user types."
+                            >
+                                <MultiSearchSelect
+                                    id="access_types"
+                                    placeholder="Add user types"
+                                    invalid={invalid.includes('access')}
+                                    options={types.map((type) => ({ value: type.id, label: type.name }))}
+                                    value={access.user_types}
+                                    onChange={(values) => pick('user_types', values)}
+                                />
+                            </Field>
+                        </>
+                    )}
+                </FormSection>
+
+                {foot}
+            </form>
+
+            <aside className="rd-form-page__aside">
+                <section className="rd-panel">
+                    <h2 className="rd-panel__title">This form so far</h2>
+                    <ol className="form-builder__so-far">
+                        {summary.map((item, index) => (
+                            <li key={item.label} className={index === 0 ? 'is-current' : undefined}>
+                                <span className="form-builder__so-far-mark" aria-hidden="true">
+                                    {index + 1}
+                                </span>
+                                <span className="form-builder__so-far-text">
+                                    <span className="form-builder__so-far-label">{item.label}</span>
+                                    <span className="rd-muted">{item.text}</span>
+                                </span>
+                            </li>
+                        ))}
+                    </ol>
+                </section>
+                <p className="form-builder__aside-note">
+                    Nothing is saved until the last step. You can go back to any step before then.
+                </p>
+            </aside>
 
             {/* Create a group without leaving the half-written form. */}
             <GroupNameModal
                 show={creatingGroup}
                 onHide={() => setCreatingGroup(false)}
                 action={route('form.groups.store')}
-                title="Create a group"
+                title="New group"
                 submitLabel="Create group"
-                hint="Groups keep the form list navigable. This form will be filed into the new group straight away."
-                existing={groups.map((group) => group.name)}
-                onSaved={({ message, group }) => {
+                hint="Groups sort the forms list. This form goes into the new group straight away."
+                existing={groups.map((option) => option.name)}
+                onSaved={({ message, group: created }) => {
                     setCreatingGroup(false);
-                    if (group) onGroupCreated(group);
+                    if (created) onGroupCreated(created);
                     toast(message);
                 }}
             />

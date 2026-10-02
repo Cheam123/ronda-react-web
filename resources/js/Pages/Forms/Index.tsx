@@ -1,16 +1,16 @@
-import { router } from '@inertiajs/react';
+import { Link, router } from '@inertiajs/react';
 import { closestCenter, DndContext } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useCallback, useMemo, useState, type FormEvent } from 'react';
-import GroupNameModal from '@/Components/forms/GroupNameModal';
-import TextInput from '@/Components/form/TextInput';
 import { useToast } from '@/Components/feedback/ToastProvider';
-import { ButtonLink } from '@/Components/ui/Button';
+import GroupNameModal from '@/Components/forms/GroupNameModal';
+import PageHeader from '@/Components/surface/PageHeader';
+import SurfacePage from '@/Components/surface/SurfacePage';
 import { useAuth } from '@/hooks/useAuth';
 import AppLayout from '@/Layouts/AppLayout';
-import { alertError, alertSuccess, confirm } from '@/lib/dialogs';
+import { confirm } from '@/lib/dialogs';
 import { pluralize } from '@/lib/format';
-import { postJson } from '@/lib/http';
+import { errorMessage, postJson } from '@/lib/http';
 import type { FormSummary } from '@/types/forms';
 import FormListGroup from './Partials/FormListGroup';
 import FormListRow from './Partials/FormListRow';
@@ -31,7 +31,7 @@ interface FormsIndexProps {
 
 type GroupDialog = { mode: 'create' } | { mode: 'rename'; id: number; name: string };
 
-/** The Form List: forms filed in groups, arranged by dragging. */
+/** The forms list: forms filed in groups, arranged by dragging. */
 export default function FormsIndex({ groups, ungrouped, search, formCount }: FormsIndexProps) {
     const { can } = useAuth();
     const toast = useToast();
@@ -70,13 +70,13 @@ export default function FormsIndex({ groups, ungrouped, search, formCount }: For
             groups: next.groups.map((id, position) => ({ id, position })),
         };
 
-        setSaving('Saving order…');
+        setSaving('Saving the order…');
         try {
             await postJson(route('form.groups.reorder'), payload);
             setSaving('Order saved');
             window.setTimeout(() => setSaving(null), 900);
         } catch {
-            setSaving('Could not save the order — reloading');
+            setSaving('The order could not be saved. Reloading…');
             window.setTimeout(() => router.reload(), 1200);
         }
     }, []);
@@ -96,12 +96,11 @@ export default function FormsIndex({ groups, ungrouped, search, formCount }: For
 
     const deleteGroup = async (id: number, count: number) => {
         const ok = await confirm({
-            title: `Delete "${groupName(id)}"?`,
+            title: `Delete the ${groupName(id)} group?`,
             text:
                 count === 0
-                    ? 'This empty group will be removed.'
-                    : `${count} form(s) will move to Ungrouped. No form is deleted.`,
-            icon: 'warning',
+                    ? 'It is empty, so nothing else changes.'
+                    : `Its ${pluralize(count, 'form')} move to Ungrouped. No form is deleted.`,
             confirmText: 'Delete group',
             danger: true,
         });
@@ -109,39 +108,39 @@ export default function FormsIndex({ groups, ungrouped, search, formCount }: For
     };
 
     const toggleForm = async (form: FormSummary) => {
-        const action = form.is_enabled ? 'disable' : 'enable';
-        if (
-            !(await confirm({
-                title: `${form.is_enabled ? 'Disable' : 'Enable'} this form?`,
-                text: `Are you sure you want to ${action} this form?`,
-                icon: 'warning',
-            }))
-        ) {
-            return;
-        }
+        const ok = await confirm({
+            title: form.is_enabled ? `Turn off ${form.name}?` : `Turn on ${form.name}?`,
+            text: form.is_enabled
+                ? 'People can no longer start it. Records already made stay as they are.'
+                : 'People who may submit it see it in Start a form again.',
+            confirmText: form.is_enabled ? 'Turn off' : 'Turn on',
+        });
+        if (!ok) return;
+
         try {
             await postJson(route('form.toggle'), { id: form.id });
-            await alertSuccess('Success!', `Form has been ${action}d.`);
+            toast(form.is_enabled ? 'Form turned off.' : 'Form turned on.');
             router.reload();
-        } catch {
-            await alertError('Error!', 'Something went wrong.');
+        } catch (error) {
+            toast(errorMessage(error, 'The form could not be changed.'), 'error');
         }
     };
 
     const deleteForm = async (form: FormSummary) => {
         const ok = await confirm({
-            title: 'Please confirm to proceed on the deletion!',
-            text: "You won't be able to revert this!",
-            icon: 'warning',
+            title: `Delete ${form.name}?`,
+            text: 'This cannot be undone.',
+            confirmText: 'Delete form',
             danger: true,
         });
         if (!ok) return;
+
         try {
             await postJson(route('form.delete'), { id: form.id });
-            await alertSuccess('Deleted!', 'Your form has been deleted.');
+            toast('Form deleted.');
             router.reload();
-        } catch {
-            await alertError('Error!', 'Something went wrong.');
+        } catch (error) {
+            toast(errorMessage(error, 'The form could not be deleted.'), 'error');
         }
     };
 
@@ -172,147 +171,179 @@ export default function FormsIndex({ groups, ungrouped, search, formCount }: For
         });
 
     return (
-        <AppLayout title="Form List" breadcrumb={['Form List']}>
-            <div className="page-title-box d-flex align-items-center justify-content-between flex-wrap gap-2">
-                <h4 className="mb-0">Form List</h4>
-                {canManage && (
-                    <div className="d-flex gap-1">
-                        <button
-                            type="button"
-                            className="btn btn-outline-secondary"
-                            onClick={() => openDialog({ mode: 'create' })}
+        <AppLayout title="Forms">
+            <SurfacePage>
+                <PageHeader
+                    crumbs={[{ label: 'Home', href: '/index' }, { label: 'Forms' }]}
+                    title="Forms"
+                    lede="The forms people fill in from Ronda, filed in groups."
+                    actions={
+                        canManage && (
+                            <>
+                                <button
+                                    type="button"
+                                    className="rd-btn rd-btn--lg"
+                                    onClick={() => openDialog({ mode: 'create' })}
+                                >
+                                    <i className="mdi mdi-folder-plus-outline" aria-hidden="true" />
+                                    New group
+                                </button>
+                                <Link href={route('form.create')} className="rd-btn rd-btn--primary rd-btn--lg">
+                                    <i className="mdi mdi-plus" aria-hidden="true" />
+                                    New form
+                                </Link>
+                            </>
+                        )
+                    }
+                />
+
+                <section className="rd-panel rd-panel--flush forms-list" aria-label="Forms">
+                    <div className="forms-list__toolbar">
+                        <form role="search" onSubmit={searchForms} className="forms-list__search">
+                            <label className="rd-search">
+                                <i className="mdi mdi-magnify" aria-hidden="true" />
+                                <input
+                                    type="search"
+                                    className="rd-input"
+                                    aria-label="Search forms"
+                                    placeholder="Search forms"
+                                    value={query}
+                                    onChange={(event) => setQuery(event.target.value)}
+                                />
+                            </label>
+                            {search && (
+                                <Link href={route('form.index')} className="rd-btn rd-btn--quiet">
+                                    Clear the search
+                                </Link>
+                            )}
+                        </form>
+                        <span className="forms-list__count">
+                            <strong>{formCount === 0 ? 'No forms' : pluralize(formCount, 'form')}</strong>
+                            {search && <> matching &ldquo;{search}&rdquo;</>}
+                            {canArrange && formCount > 1 && (
+                                <>
+                                    {' '}
+                                    · drag <i className="mdi mdi-drag" aria-label="the handle" /> to arrange
+                                </>
+                            )}
+                            {canManage && search && ' · clear the search to arrange them'}
+                        </span>
+                    </div>
+
+                    <div className="forms-list__head" aria-hidden="true">
+                        <span />
+                        <span>Form</span>
+                        <span>Status</span>
+                        <span>Fields</span>
+                        <span>Created</span>
+                        <span />
+                    </div>
+
+                    <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragStart={onDragStart}
+                        onDragOver={onDragOver}
+                        onDragEnd={onDragEnd}
+                        onDragCancel={onDragCancel}
+                    >
+                        <SortableContext
+                            items={arrangement.groups.map(groupKey)}
+                            strategy={verticalListSortingStrategy}
                         >
-                            <i className="mdi mdi-folder-plus-outline me-1" /> Create Group
-                        </button>
-                        <ButtonLink href={route('form.create')} icon="mdi mdi-plus">
-                            Create New Form
-                        </ButtonLink>
+                            {arrangement.groups.map((id) => {
+                                const list = String(id);
+                                const count = arrangement.lists[list]?.length ?? 0;
+                                return (
+                                    <FormListGroup
+                                        key={id}
+                                        group={{ id, name: groupName(id) }}
+                                        list={list}
+                                        formIds={arrangement.lists[list] ?? []}
+                                        canArrange={canArrange}
+                                        dragging={draggingForm}
+                                        emptyText="No forms yet. Drag one here."
+                                        actions={
+                                            canManage && (
+                                                <>
+                                                    <button
+                                                        type="button"
+                                                        className="rd-btn rd-btn--icon"
+                                                        aria-label={`Rename ${groupName(id)}`}
+                                                        title="Rename"
+                                                        onClick={() =>
+                                                            openDialog({ mode: 'rename', id, name: groupName(id) })
+                                                        }
+                                                    >
+                                                        <i className="mdi mdi-pencil-outline" aria-hidden="true" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        className="rd-btn rd-btn--icon rd-btn--icon-danger"
+                                                        aria-label={`Delete ${groupName(id)}`}
+                                                        title="Delete the group (its forms move to Ungrouped)"
+                                                        onClick={() => deleteGroup(id, count)}
+                                                    >
+                                                        <i className="mdi mdi-trash-can-outline" aria-hidden="true" />
+                                                    </button>
+                                                </>
+                                            )
+                                        }
+                                    >
+                                        {renderRows(list)}
+                                    </FormListGroup>
+                                );
+                            })}
+                        </SortableContext>
+
+                        <FormListGroup
+                            group={null}
+                            list={UNGROUPED}
+                            formIds={arrangement.lists[UNGROUPED] ?? []}
+                            canArrange={canArrange}
+                            dragging={draggingForm}
+                            emptyText={
+                                formCount === 0 ? 'No forms yet.' : 'Drop a form here to take it out of its group.'
+                            }
+                        >
+                            {renderRows(UNGROUPED)}
+                        </FormListGroup>
+                    </DndContext>
+
+                    {formCount === 0 && (
+                        <p className="rd-list__empty">
+                            {search
+                                ? 'No forms match.'
+                                : canManage
+                                  ? 'No forms yet. Make one with New form.'
+                                  : 'No forms yet.'}
+                        </p>
+                    )}
+                </section>
+
+                {saving && (
+                    <div className="forms-list__saving" role="status">
+                        {saving}
                     </div>
                 )}
-            </div>
 
-            <div className="fl-toolbar">
-                <form onSubmit={searchForms} className="fl-search">
-                    <div className="input-group">
-                        <span className="input-group-text">
-                            <i className="mdi mdi-magnify" />
-                        </span>
-                        <TextInput
-                            large
-                            placeholder="Search forms..."
-                            aria-label="Search forms"
-                            value={query}
-                            onChange={(event) => setQuery(event.target.value)}
-                        />
-                        {search && (
-                            <button
-                                type="button"
-                                className="btn btn-outline-secondary"
-                                title="Clear"
-                                onClick={() => router.get(route('form.index'))}
-                            >
-                                <i className="mdi mdi-close" />
-                            </button>
-                        )}
-                    </div>
-                </form>
-                <div className="text-muted small">
-                    {formCount === 0 ? 'No forms' : pluralize(formCount, 'form')}
-                    {search && <> matching &ldquo;{search}&rdquo;</>}
-                    {canArrange && (
-                        <>
-                            {' '}
-                            &middot; drag <i className="mdi mdi-drag-horizontal-variant" /> to arrange
-                        </>
-                    )}
-                </div>
-            </div>
-
-            {search && (
-                <div className="alert alert-light border small py-2 px-3">
-                    <i className="mdi mdi-information-outline me-1" />
-                    Clear the search to rearrange forms.
-                </div>
-            )}
-
-            <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragStart={onDragStart}
-                onDragOver={onDragOver}
-                onDragEnd={onDragEnd}
-                onDragCancel={onDragCancel}
-            >
-                <SortableContext items={arrangement.groups.map(groupKey)} strategy={verticalListSortingStrategy}>
-                    {arrangement.groups.map((id) => {
-                        const list = String(id);
-                        const count = arrangement.lists[list]?.length ?? 0;
-                        return (
-                            <FormListGroup
-                                key={id}
-                                group={{ id, name: groupName(id) }}
-                                list={list}
-                                formIds={arrangement.lists[list] ?? []}
-                                canArrange={canArrange}
-                                dragging={draggingForm}
-                                emptyText="Drag forms here."
-                                actions={
-                                    canManage && (
-                                        <>
-                                            <button
-                                                type="button"
-                                                className="btn btn-sm btn-outline-secondary"
-                                                title="Rename group"
-                                                onClick={() => openDialog({ mode: 'rename', id, name: groupName(id) })}
-                                            >
-                                                <i className="mdi mdi-pencil-outline" />
-                                            </button>
-                                            <button
-                                                type="button"
-                                                className="btn btn-sm btn-outline-danger"
-                                                title="Delete group"
-                                                onClick={() => deleteGroup(id, count)}
-                                            >
-                                                <i className="mdi mdi-trash-can-outline" />
-                                            </button>
-                                        </>
-                                    )
-                                }
-                            >
-                                {renderRows(list)}
-                            </FormListGroup>
-                        );
-                    })}
-                </SortableContext>
-
-                <FormListGroup
-                    group={null}
-                    list={UNGROUPED}
-                    formIds={arrangement.lists[UNGROUPED] ?? []}
-                    canArrange={canArrange}
-                    dragging={draggingForm}
-                    emptyText={formCount === 0 ? 'No forms yet.' : 'Every form is filed in a group.'}
-                >
-                    {renderRows(UNGROUPED)}
-                </FormListGroup>
-            </DndContext>
-
-            {saving && <div className="fl-saving">{saving}</div>}
-
-            <GroupNameModal
-                show={dialogOpen}
-                onHide={() => setDialogOpen(false)}
-                action={dialog.mode === 'rename' ? route('form.groups.update', dialog.id) : route('form.groups.store')}
-                title={dialog.mode === 'rename' ? 'Rename group' : 'Create group'}
-                submitLabel={dialog.mode === 'rename' ? 'Save' : 'Create group'}
-                initialName={dialog.mode === 'rename' ? dialog.name : ''}
-                hint={
-                    dialog.mode === 'create'
-                        ? 'Groups only organise the list. Who may submit a form is still set on the form itself.'
-                        : undefined
-                }
-                onSaved={groupSaved}
-            />
+                <GroupNameModal
+                    show={dialogOpen}
+                    onHide={() => setDialogOpen(false)}
+                    action={
+                        dialog.mode === 'rename' ? route('form.groups.update', dialog.id) : route('form.groups.store')
+                    }
+                    title={dialog.mode === 'rename' ? 'Rename the group' : 'New group'}
+                    submitLabel={dialog.mode === 'rename' ? 'Save' : 'Make group'}
+                    initialName={dialog.mode === 'rename' ? dialog.name : ''}
+                    hint={
+                        dialog.mode === 'create'
+                            ? 'Groups only order the list. Who may submit is set on each form.'
+                            : undefined
+                    }
+                    onSaved={groupSaved}
+                />
+            </SurfacePage>
         </AppLayout>
     );
 }

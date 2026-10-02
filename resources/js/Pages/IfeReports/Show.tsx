@@ -1,10 +1,10 @@
 import { useState, type ReactNode } from 'react';
-import FormActions from '@/Components/form/FormActions';
-import Card from '@/Components/ui/Card';
+import PageHeader from '@/Components/surface/PageHeader';
+import SurfacePage from '@/Components/surface/SurfacePage';
 import ImageLightbox from '@/Components/ui/ImageLightbox';
 import AppLayout from '@/Layouts/AppLayout';
-import { breadcrumbFrom } from '@/lib/breadcrumbs';
-import type { BreadcrumbProps, QueryParams } from '@/types';
+import { formatPhone, phoneHref } from '@/lib/phone';
+import type { QueryParams } from '@/types';
 
 interface IfeReport {
     id: number;
@@ -31,97 +31,158 @@ interface IfeReport {
     photos: { id: number; url: string }[];
 }
 
-function ReportSection({ title, children }: { title: string; children: ReactNode }) {
+function Panel({ title, children }: { title: string; children: ReactNode }) {
     return (
-        <section className="report-section">
-            <div className="report-section__title">{title}</div>
-            <div className="report-section__body">{children}</div>
+        <section className="rd-panel lead-card">
+            <h2 className="rd-panel__title">{title}</h2>
+            {children}
         </section>
     );
 }
 
-function ReportItem({ label, value }: { label?: string; value: ReactNode }) {
+function Fact({ label, children }: { label: string; children: ReactNode }) {
     return (
-        <div className="report-item">
-            {label && <div className="report-item__label">{label}:</div>}
-            <div className="report-item__value">{value || 'N/A'}</div>
+        <>
+            <dt>{label}</dt>
+            <dd>{children || <span className="rd-muted">—</span>}</dd>
+        </>
+    );
+}
+
+/** A block of report text, or a dash when the rep left it empty. */
+function Text({ label, children }: { label: string; children: string | null }) {
+    return (
+        <div className="ife-text">
+            <h3 className="ife-text__label">{label}</h3>
+            {children ? <p className="ife-text__body">{children}</p> : <p className="rd-muted mb-0">—</p>}
         </div>
     );
 }
 
-interface ShowIfeReportProps extends BreadcrumbProps {
+function Phone({ value }: { value: string | null }) {
+    if (!value) return null;
+    const href = phoneHref(value);
+
+    return href ? (
+        <a href={href} className="rd-facts__phone">
+            <i className="mdi mdi-phone-outline" aria-hidden="true" />
+            {formatPhone(value)}
+        </a>
+    ) : (
+        <>{value}</>
+    );
+}
+
+interface ShowIfeReportProps {
     report: IfeReport;
     filters: QueryParams;
 }
 
-/** One visit report, laid out like the app's report screen. */
-export default function ShowIfeReport({ report, filters, ...breadcrumb }: ShowIfeReportProps) {
+/** One visit report: what happened and what's next, the outlet and who to call beside it. */
+export default function ShowIfeReport({ report, filters }: ShowIfeReportProps) {
     const [photo, setPhoto] = useState<string | null>(null);
+    const title = report.shop_name || report.company_name || 'Visit report';
+    const needsSupport = (report.support_required ?? '').toLowerCase() === 'yes';
 
     return (
-        <AppLayout title="IFE Report" breadcrumb={breadcrumbFrom(breadcrumb)}>
-            <Card variant="plain">
-                <div className="ife-report">
-                    <div className="py-2 small">Salesperson : {report.salesperson}</div>
+        <AppLayout title={`IFE report: ${title}`}>
+            <SurfacePage>
+                <PageHeader
+                    crumbs={[
+                        { label: 'Home', href: '/index' },
+                        { label: 'IFE Report', href: route('ifereport.index', filters) },
+                        { label: title },
+                    ]}
+                    title={title}
+                    meta={
+                        <>
+                            {report.status && <span className="rd-chip">{report.status}</span>}
+                            {report.ife_area && <span className="rd-tag">{report.ife_area}</span>}
+                            <span>
+                                {report.salesperson ? `By ${report.salesperson}, ` : ''}
+                                {report.created_at}
+                            </span>
+                        </>
+                    }
+                />
 
-                    <ReportSection title="📊 Report Summary">
-                        <ReportItem label="Created On" value={report.created_at} />
-                        <ReportItem label="Last Updated" value={report.updated_at} />
-                    </ReportSection>
+                <div className="lead-page">
+                    <div className="lead-page__aside">
+                        <Panel title="What happened">
+                            <Text label="Problem">{report.problem_description}</Text>
+                            <div className="ife-text">
+                                <h3 className="ife-text__label">Needs support</h3>
+                                {needsSupport ? (
+                                    <span className="rd-chip rd-chip--serious align-self-start">
+                                        <span className="rd-dot" />
+                                        Yes
+                                    </span>
+                                ) : (
+                                    <span className="rd-chip align-self-start">{report.support_required || 'No'}</span>
+                                )}
+                            </div>
+                            {needsSupport && <Text label="Support needed">{report.support_description}</Text>}
+                            <Text label="Advice, suggestion or opportunity">{report.personal_remarks}</Text>
+                        </Panel>
 
-                    <ReportSection title="📋 Task Information">
-                        <ReportItem label="Task Title" value={report.task_title} />
-                    </ReportSection>
+                        <Panel title="Follow-up">
+                            <dl className="rd-facts">
+                                <Fact label="Next visit">{report.next_followup_date}</Fact>
+                                <Fact label="Plan">{report.next_followup_plan}</Fact>
+                            </dl>
+                        </Panel>
 
-                    <ReportSection title="🏢 Company Information">
-                        <ReportItem
-                            label="Company Name"
-                            value={report.company_name || <em className="text-muted">Not specified</em>}
-                        />
-                        <ReportItem label="Nature of Business" value={report.nature_of_business} />
-                        <ReportItem label="Status" value={report.status} />
-                        <ReportItem label="Cafe/Outlet/Shop Name" value={report.shop_name} />
-                    </ReportSection>
-
-                    <ReportSection title="📍 Location & Area">
-                        <ReportItem label="IFE Area" value={report.ife_area} />
-                        <ReportItem label="Location" value={report.location} />
-                    </ReportSection>
-
-                    <ReportSection title="🔧 Technical Details">
-                        <ReportItem label="Problem" value={report.problem_description} />
-                        <ReportItem label="Require Support" value={report.support_required} />
-                        <ReportItem label="Support Detail" value={report.support_description} />
-                        <ReportItem label="Advise/Suggestion/Opportunity" value={report.personal_remarks} />
-                    </ReportSection>
-
-                    <ReportSection title="👤 Contact Information">
-                        <ReportItem label="PIC Name" value={report.pic_name} />
-                        <ReportItem label="Mobile No" value={report.mobile_number} />
-                        <ReportItem label="Other Contact No" value={report.other_mobile_numbers} />
-                        <ReportItem label="Email" value={report.email} />
-                    </ReportSection>
-
-                    <ReportSection title="📅 Follow-up Schedule">
-                        <ReportItem value={report.next_followup_date} />
-                        <ReportItem label="Planning" value={report.next_followup_plan} />
-                    </ReportSection>
-
-                    <div className="d-flex flex-wrap gap-2 mb-5">
-                        {report.photos.map((document) => (
-                            <img
-                                key={document.id}
-                                src={document.url}
-                                alt="Visit photo"
-                                className="thumb"
-                                onClick={() => setPhoto(document.url)}
-                            />
-                        ))}
+                        {report.photos.length > 0 && (
+                            <Panel title="Photos">
+                                <div className="ife-photos">
+                                    {report.photos.map((document, index) => (
+                                        <button
+                                            key={document.id}
+                                            type="button"
+                                            className="ife-photos__item"
+                                            aria-label={`Open photo ${index + 1}`}
+                                            onClick={() => setPhoto(document.url)}
+                                        >
+                                            <img src={document.url} alt="" />
+                                        </button>
+                                    ))}
+                                </div>
+                            </Panel>
+                        )}
                     </div>
-                </div>
 
-                <FormActions backHref={route('ifereport.index', filters)} />
-            </Card>
+                    <aside className="lead-page__aside">
+                        <Panel title="Outlet">
+                            <dl className="rd-facts">
+                                <Fact label="Company">{report.company_name}</Fact>
+                                <Fact label="Shop">{report.shop_name}</Fact>
+                                <Fact label="Business">{report.nature_of_business}</Fact>
+                                <Fact label="Location">{report.location}</Fact>
+                            </dl>
+                        </Panel>
+                        <Panel title="Contact">
+                            <dl className="rd-facts">
+                                <Fact label="Person">{report.pic_name}</Fact>
+                                <Fact label="Mobile">
+                                    <Phone value={report.mobile_number} />
+                                </Fact>
+                                <Fact label="Other numbers">{report.other_mobile_numbers}</Fact>
+                                <Fact label="Email">
+                                    {report.email && <a href={`mailto:${report.email}`}>{report.email}</a>}
+                                </Fact>
+                            </dl>
+                        </Panel>
+                        <Panel title="Report">
+                            <dl className="rd-facts">
+                                <Fact label="Task">{report.task_title}</Fact>
+                                <Fact label="By">{report.salesperson}</Fact>
+                                <Fact label="Filed">{report.created_at}</Fact>
+                                <Fact label="Updated">{report.updated_at}</Fact>
+                            </dl>
+                        </Panel>
+                    </aside>
+                </div>
+            </SurfacePage>
 
             <ImageLightbox src={photo} onClose={() => setPhoto(null)} />
         </AppLayout>

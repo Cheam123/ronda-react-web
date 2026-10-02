@@ -2,6 +2,7 @@ import clsx from 'clsx';
 import { useEffect, useState } from 'react';
 import Dropdown from 'react-bootstrap/Dropdown';
 import { useToast } from '@/Components/feedback/ToastProvider';
+import Initials from '@/Components/surface/Initials';
 import SafeHtml from '@/Components/ui/SafeHtml';
 import { confirm } from '@/lib/dialogs';
 import { fileKind } from '@/lib/files';
@@ -22,22 +23,21 @@ export default function ActivityTimeline({ activities, onChanged, onImageClick }
     const now = useNow(30_000);
 
     if (activities.length === 0) {
-        return <div className="timeline-empty">No activity yet.</div>;
+        return <p className="timeline-empty">No follow-ups yet.</p>;
     }
 
     return (
-        <div>
-            {activities.map((activity, index) => (
+        <ol className="timeline">
+            {activities.map((activity) => (
                 <TimelineEntry
                     key={activity.id}
                     activity={activity}
-                    last={index === activities.length - 1}
                     editable={isStillEditable(activity, now)}
                     onChanged={onChanged}
                     onImageClick={onImageClick}
                 />
             ))}
-        </div>
+        </ol>
     );
 }
 
@@ -55,13 +55,12 @@ function useNow(interval: number): number {
 
 interface TimelineEntryProps {
     activity: TaskActivity;
-    last: boolean;
     editable: boolean;
     onChanged: () => void;
     onImageClick: (src: string) => void;
 }
 
-function TimelineEntry({ activity, last, editable, onChanged, onImageClick }: TimelineEntryProps) {
+function TimelineEntry({ activity, editable, onChanged, onImageClick }: TimelineEntryProps) {
     const toast = useToast();
     const [editing, setEditing] = useState(false);
     const [draft, setDraft] = useState(activity.message);
@@ -69,7 +68,7 @@ function TimelineEntry({ activity, last, editable, onChanged, onImageClick }: Ti
 
     const expired = (action: string) => {
         if (isStillEditable(activity)) return false;
-        toast(`The 15-minute window to ${action} this message has passed.`, 'warning');
+        toast(`The 15-minute window to ${action} this follow-up has passed.`, 'warning');
         return true;
     };
 
@@ -88,10 +87,10 @@ function TimelineEntry({ activity, last, editable, onChanged, onImageClick }: Ti
         try {
             await updateActivity(activity.id, draft.trim());
             setEditing(false);
-            toast('Follow-up activity updated successfully.');
+            toast('Follow-up updated.');
             onChanged();
         } catch (error) {
-            toast(errorMessage(error, 'Failed to update activity.'), 'error');
+            toast(errorMessage(error, 'The follow-up could not be updated.'), 'error');
         } finally {
             setSaving(false);
         }
@@ -99,47 +98,46 @@ function TimelineEntry({ activity, last, editable, onChanged, onImageClick }: Ti
 
     const remove = async () => {
         if (expired('delete')) return;
-        if (!(await confirm({ title: 'Please confirm to delete this follow-up log!', danger: true }))) return;
+        if (!(await confirm({ title: 'Delete this follow-up?', confirmText: 'Delete', danger: true }))) return;
         try {
             await deleteActivity(activity.id);
-            toast('Follow-up activity deleted successfully.');
+            toast('Follow-up deleted.');
             onChanged();
         } catch (error) {
-            toast(errorMessage(error, 'Failed to delete activity.'), 'error');
+            toast(errorMessage(error, 'The follow-up could not be deleted.'), 'error');
         }
     };
 
     const files = [...activity.attachments, ...activity.report_photos];
 
     return (
-        <div className="tl-row">
-            <div className="tl-rail">
-                {!last && <span className="line" />}
-                <span className="tl-dot">
-                    <i className="mdi mdi-comment-text-outline" />
-                </span>
-            </div>
-            <div className="tl-content">
-                <div className="tl-head">
-                    <span className="who">{activity.author}</span>
-                    <span className="when">{activity.created_at}</span>
+        <li className="tl-entry">
+            <Initials name={activity.author} />
+            <div className="tl-entry__body">
+                <div className="tl-entry__head">
+                    <span className="tl-entry__who">
+                        <strong>{activity.author}</strong>
+                        <span className="tl-entry__when">{activity.created_at}</span>
+                    </span>
                     {editable && !editing && (
-                        <Dropdown align="end" className="tl-menu">
+                        <Dropdown align="end">
                             <Dropdown.Toggle
                                 as="button"
                                 type="button"
-                                bsPrefix="tl-menu-btn"
-                                title="Actions"
-                                aria-label="Actions"
+                                bsPrefix="rd-btn rd-btn--icon"
+                                title="You can change it for 15 minutes"
+                                aria-label="Edit or delete this follow-up"
                             >
-                                <i className="mdi mdi-dots-vertical" />
+                                <i className="mdi mdi-dots-horizontal" aria-hidden="true" />
                             </Dropdown.Toggle>
-                            <Dropdown.Menu className="tl-menu-list">
-                                <Dropdown.Item as="button" className="tl-menu-item" onClick={startEdit}>
-                                    <i className="mdi mdi-pencil-outline" /> Edit
+                            <Dropdown.Menu className="rd-menu rd-menu--fixed" popperConfig={{ strategy: 'fixed' }}>
+                                <Dropdown.Item as="button" type="button" onClick={startEdit}>
+                                    <i className="mdi mdi-pencil-outline" aria-hidden="true" />
+                                    Edit
                                 </Dropdown.Item>
-                                <Dropdown.Item as="button" className="tl-menu-item danger" onClick={remove}>
-                                    <i className="mdi mdi-trash-can-outline" /> Delete
+                                <Dropdown.Item as="button" type="button" className="is-danger" onClick={remove}>
+                                    <i className="mdi mdi-trash-can-outline" aria-hidden="true" />
+                                    Delete
                                 </Dropdown.Item>
                             </Dropdown.Menu>
                         </Dropdown>
@@ -149,17 +147,24 @@ function TimelineEntry({ activity, last, editable, onChanged, onImageClick }: Ti
                 {editing ? (
                     <div className="tl-edit">
                         <textarea
+                            className="rd-input"
                             aria-label="Edit follow-up"
+                            rows={3}
                             value={draft}
                             autoFocus
                             onChange={(event) => setDraft(event.target.value)}
                         />
-                        <div className="tl-edit-actions">
-                            <button type="button" className="tl-edit-save" disabled={saving} onClick={saveEdit}>
-                                {saving ? 'Saving...' : 'Save'}
-                            </button>
-                            <button type="button" className="tl-edit-cancel" onClick={() => setEditing(false)}>
+                        <div className="tl-edit__actions">
+                            <button type="button" className="rd-btn rd-btn--quiet" onClick={() => setEditing(false)}>
                                 Cancel
+                            </button>
+                            <button
+                                type="button"
+                                className="rd-btn rd-btn--primary"
+                                disabled={saving}
+                                onClick={saveEdit}
+                            >
+                                {saving ? 'Saving...' : 'Save'}
                             </button>
                         </div>
                     </div>
@@ -175,28 +180,40 @@ function TimelineEntry({ activity, last, editable, onChanged, onImageClick }: Ti
                     </div>
                 )}
             </div>
-        </div>
+        </li>
     );
 }
 
 function Attachment({ file, onImageClick }: { file: ActivityFile; onImageClick: (src: string) => void }) {
     const kind = fileKind(file.filename);
 
+    if (kind === 'image') {
+        return (
+            <button
+                type="button"
+                className="tl-thumb"
+                aria-label={`Open ${file.name}`}
+                onClick={() => onImageClick(file.url)}
+            >
+                <img src={file.url} alt="" loading="lazy" />
+            </button>
+        );
+    }
+
+    if (kind === 'video') {
+        return (
+            <video className="tl-video" controls src={file.url}>
+                Your browser does not support the video tag.
+            </video>
+        );
+    }
+
     return (
-        <div className={clsx('tl-attachment', `tl-attachment--${kind}`)}>
-            {kind === 'image' && (
-                <img src={file.url} alt={file.name} loading="lazy" onClick={() => onImageClick(file.url)} />
-            )}
-            {kind === 'video' && (
-                <video controls src={file.url}>
-                    Your browser does not support the video tag.
-                </video>
-            )}
-            {kind !== 'image' && kind !== 'video' && (
-                <a className="tl-file" href={file.url} target="_blank" rel="noopener noreferrer">
-                    <i className="mdi mdi-paperclip" /> {file.name}
-                </a>
-            )}
-        </div>
+        <a className={clsx('tl-file', `tl-file--${kind}`)} href={file.url} target="_blank" rel="noopener noreferrer">
+            <span className="tl-file__icon">
+                <i className="mdi mdi-file-document-outline" aria-hidden="true" />
+            </span>
+            <span className="tl-file__name">{file.name}</span>
+        </a>
     );
 }

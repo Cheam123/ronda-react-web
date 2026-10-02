@@ -1,1103 +1,1619 @@
 //
-// The form builder: Basic Info, Form Design (palette, phone preview, settings)
-// and Process Design (the pannable flow and its step drawer).
+// The form builder: Details, Fields (the field list, a phone preview and
+// the selected field's settings) and Process (the flow after submitting).
 //
 
-$lk-blue: #3370ff;
-$lk-line: #b9c0cc;
+// ----- Steps across the top, and the bar under each step ---------------------------
 
-.wizard-pill {
-    width: 100%;
-}
+.form-steps {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    overflow: hidden;
+    border: 1px solid $rd-line;
+    border-radius: 16px;
+    background: $rd-panel;
 
-// ----- Step 1 ------------------------------------------------------------------
+    &__step {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        min-width: 0;
+        padding: 16px 24px 13px;
+        border: 0;
+        border-bottom: 3px solid transparent;
+        background: none;
+        text-align: left;
+        cursor: pointer;
 
-.group-picker {
-    display: flex;
-    align-items: stretch;
-    gap: 8px;
+        & + & {
+            border-left: 1px solid $rd-line;
+        }
 
-    > .search-select {
-        flex: 1 1 auto;
+        &:hover {
+            background: $rd-row-alt;
+        }
+
+        &:focus-visible {
+            outline: 2px solid $rd-brand;
+            outline-offset: -2px;
+        }
+
+        &.is-current {
+            border-bottom-color: $rd-brand;
+        }
+    }
+
+    &__mark {
+        display: inline-flex;
+        flex-shrink: 0;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border: 1.5px solid $rd-control;
+        border-radius: 999px;
+        color: $rd-ink-2;
+        font-size: 14px;
+        font-weight: 600;
+
+        i {
+            font-size: 18px;
+        }
+
+        .is-current & {
+            border-color: $rd-brand;
+            background: $rd-brand;
+            color: #fff;
+        }
+
+        .is-done & {
+            border-color: $rd-brand-tint;
+            background: $rd-brand-tint;
+            color: $rd-brand-ink;
+        }
+    }
+
+    &__text {
+        display: flex;
+        flex-direction: column;
         min-width: 0;
     }
 
-    &__new {
-        flex: 0 0 auto;
-        white-space: nowrap;
+    &__label {
+        color: $rd-body;
+        font-size: 15px;
         font-weight: 600;
-        font-size: 0.82rem;
+
+        .is-current & {
+            color: $rd-ink;
+        }
+    }
+
+    &__hint {
+        overflow: hidden;
+        color: $rd-muted;
+        font-size: 13px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    @media (max-width: 767.98px) {
+        &__step {
+            justify-content: center;
+            padding: 12px 8px 9px;
+        }
+
+        &__hint {
+            display: none;
+        }
+
+        &__text {
+            display: none;
+        }
+
+        .is-current .form-steps__text {
+            display: flex;
+        }
     }
 }
 
-.access-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.78rem;
-
-    &--user { background: $primary; }
-    &--type { background: #6f42c1; }
-
-    &__remove {
+.form-builder {
+    // "New group", under the group picker.
+    &__link {
+        align-self: flex-start;
         padding: 0;
         border: 0;
         background: none;
-        color: inherit;
-        line-height: 1;
-    }
-}
+        color: $rd-brand-ink;
+        font: 600 13px/1.4 $rd-sans;
+        cursor: pointer;
 
-.ap-modal {
-    border-radius: 14px;
-}
-
-.ap-panes {
-    display: flex;
-    height: 420px;
-    overflow: hidden;
-    border: 1px solid #e3e8f0;
-    border-radius: 10px;
-}
-
-.ap-left {
-    display: flex;
-    flex: 1.25;
-    flex-direction: column;
-    min-width: 0;
-    border-right: 1px solid #eceff5;
-}
-
-.ap-tabs {
-    display: flex;
-    flex-shrink: 0;
-    gap: 2px;
-    padding: 0 14px;
-    border-bottom: 1px solid #eceff5;
-}
-
-.ap-tab {
-    margin-bottom: -1px;
-    padding: 11px 14px;
-    border: 0;
-    border-bottom: 2px solid transparent;
-    background: none;
-    color: #5f6672;
-    font-weight: 600;
-    font-size: 0.86rem;
-
-    &:hover { color: $lk-blue; }
-
-    &.active {
-        border-bottom-color: $lk-blue;
-        color: $lk-blue;
-    }
-}
-
-.ap-search {
-    display: flex;
-    flex-shrink: 0;
-    align-items: center;
-    gap: 7px;
-    margin: 12px 14px 8px;
-    padding: 7px 11px;
-    border: 1px solid #d5dbe7;
-    border-radius: 8px;
-
-    &:focus-within {
-        border-color: $lk-blue;
-        box-shadow: 0 0 0 3px rgba(51, 112, 255, 0.12);
+        &:hover {
+            text-decoration: underline;
+        }
     }
 
-    input {
-        flex: 1;
-        min-width: 0;
-        border: 0;
-        outline: none;
-        background: transparent;
-        font-size: 0.85rem;
-    }
-}
-
-.ap-list {
-    flex: 1;
-    overflow-y: auto;
-    padding: 2px 8px 10px;
-}
-
-.ap-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin: 0;
-    padding: 8px 10px;
-    border-radius: 6px;
-    color: #16203a;
-    font-size: 0.88rem;
-    cursor: pointer;
-
-    &:hover { background: #f4f6fa; }
-
-    .form-check-input {
-        flex-shrink: 0;
+    // "This form so far", beside Details.
+    &__so-far {
+        display: flex;
+        flex-direction: column;
         margin: 0;
+        padding: 0;
+        list-style: none;
+
+        li {
+            display: flex;
+            gap: 12px;
+            padding: 12px 0;
+
+            & + li {
+                border-top: 1px solid $rd-line-soft;
+            }
+
+            &:first-child {
+                padding-top: 0;
+            }
+
+            &:last-child {
+                padding-bottom: 0;
+            }
+        }
+    }
+
+    &__so-far-mark {
+        display: inline-flex;
+        flex-shrink: 0;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        border: 1.5px solid $rd-control;
+        border-radius: 999px;
+        color: $rd-ink-2;
+        font-size: 12px;
+        font-weight: 600;
+
+        .is-current & {
+            border-color: $rd-brand-tint;
+            background: $rd-brand-tint;
+            color: $rd-brand-ink;
+        }
+    }
+
+    &__so-far-text {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        font-size: 13px;
+        line-height: 1.45;
+    }
+
+    &__so-far-label {
+        color: $rd-ink;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    &__aside-note {
+        padding: 0 4px;
+        color: $rd-muted;
+        font-size: 13px;
+        line-height: 1.45;
+    }
+
+    // Under Fields and Process: the tally, then Back and Next.
+    &__foot {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px 16px;
+    }
+
+    &__tally {
+        color: $rd-ink-2;
+        font-size: 14px;
+
+        strong {
+            color: $rd-ink;
+            font-weight: 600;
+        }
+    }
+
+    &__buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
     }
 }
 
-.ap-row-name,
-.ap-selected-name {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
+// ----- Fields: field list, phone preview, settings ------------------------------------
 
-.ap-list-empty {
-    padding: 24px 14px;
-    text-align: center;
-    color: #b6bec7;
-    font-size: 0.85rem;
-}
-
-.ap-right {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-    min-width: 0;
-}
-
-.ap-right-head {
-    display: flex;
-    flex-shrink: 0;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 16px 8px;
-    color: #374151;
-    font-size: 0.86rem;
-    font-weight: 600;
-}
-
-.ap-selected {
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-}
-
-.ap-selected-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 8px;
-    padding: 7px 16px;
-    font-size: 0.88rem;
-
-    &:hover { background: #f8f9fc; }
-}
-
-.ap-selected-tag {
-    flex-shrink: 0;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 0.68rem;
-    font-weight: 700;
-    letter-spacing: 0.03em;
-    text-transform: uppercase;
-
-    &--user { background: #eef1fd; color: #3446b8; }
-    &--type { background: #f1ecfb; color: #6f42c1; }
-}
-
-.ap-selected-remove {
-    flex-shrink: 0;
-    padding: 0;
-    border: 0;
-    background: none;
-    color: #b6bec7;
-
-    &:hover { color: #c0392b; }
-}
-
-.ap-empty {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    min-height: 200px;
-    color: #b6bec7;
-
-    i {
-        font-size: 44px;
-        opacity: 0.6;
-    }
-}
-
-// ----- Step 2: palette, phone preview, settings ---------------------------------
-
-.builder-layout {
+.builder {
+    display: grid;
+    grid-template-columns: 276px minmax(0, 1fr) 360px;
+    height: calc(100vh - 260px);
     min-height: 620px;
+    overflow: hidden;
+    border: 1px solid $rd-line;
+    border-radius: 16px;
+    background: $rd-panel;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+
+    &__stage {
+        display: flex;
+        justify-content: center;
+        min-width: 0;
+        padding: 28px 24px;
+        overflow-y: auto;
+        background: $rd-track;
+    }
+
+    &__settings {
+        min-width: 0;
+        overflow-y: auto;
+        border-left: 1px solid $rd-line;
+    }
 
     @media (max-width: 1199.98px) {
-        flex-wrap: wrap;
+        grid-template-columns: 244px minmax(0, 1fr) 320px;
+    }
+
+    // Narrow screens: one pane after another, each its natural height.
+    @media (max-width: 991.98px) {
+        grid-template-columns: minmax(0, 1fr);
+        height: auto;
+        min-height: 0;
+
+        &__settings {
+            border-top: 1px solid $rd-line;
+            border-left: 0;
+        }
+    }
+}
+
+.builder-pane {
+    &__title {
+        margin: 0;
+        color: $rd-ink;
+        font-size: 15px;
+        font-weight: 600;
+        line-height: 1.3;
+    }
+
+    &__sub {
+        margin: 0;
+        color: $rd-muted;
+        font-size: 13px;
+        line-height: 1.4;
     }
 }
 
 .builder-palette {
-    flex-shrink: 0;
-    width: 250px;
-    max-height: 78vh;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+    padding: 20px;
     overflow-y: auto;
+    border-right: 1px solid $rd-line;
 
-    @media (max-width: 1199.98px) {
-        width: 100%;
-        max-height: none;
-        border-right: 0 !important;
-        border-bottom: 1px solid #e3e6ea;
+    &__head {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    @media (max-width: 991.98px) {
+        border-right: 0;
+        border-bottom: 1px solid $rd-line;
     }
 }
 
 .palette-section {
-    margin: 12px 0 6px;
-    font-size: 0.72rem;
-    font-weight: 600;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    color: #8c98a4;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    &__title {
+        margin: 0;
+        color: $rd-ink-2;
+        font-size: 12px;
+        font-weight: 600;
+    }
 }
 
 .palette-list {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 6px;
+
+    @media (max-width: 991.98px) {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    }
 }
 
 .palette-item {
-    flex: 1 1 45%;
-    min-width: 100px;
-    overflow: hidden;
-    padding: 7px 9px;
-    border: 1px solid #e3e6ea;
-    border-radius: 6px;
-    background: #fff;
-    color: #444;
-    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    min-height: 40px;
+    padding: 6px 8px;
+    border: 1px solid $rd-line;
+    border-radius: 10px;
+    background: $rd-panel;
+    color: $rd-body;
+    font: 500 13px/1.2 $rd-sans;
     text-align: left;
-    text-overflow: ellipsis;
-    white-space: nowrap;
     cursor: grab;
     touch-action: none;
 
     i {
-        margin-right: 3px;
-        color: #7a8794;
+        flex-shrink: 0;
+        color: $rd-muted;
+        font-size: 16px;
     }
 
     &:hover {
-        border-color: #556ee6;
-        background: #f3f6ff;
-        color: #556ee6;
+        border-color: $rd-control-hover;
+        background: $rd-row-alt;
+        color: $rd-ink;
+    }
 
-        i { color: #556ee6; }
+    &:focus-visible {
+        outline: 2px solid $rd-brand;
+        outline-offset: 1px;
     }
 
     &--overlay {
-        display: inline-block;
-        min-width: 140px;
-        box-shadow: 0 6px 18px rgba(16, 24, 40, 0.18);
+        width: 160px;
+        border-color: $rd-brand;
+        box-shadow: 0 12px 24px -6px rgba(16, 24, 40, 0.2);
+        cursor: grabbing;
     }
 }
 
-.builder-stage {
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    max-height: 78vh;
-    overflow-y: auto;
-    padding: 28px 16px;
-    background: #f0f2f5;
-}
-
-.phone-frame {
+// The form as it shows on a phone.
+.phone {
     display: flex;
     flex-direction: column;
-    width: 375px;
+    align-self: flex-start;
+    width: 380px;
     max-width: 100%;
-    min-height: 540px;
-    border: 1px solid #e3e6ea;
-    border-radius: 18px;
-    background: #fff;
-}
+    overflow: hidden;
+    border: 1px solid $rd-line;
+    border-radius: 24px;
+    background: $rd-panel;
+    box-shadow: 0 12px 32px -8px rgba(16, 24, 40, 0.14);
 
-.phone-header {
-    padding: 16px;
-    border-bottom: 1px solid #eef0f3;
-    border-radius: 18px 18px 0 0;
-    background: #fff;
-    font-weight: 600;
-    text-align: center;
-}
+    &__head {
+        display: flex;
+        flex-direction: column;
+        padding: 18px 20px 14px;
+        border-bottom: 1px solid $rd-line;
+    }
 
-.phone-body {
-    flex: 1 1 auto;
-    min-height: 320px;
-    padding: 6px 0 0;
-}
+    &__eyebrow {
+        color: $rd-muted;
+        font-size: 12px;
+    }
 
-.phone-footer {
-    padding: 14px;
-    border-top: 1px dashed #e3e6ea;
-    color: #98a2ad;
-    font-size: 0.8rem;
-    text-align: center;
-}
+    &__title {
+        overflow: hidden;
+        color: $rd-ink;
+        font-size: 17px;
+        font-weight: 600;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
 
-.pv-row {
-    position: relative;
-    padding: 12px 16px;
-    border-bottom: 1px solid #f0f2f5;
-    background: #fff;
-    cursor: pointer;
-    touch-action: none;
+    &__body {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        min-height: 240px;
+        padding: 16px 16px 24px;
+    }
 
-    &:hover { background: #f8faff; }
+    &__drop {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 44px;
+        padding: 10px 14px;
+        border: 1.5px dashed $rd-brand-soft;
+        border-radius: 12px;
+        color: $rd-brand-ink;
+        font-size: 13px;
+        font-weight: 500;
+        text-align: center;
 
-    &.is-dragging {
-        z-index: 3;
-        opacity: 0.5;
+        &.is-over {
+            background: $rd-brand-tint;
+        }
     }
 }
 
-.pv-flex {
+.phone-field,
+.phone-group {
+    position: relative;
+    cursor: pointer;
+
+    &.is-selected {
+        outline: 2px solid $rd-brand;
+        outline-offset: 0;
+    }
+
+    &.is-invalid {
+        outline: 2px solid $rd-critical;
+        outline-offset: 0;
+    }
+
+    &.is-dragging {
+        z-index: 5;
+        opacity: 0.85;
+        box-shadow: 0 12px 24px -6px rgba(16, 24, 40, 0.2);
+    }
+}
+
+.phone-field {
     display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: 10px;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: $rd-panel;
+    touch-action: none;
+
+    &:hover:not(.is-selected) {
+        background: $rd-row-alt;
+    }
+
+    &.is-selected {
+        background: $rd-brand-tint;
+    }
+
+    &__label {
+        color: $rd-ink;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    &__required {
+        color: $rd-critical;
+    }
+
+    &__input {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        min-height: 38px;
+        padding: 0 10px;
+        border: 1px solid $rd-control;
+        border-radius: 8px;
+        background: $rd-panel;
+        color: $rd-muted;
+        font-size: 13px;
+
+        &.is-tall {
+            align-items: flex-start;
+            min-height: 64px;
+            padding-top: 9px;
+        }
+
+        span {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        i {
+            font-size: 16px;
+        }
+    }
+
+    &__text {
+        margin: 0;
+        color: $rd-ink-2;
+        font-size: 13px;
+        line-height: 1.5;
+        white-space: pre-line;
+    }
+
+    &__untitled {
+        color: $rd-muted;
+        font-style: italic;
+        font-weight: 400;
+    }
 }
 
-.pv-label {
-    color: #212529;
-    font-size: 0.88rem;
-    font-weight: 500;
-    word-break: break-word;
+.phone-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px;
+    border: 1px solid $rd-line;
+    border-radius: 14px;
+    background: $rd-panel;
 
-    .req { color: $danger; }
+    &.is-conditional {
+        border-style: dashed;
+        border-color: $rd-control;
+    }
+
+    &__head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 6px 8px;
+        padding: 0 2px 4px;
+        cursor: grab;
+        touch-action: none;
+    }
+
+    &__name {
+        color: $rd-ink-2;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    &__body {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-height: 44px;
+        border-radius: 10px;
+        transition: background-color 0.15s;
+
+        &.is-over {
+            background: $rd-brand-tint;
+        }
+    }
+
+    &__empty {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 44px;
+        border: 1.5px dashed $rd-line;
+        border-radius: 10px;
+        color: $rd-muted;
+        font-size: 12px;
+    }
 }
 
-.untitled {
-    color: #b6bec7;
-    font-weight: 400;
-    text-transform: none;
-}
-
-.pv-placeholder {
-    flex-shrink: 0;
-    color: #b6bec7;
-    font-size: 0.85rem;
-}
-
-.pv-desc-text {
-    color: #74788d;
-    font-size: 0.82rem;
-    white-space: pre-wrap;
-}
-
-.pv-badge {
-    font-size: 0.62rem;
-}
-
-.pv-selected {
-    outline: 2px solid #556ee6;
-    outline-offset: -2px;
-    background: #f3f6ff !important;
-}
-
-.pv-invalid {
-    outline: 2px solid $danger;
-    outline-offset: -2px;
-}
-
-.pv-actions {
+// Duplicate and Remove, over the selected field's corner.
+.phone-tools {
     position: absolute;
-    top: -12px;
+    top: -14px;
     right: 8px;
-    z-index: 5;
+    z-index: 2;
     display: flex;
+    gap: 2px;
+    padding: 2px;
+    border-radius: 8px;
+    background: $rd-ink;
 
     button {
         display: inline-flex;
         align-items: center;
         justify-content: center;
         width: 28px;
-        height: 24px;
-        border: none;
-        background: #556ee6;
-        color: #fff;
-        font-size: 13px;
-
-        &:first-child {
-            border-right: 1px solid rgba(255, 255, 255, 0.35);
-            border-radius: 4px 0 0 4px;
-        }
-
-        &:last-child { border-radius: 0 4px 4px 0; }
-        &:only-child { border-radius: 4px; }
-    }
-}
-
-.pv-cond-flag {
-    position: absolute;
-    right: 10px;
-    bottom: 4px;
-    color: #556ee6;
-    font-size: 0.62rem;
-}
-
-.pv-group {
-    position: relative;
-    border-top: 6px solid #f0f2f5;
-    border-bottom: 6px solid #f0f2f5;
-    cursor: pointer;
-
-    &.pv-selected {
-        outline-color: #dd974d;
-        background: #fffaf3 !important;
-    }
-
-    &.is-dragging { opacity: 0.6; }
-}
-
-.pv-group-header {
-    padding: 10px 16px 4px;
-    color: #b06f24;
-    font-size: 0.78rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    cursor: grab;
-    touch-action: none;
-}
-
-.group-drop-zone {
-    min-height: 44px;
-
-    &.is-over { background: #fffaf3; }
-
-    &__empty {
-        padding: 12px 16px;
-        color: #b6bec7;
-        font-size: 0.78rem;
-        font-style: italic;
-    }
-}
-
-.builder-settings {
-    flex-shrink: 0;
-    width: 340px;
-    max-height: 78vh;
-    overflow-y: auto;
-
-    @media (max-width: 1199.98px) {
-        width: 100%;
-        max-height: none;
-        border-left: 0 !important;
-        border-top: 1px solid #e3e6ea;
-    }
-
-    .nav-link {
-        width: 100%;
-        border: 0;
-    }
-}
-
-.settings-narrow {
-    max-width: 260px;
-}
-
-// Condition editor (visibility and branch conditions).
-.condition-block {
-    margin-bottom: 0.5rem;
-    padding: 0.5rem;
-    border: 1px solid $border-color;
-    border-radius: 0.25rem;
-    background: $gray-100;
-}
-
-.condition-row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 4px;
-    margin-bottom: 0.5rem;
-
-    &__field { flex: 1 1 100%; }
-    &__operator { flex: 1 1 42%; }
-    &__value { flex: 1 1 40%; min-width: 0; }
-}
-
-// ----- Step 3: the process flow --------------------------------------------------
-
-.process-viewport {
-    position: relative;
-    height: 640px;
-    overflow: hidden;
-    border-radius: 8px;
-    background: #eef0f4;
-    cursor: grab;
-    user-select: none;
-    touch-action: none;
-
-    &.lk-panning { cursor: grabbing; }
-}
-
-.process-chain {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: max-content;
-    min-width: 100%;
-    padding: 30px 40px;
-    transform-origin: 0 0;
-    will-change: transform;
-}
-
-.lk-zoom-controls {
-    position: absolute;
-    bottom: 14px;
-    left: 14px;
-    z-index: 20;
-    display: flex;
-    align-items: center;
-    gap: 2px;
-    padding: 3px;
-    border-radius: 8px;
-    background: #fff;
-    box-shadow: 0 1px 6px rgba(31, 35, 41, 0.18);
-
-    button {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 30px;
         height: 28px;
+        padding: 0;
         border: 0;
         border-radius: 6px;
         background: transparent;
-        color: #374151;
+        color: #fff;
         font-size: 15px;
+        cursor: pointer;
 
-        &:hover { background: #eef0f4; }
+        &:hover {
+            background: rgba(255, 255, 255, 0.16);
+        }
+
+        &:focus-visible {
+            outline: 2px solid #fff;
+            outline-offset: -2px;
+        }
+    }
+}
+
+// "Shown when …", on a field or group with conditions.
+.phone-when {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    align-self: flex-start;
+    max-width: 100%;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #f0fdf9;
+    color: #107569;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.5;
+
+    i {
+        font-size: 12px;
+    }
+}
+
+// The selected field's settings.
+.builder-settings {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+
+    &__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 18px 20px;
+        border-bottom: 1px solid $rd-line;
     }
 
-    span {
-        min-width: 42px;
-        color: #374151;
-        font-size: 0.76rem;
-        font-weight: 600;
+    &__title {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+
+        .builder-pane__title {
+            overflow: hidden;
+            font-size: 16px;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    }
+
+    &__body {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        padding: 20px;
+
+        .form-field {
+            margin-bottom: 0;
+        }
+
+        .rd-form__row {
+            gap: 12px;
+        }
+    }
+
+    // Required, as a bordered row.
+    &__switch {
+        padding: 12px 14px;
+        border: 1px solid $rd-line;
+        border-radius: 12px;
+    }
+
+    // "Always" and Add a condition.
+    &__always {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 10px 14px;
+        border: 1px solid $rd-line;
+        border-radius: 12px;
+        background: $rd-row-alt;
+        color: $rd-body;
+        font-size: 14px;
+    }
+
+    &__empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        height: 100%;
+        min-height: 200px;
+        padding: 32px 24px;
+        color: $rd-ink-2;
         text-align: center;
     }
 }
 
-.lk-canvas-hint {
-    position: absolute;
-    right: 16px;
-    bottom: 18px;
-    z-index: 20;
-    color: #98a2ad;
-    font-size: 0.72rem;
-}
-
-.lk-node {
-    position: relative;
-    flex-shrink: 0;
-    width: 232px;
-    border-radius: 8px;
-    background: #fff;
-    box-shadow: 0 1px 4px rgba(31, 35, 41, 0.12);
-    cursor: pointer;
-
-    &:hover { box-shadow: 0 0 0 2px $lk-blue, 0 1px 4px rgba(31, 35, 41, 0.12); }
-
-    &:hover .lk-head-actions { display: inline-flex; }
-}
-
-.lk-node-submit {
-    cursor: default;
-
-    &:hover { box-shadow: 0 1px 4px rgba(31, 35, 41, 0.12); }
-}
-
-// A step that failed the check: a ring, so the card does not change size.
-.lk-node--invalid {
-    box-shadow: 0 0 0 2px #c0392b, 0 1px 4px rgba(31, 35, 41, 0.12);
-
-    &:hover { box-shadow: 0 0 0 2px #a5301f, 0 1px 4px rgba(31, 35, 41, 0.12); }
-}
-
-.lk-node-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 7px 12px;
-    border-radius: 8px 8px 0 0;
-    color: #fff;
-    font-size: 0.84rem;
-    font-weight: 600;
-
-    &--submit {
-        background: #f3f4f6;
-        color: #374151;
-    }
-}
-
-.lk-head-title {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.lk-head-actions {
-    display: none;
-    flex-shrink: 0;
-    gap: 2px;
-}
-
-.lk-mini,
-.lk-mini-dark,
-.lk-mini-grey {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 20px;
-    height: 20px;
-    padding: 0;
-    border: 0;
-    border-radius: 4px;
-    font-size: 12px;
-}
-
-.lk-mini {
-    background: rgba(255, 255, 255, 0.25);
-    color: #fff;
-
-    &:hover { background: rgba(255, 255, 255, 0.45); }
-}
-
-.lk-mini-dark,
-.lk-mini-grey {
-    flex-shrink: 0;
-    background: #e4e7ec;
-    color: #5f6672;
-
-    &:hover { background: #d3d8e0; }
-}
-
-.lk-node-body {
-    position: relative;
-    min-height: 38px;
-    padding: 10px 24px 10px 12px;
-    border-radius: 0 0 8px 8px;
-    color: #374151;
-    font-size: 0.8rem;
-}
-
-.lk-body-label { color: #8a919f; }
-.lk-missing { color: #b6bec7; font-style: italic; }
-
-.lk-chevron {
-    position: absolute;
-    top: 50%;
-    right: 8px;
-    transform: translateY(-50%);
-    color: #b6bec7;
-}
-
-.lk-end span {
-    display: inline-block;
-    padding: 4px 18px;
-    border-radius: 14px;
-    background: #d7dbe2;
-    color: #5f6672;
-    font-size: 0.78rem;
-    font-weight: 600;
-}
-
-.lk-connector {
+// A choice field's options.
+.option-list {
     display: flex;
     flex-direction: column;
-    align-items: center;
-}
+    gap: 8px;
 
-.lk-line {
-    width: 1.5px;
-    height: 12px;
-    background: $lk-line;
-}
+    &__actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-left: -10px;
+    }
 
-.lk-line-arrow {
-    position: relative;
-    height: 16px;
-
-    &::after {
-        content: '';
-        position: absolute;
-        bottom: -1px;
-        left: 50%;
-        transform: translateX(-50%);
-        border: 5px solid transparent;
-        border-top-color: $lk-line;
+    &__category {
+        align-self: flex-start;
     }
 }
 
-.lk-add {
-    position: relative;
-}
-
-.lk-add-btn {
-    display: inline-flex;
+.option-row {
+    display: flex;
     align-items: center;
-    justify-content: center;
-    width: 22px;
-    height: 22px;
-    padding: 0;
-    border: 0;
-    border-radius: 50%;
-    background: $lk-blue;
-    color: #fff;
-    font-size: 13px;
-    line-height: 1;
-    box-shadow: 0 1px 3px rgba(51, 112, 255, 0.4);
+    gap: 4px;
 
-    &:hover { background: #2456cc; }
-}
+    .rd-input {
+        flex-grow: 1;
+        min-width: 0;
+    }
 
-.lk-add-menu {
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    z-index: 30;
-    min-width: 290px;
-    margin-top: 4px;
-    transform: translateX(-50%);
-
-    .dropdown-item {
-        padding: 7px 14px;
-        font-weight: 500;
-        white-space: normal;
+    .rd-btn--icon {
+        flex-shrink: 0;
     }
 }
 
-.lk-menu-dot {
-    display: inline-block;
-    width: 9px;
-    height: 9px;
-    margin-right: 8px;
-    border-radius: 50%;
-}
+.option-category {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    border: 1px solid $rd-line;
+    border-radius: 12px;
+    background: $rd-row-alt;
 
-.lk-menu-hint {
-    display: block;
-    margin-left: 17px;
-    color: #8a919f;
-    font-size: 0.72rem;
-    font-weight: 400;
-}
+    &__options {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding-left: 16px;
+        border-left: 2px solid $rd-line;
 
-// Branch block: split and merge rails drawn per column so lines always meet.
-.lk-branch {
-    position: relative;
-
-    &:hover .lk-branch-actions { display: inline-flex; }
-
-    // A branch spans every column below it; mark its pill instead of boxing half the canvas.
-    &.lk-node--invalid {
-        box-shadow: none;
-
-        > .lk-branch-top .lk-branch-pill {
-            border-color: #c0392b;
-            background: #fdeeee;
-            color: #c0392b;
+        > .rd-btn {
+            align-self: flex-start;
+            margin-left: -10px;
         }
     }
 }
 
-.lk-branch-top {
-    position: relative;
-    text-align: center;
-}
-
-.lk-branch-pill {
-    padding: 5px 14px;
-    border: 1px solid #d0d5dd;
-    border-radius: 16px;
-    background: #fff;
-    color: #22a06b;
-    font-size: 0.78rem;
-    font-weight: 600;
-    box-shadow: 0 1px 3px rgba(31, 35, 41, 0.08);
-
-    &:hover { border-color: $lk-blue; }
-}
-
-.lk-branch-actions {
-    position: absolute;
-    top: 4px;
-    right: -8px;
-}
-
-.lk-branch-center-drop {
-    width: 1.5px;
-    height: 12px;
-    margin: 0 auto;
-    background: $lk-line;
-}
-
-.lk-branch-columns {
-    display: flex;
-    justify-content: center;
-    align-items: stretch;
-}
-
-.lk-branch-column {
-    position: relative;
+// Sets of conditions (when a field shows, which path a branch takes).
+.condition-editor {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    min-width: 260px;
-    padding: 0 14px;
-}
+    gap: 10px;
+    container-type: inline-size;
 
-.lk-rail {
-    position: relative;
-    flex-shrink: 0;
-    align-self: stretch;
-    height: 14px;
-    margin: 0 -14px;
-
-    &::before {
-        content: '';
-        position: absolute;
-        right: 0;
-        left: 0;
-        height: 1.5px;
-        background: $lk-line;
+    &__set {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
     }
 
-    &::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        left: 50%;
-        width: 1.5px;
-        background: $lk-line;
+    &__or {
+        align-self: center;
+        padding: 2px 10px;
+        border-radius: 999px;
+        background: $rd-track;
+        color: $rd-ink-2;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    &__add {
+        align-self: flex-start;
+    }
+
+    &__none {
+        margin: 0;
+        color: $rd-muted;
+        font-size: 13px;
     }
 }
 
-.lk-rail-top::before { top: 0; }
-.lk-rail-bottom::before { bottom: 0; }
-.lk-rail-first::before { left: 50%; }
-.lk-rail-last::before { right: 50%; }
-
-.lk-branch-chain {
+.condition-block {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid $rd-line;
+    border-radius: 12px;
+    background: $rd-row-alt;
+
+    &__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin: -4px -4px 0 0;
+        color: $rd-ink-2;
+        font-size: 13px;
+        font-weight: 600;
+
+        .rd-btn--icon {
+            width: 32px;
+            height: 32px;
+        }
+    }
+
+    &__add {
+        align-self: flex-start;
+        margin-left: -6px;
+    }
 }
 
-.lk-col-tail {
-    position: relative;
-    flex: 1 1 auto;
-    width: 1.5px;
-    min-height: 10px;
-    overflow: visible;
-    background: $lk-line;
+// Narrow (the settings panel): field across, then test and value, then x.
+// Wide (the path dialog): all four in a row.
+.condition-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) 32px;
+    gap: 8px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid $rd-line;
 
-    &:has(.lk-loop-tail) { min-height: 26px; }
+    &__field {
+        grid-column: 1 / 3;
+    }
+
+    &__remove {
+        grid-row: 1;
+        grid-column: 3;
+        align-self: center;
+        width: 32px;
+        height: 32px;
+    }
+
+    &__value:empty {
+        display: none;
+    }
+
+    @container (min-width: 560px) {
+        grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr) 32px;
+        padding-bottom: 0;
+        border-bottom: 0;
+
+        &__field {
+            grid-column: auto;
+        }
+
+        &__remove {
+            grid-column: 4;
+        }
+    }
 }
 
-.lk-loop-tail {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    padding: 1px 8px;
-    border: 1px solid #c7d2fe;
-    border-radius: 10px;
-    background: #eef2ff;
-    color: #4f46e5;
-    font-size: 0.68rem;
-    font-weight: 600;
-    white-space: nowrap;
-}
+// ----- Process: the flow, and the kinds of step beside it ----------------------------
 
-.lk-cond-card {
-    width: 232px;
-    border-radius: 8px;
-    background: #fff;
-    box-shadow: 0 1px 4px rgba(31, 35, 41, 0.12);
-    cursor: pointer;
-
-    &:hover { box-shadow: 0 0 0 2px $lk-blue, 0 1px 4px rgba(31, 35, 41, 0.12); }
-}
-
-.lk-cond-default {
-    cursor: default;
-
-    &:hover { box-shadow: 0 1px 4px rgba(31, 35, 41, 0.12); }
-}
-
-.lk-cond-head {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 7px 10px;
-    border-bottom: 1px solid #f0f2f5;
-    color: #22a06b;
-    font-size: 0.78rem;
-    font-weight: 600;
-}
-
-.lk-cond-name {
+.process-board {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    height: calc(100vh - 260px);
+    min-height: 640px;
     overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    border: 1px solid $rd-line;
+    border-radius: 16px;
+    background: $rd-panel;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+
+    &__aside {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        padding: 24px;
+        overflow-y: auto;
+        border-left: 1px solid $rd-line;
+
+        .builder-pane__title {
+            font-size: 16px;
+        }
+    }
+
+    &__lede {
+        color: $rd-ink-2;
+        font-size: 14px;
+        line-height: 1.45;
+    }
+
+    @media (max-width: 1199.98px) {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: minmax(520px, 1fr) auto;
+        height: auto;
+
+        &__aside {
+            border-top: 1px solid $rd-line;
+            border-left: 0;
+        }
+    }
 }
 
-.lk-priority {
-    flex-shrink: 0;
-    margin-left: auto;
-    color: #22a06b;
-    font-size: 0.72rem;
-    font-weight: 500;
+.process-kinds {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+
+    &__item {
+        display: flex;
+        gap: 12px;
+        padding: 12px 0;
+        border-top: 1px solid $rd-line-soft;
+    }
+
+    &__text {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    &__name {
+        color: $rd-ink;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    &__hint {
+        color: $rd-muted;
+        font-size: 13px;
+        line-height: 1.4;
+    }
 }
 
-.lk-cond-body {
+// The pannable view: a dotted ground.
+.process-viewport {
     position: relative;
-    min-height: 34px;
-    padding: 9px 24px 9px 10px;
-    color: #374151;
-    font-size: 0.78rem;
+    min-width: 0;
+    overflow: hidden;
+    background-color: $rd-row-alt;
+    background-image: radial-gradient(#e4e7ec 1px, transparent 1px);
+    background-size: 20px 20px;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+
+    &.is-panning {
+        cursor: grabbing;
+    }
 }
 
-.lk-cond-loop {
+.process-chain {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 100%;
+    padding: 28px 24px 56px;
+    transform-origin: 0 0;
+    cursor: default;
+}
+
+.process-zoom {
+    position: absolute;
+    right: 16px;
+    bottom: 16px;
     display: flex;
     align-items: center;
     gap: 2px;
-    padding: 5px 8px;
-    border-top: 1px dashed #e5e7eb;
-    border-radius: 0 0 8px 8px;
-    color: #98a2b3;
-    font-size: 0.72rem;
+    padding: 2px;
+    border: 1px solid $rd-line;
+    border-radius: 10px;
+    background: $rd-panel;
+    box-shadow: $rd-shadow-xs;
     cursor: default;
 
-    &.lk-loop-on {
-        background: #eef2ff;
-        color: #4f46e5;
+    .rd-btn--icon {
+        width: 32px;
+        height: 32px;
+
+        i {
+            font-size: 17px;
+        }
+    }
+
+    &__value {
+        min-width: 44px;
+        color: $rd-ink-2;
+        font-size: 12px;
+        font-weight: 600;
+        text-align: center;
+        font-variant-numeric: tabular-nums;
     }
 }
 
-.lk-loop-select {
-    flex: 1 1 auto;
-    min-width: 0;
+.process-hint {
+    position: absolute;
+    top: 14px;
+    left: 16px;
+    color: $rd-muted;
+    font-size: 12px;
+    pointer-events: none;
+}
+
+// An icon on a tinted tile; the tint comes from .rd-tag--{hue}.
+.flow-icon {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
     padding: 0;
-    border: 0;
-    outline: none;
-    background: transparent;
-    color: inherit;
-    font-size: 0.72rem;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.lk-runtime-tag {
-    color: #7a56d1;
-    font-weight: 600;
-}
-
-.lk-runtime-note {
-    padding: 10px 12px;
-    border: 1px solid #e2d9f5;
     border-radius: 8px;
-    background: #f5f2fc;
-    color: #5b3fa8;
-    font-size: 0.78rem;
+    font-size: 18px;
+    line-height: 1;
 
-    // The same note for a setting that will refuse to save.
-    &--warn {
-        border-color: #f2c9c4;
-        background: #fdeeee;
-        color: #a5301f;
+    &--dark {
+        background: rgba(255, 255, 255, 0.12);
+        color: #fff;
     }
 }
 
-.process-error {
+.flow-submitted {
     display: flex;
-    align-items: flex-start;
-    gap: 9px;
-    padding: 11px 15px;
-    border: 1px solid #f2c9c4;
-    border-radius: 8px;
-    background: #fdeeee;
-    color: #a5301f;
-    font-size: 0.95rem;
-    font-weight: 600;
-    line-height: 1.45;
+    align-items: center;
+    gap: 12px;
+    width: 320px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: $rd-ink;
+    color: #fff;
 
-    .mdi {
-        flex-shrink: 0;
-        font-size: 1.15rem;
-        line-height: 1.25;
+    &__text {
+        display: flex;
+        flex-direction: column;
     }
-}
 
-// Step drawer.
-.node-drawer {
-    width: 460px !important;
-    max-width: 92vw;
-}
-
-.lk-drawer-dot {
-    display: inline-block;
-    width: 10px;
-    height: 10px;
-    margin-right: 8px;
-    border-radius: 50%;
-}
-
-.lk-drawer-tabs .nav-link {
-    padding: 7px 14px;
-    color: #5f6672;
-    font-size: 0.85rem;
-
-    &.active {
-        color: $lk-blue;
+    &__name {
+        font-size: 14px;
         font-weight: 600;
     }
+
+    &__who {
+        color: #d0d5dd;
+        font-size: 12px;
+    }
 }
 
-.lk-perm-table {
-    border: 1px solid #dde1e7;
+.flow-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
 
-    th,
-    td {
-        vertical-align: middle;
-        border: 1px solid #e6e9ee !important;
+.flow-connector {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.flow-line {
+    width: 2px;
+    height: 14px;
+    background: $rd-control;
+}
+
+.flow-add {
+    position: relative;
+
+    &__button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border: 1px solid $rd-control;
+        border-radius: 999px;
+        background: $rd-panel;
+        color: $rd-ink-2;
+        font-size: 16px;
+        cursor: pointer;
+
+        &:hover,
+        &[aria-expanded="true"] {
+            border-color: $rd-ink;
+            background: $rd-ink;
+            color: #fff;
+        }
+
+        &:focus-visible {
+            outline: 2px solid $rd-brand;
+            outline-offset: 2px;
+        }
+    }
+
+    // Like .rd-menu, opened under the +.
+    &__menu {
+        position: absolute;
+        top: calc(100% + 6px);
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10;
+        display: flex;
+        flex-direction: column;
+        width: 300px;
+        padding: 6px;
+        border: 1px solid $rd-line;
+        border-radius: 12px;
+        background: $rd-panel;
+        box-shadow: 0 12px 24px -4px rgba(16, 24, 40, 0.16);
+    }
+
+    &__item {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 8px 10px;
+        border: 0;
+        border-radius: 8px;
+        background: none;
+        text-align: left;
+        cursor: pointer;
+
+        &:hover,
+        &:focus-visible {
+            background: $rd-track;
+            outline: none;
+        }
+    }
+
+    &__text {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    &__label {
+        color: $rd-ink;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    &__hint {
+        color: $rd-muted;
+        font-size: 12px;
+        line-height: 1.4;
+    }
+}
+
+.flow-step {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 320px;
+    border: 1px solid $rd-line;
+    border-radius: 12px;
+    background: $rd-panel;
+    box-shadow: $rd-shadow-xs;
+    transition:
+        border-color 0.15s,
+        box-shadow 0.15s;
+
+    &:hover {
+        border-color: $rd-control;
+        box-shadow: 0 6px 16px -6px rgba(16, 24, 40, 0.14);
+    }
+
+    &.is-invalid {
+        border-color: $rd-critical;
+        box-shadow: 0 0 0 3px $rd-critical-tint;
+    }
+
+    &__head {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 8px 8px 8px 0;
+        border-bottom: 1px solid $rd-line-soft;
+    }
+
+    &__open {
+        display: flex;
+        flex-grow: 1;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+        padding: 4px 6px 4px 14px;
+        border: 0;
+        background: none;
+        text-align: left;
+        cursor: pointer;
+
+        &:focus-visible {
+            outline: 2px solid $rd-brand;
+            outline-offset: -2px;
+            border-radius: 8px;
+        }
+    }
+
+    &__title {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }
+
+    &__kind {
+        color: $rd-muted;
+        font-size: 12px;
+    }
+
+    &__name {
+        overflow: hidden;
+        color: $rd-ink;
+        font-size: 14px;
+        font-weight: 600;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    &__body {
+        display: block;
+        width: 100%;
+        padding: 10px 14px;
+        border: 0;
+        border-radius: 0 0 12px 12px;
+        background: none;
+        color: $rd-ink-2;
+        font: 400 13px/1.45 $rd-sans;
+        text-align: left;
+        cursor: pointer;
+
+        &:hover {
+            background: $rd-row-alt;
+        }
+
+        &:focus-visible {
+            outline: 2px solid $rd-brand;
+            outline-offset: -2px;
+        }
+    }
+
+    &__missing {
+        color: $rd-serious;
+        font-weight: 500;
+    }
+
+    &__problem {
+        display: flex;
+        align-items: flex-start;
+        gap: 6px;
+        padding: 8px 14px 10px;
+        border-top: 1px solid $rd-critical-tint;
+        color: $rd-critical;
+        font-size: 12px;
+        line-height: 1.4;
+
+        i {
+            font-size: 14px;
+            line-height: 1.2;
+        }
+    }
+}
+
+// Move up, move down, delete.
+.flow-tools {
+    display: flex;
+    flex-shrink: 0;
+    gap: 0;
+
+    &__button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        padding: 0;
+        border: 0;
+        border-radius: 6px;
+        background: transparent;
+        color: $rd-muted;
+        font-size: 15px;
+        cursor: pointer;
+
+        &:hover {
+            background: $rd-track;
+            color: $rd-ink;
+        }
+
+        &.is-danger:hover {
+            background: $rd-critical-tint;
+            color: $rd-critical;
+        }
+
+        &:focus-visible {
+            outline: 2px solid $rd-brand;
+            outline-offset: -1px;
+        }
+    }
+}
+
+// A branch: one path is taken, by the answers.
+.flow-branch {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 660px;
+    padding: 14px;
+    border: 1.5px solid #99d5c9;
+    border-radius: 16px;
+    background: rgba(240, 253, 249, 0.6);
+
+    &.is-invalid {
+        border-color: $rd-critical;
+        box-shadow: 0 0 0 3px $rd-critical-tint;
+    }
+
+    > .flow-step__problem {
+        border-top: 0;
+        padding: 0;
+    }
+
+    &__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        cursor: default;
+    }
+
+    &__title {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: #107569;
+        font-size: 13px;
+        font-weight: 600;
+
+        i {
+            font-size: 16px;
+        }
+    }
+
+    &__actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    &__add {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        height: 32px;
+        padding: 0 10px;
+        border: 1px solid #99d5c9;
+        border-radius: 8px;
+        background: $rd-panel;
+        color: #107569;
+        font: 600 13px/1 $rd-sans;
+        cursor: pointer;
+
+        &:hover {
+            background: #f0fdf9;
+        }
+
+        i {
+            font-size: 14px;
+        }
+    }
+
+    &__paths {
+        display: grid;
+        grid-template-columns: repeat(var(--flow-paths, 2), minmax(300px, 1fr));
+        gap: 12px;
+    }
+}
+
+.flow-path {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 0;
+
+    &__card {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px dashed #99d5c9;
+        border-radius: 10px;
+        background: $rd-panel;
+        color: $rd-body;
+        font-size: 13px;
+        cursor: default;
+
+        &.is-default {
+            border-style: solid;
+            border-color: $rd-line;
+        }
+    }
+
+    &__top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 6px;
+    }
+
+    &__name {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0;
+        border: 0;
+        background: none;
+        color: #107569;
+        font: 600 13px/1.3 $rd-sans;
+        cursor: pointer;
+
+        i {
+            color: $rd-muted;
+            font-size: 13px;
+            opacity: 0;
+            transition: opacity 0.15s;
+        }
+
+        &:hover i,
+        &:focus-visible i {
+            opacity: 1;
+        }
+
+        .is-default & {
+            color: $rd-ink-2;
+            cursor: default;
+        }
+    }
+
+    &__when {
+        display: block;
+        width: 100%;
+        padding: 6px 8px;
+        border: 0;
+        border-radius: 6px;
+        background: $rd-row-alt;
+        color: $rd-body;
+        font: 400 13px/1.4 $rd-sans;
+        text-align: left;
+        cursor: pointer;
+
+        &:hover {
+            background: $rd-track;
+        }
+
+        .is-default & {
+            padding: 0;
+            background: none;
+            color: $rd-muted;
+            cursor: default;
+        }
+    }
+
+    &__steps {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+
+        .flow-step {
+            width: 100%;
+            max-width: 320px;
+        }
+    }
+
+    &__tail {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 4px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: #f0fdf9;
+        color: #107569;
+        font-size: 12px;
+        font-weight: 500;
+
+        i {
+            font-size: 14px;
+        }
+    }
+}
+
+.flow-done {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 32px;
+    margin-top: 6px;
+    padding: 0 14px;
+    border-radius: 999px;
+    background: $rd-track;
+    color: $rd-ink-2;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+// ----- A step's drawer: what they can see ---------------------------------------------
+
+.rd-drawer__note {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: $rd-row-alt;
+    color: $rd-body;
+    font-size: 14px;
+
+    i {
+        color: $rd-ink-2;
+        font-size: 18px;
+        line-height: 1.2;
+    }
+}
+
+.perm-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+
+    &__hint {
+        margin-bottom: 4px;
     }
 
     thead th {
-        background: #f7f8fa;
-        font-weight: 600;
+        height: 40px;
+        padding: 0 12px;
+        background: $rd-row-alt;
+        color: $rd-ink-2;
+        font-size: 13px;
+        font-weight: 500;
+        text-align: left;
+
+        &:first-child {
+            border-radius: 10px 0 0 10px;
+        }
+
+        &:last-child {
+            border-radius: 0 10px 10px 0;
+        }
     }
 
-    .lk-perm-col { width: 70px; }
-
-    .lk-perm-group {
-        width: 130px;
-        background: #fafbfc;
-        color: #374151;
-        font-size: 0.78rem;
-        font-weight: 600;
+    tbody th,
+    tbody td {
+        height: 44px;
+        padding: 0 12px;
+        border-bottom: 1px solid $rd-line-soft;
     }
 
-    .lk-perm-field { font-size: 0.8rem; }
+    &__check {
+        width: 96px;
+        text-align: center;
+
+        thead & {
+            text-align: center;
+        }
+    }
+
+    &__head {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    &__field {
+        color: $rd-ink;
+        font-weight: 400;
+
+        &.is-grouped {
+            padding-left: 28px !important;
+        }
+    }
+
+    &__group th {
+        height: 40px;
+        color: $rd-ink-2;
+        font-size: 13px;
+        font-weight: 600;
+    }
 }

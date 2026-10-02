@@ -10,12 +10,12 @@ interface DesignStepProps {
     builder: FormDesign;
     formName: string;
     people: Person[];
-    /** Widgets the last check flagged. */
+    /** Fields and groups the last check flagged. */
     invalid: string[];
     error: string | null;
 }
 
-/** Step 2, Form Design: widget palette, phone preview and the selected widget's settings. */
+/** Step 2, Fields: the field list, the phone preview and the selected field's settings. */
 export default function DesignStep({ builder, formName, people, invalid, error }: DesignStepProps) {
     const { design, selected, dnd } = builder;
     const fields = collectFields(design);
@@ -33,55 +33,53 @@ export default function DesignStep({ builder, formName, people, invalid, error }
 
     return (
         <>
-            <div className="card mt-3">
-                <div className="card-body p-0">
-                    <DndContext
-                        sensors={dnd.sensors}
-                        collisionDetection={dnd.collisionDetection}
-                        onDragStart={dnd.onDragStart}
-                        onDragOver={dnd.onDragOver}
-                        onDragEnd={dnd.onDragEnd}
-                        onDragCancel={dnd.onDragCancel}
-                    >
-                        <div className="d-flex builder-layout">
-                            <WidgetPalette onAdd={builder.add} />
-
-                            <div className="builder-stage flex-grow-1">
-                                <PhoneCanvas
-                                    design={design}
-                                    formName={formName}
-                                    selected={selected}
-                                    invalid={invalid}
-                                    onSelect={builder.select}
-                                    onDuplicate={builder.duplicate}
-                                    onRemove={builder.remove}
-                                />
-                            </div>
-
-                            <div className="builder-settings border-start">
-                                <SettingsPanel
-                                    key={selected ? `${selected.kind}:${selected.id}` : 'none'}
-                                    subject={subject}
-                                    sources={fields.filter((field) => field.id !== selected?.id)}
-                                    people={people}
-                                    onElementChange={(patch) => selected && builder.updateElement(selected.id, patch)}
-                                    onSectionChange={(patch) => selected && builder.updateSection(selected.id, patch)}
-                                />
-                            </div>
-                        </div>
-
-                        <DragOverlay dropAnimation={null}>
-                            {draggingPalette && (
-                                <div className="palette-item palette-item--overlay">
-                                    {paletteLabel(draggingPalette)}
-                                </div>
-                            )}
-                        </DragOverlay>
-                    </DndContext>
+            {error && (
+                <div className="rd-notice rd-notice--critical" role="alert">
+                    <i className="mdi mdi-alert-circle-outline" aria-hidden="true" />
+                    {error}
                 </div>
-            </div>
+            )}
+            <section className="builder" aria-label="Fields">
+                <DndContext
+                    sensors={dnd.sensors}
+                    collisionDetection={dnd.collisionDetection}
+                    onDragStart={dnd.onDragStart}
+                    onDragOver={dnd.onDragOver}
+                    onDragEnd={dnd.onDragEnd}
+                    onDragCancel={dnd.onDragCancel}
+                >
+                    <WidgetPalette onAdd={builder.add} />
 
-            {error && <div className="text-danger text-center mt-2 font-size-14">{error}</div>}
+                    <div className="builder__stage">
+                        <PhoneCanvas
+                            design={design}
+                            formName={formName}
+                            selected={selected}
+                            invalid={invalid}
+                            onSelect={builder.select}
+                            onDuplicate={builder.duplicate}
+                            onRemove={builder.remove}
+                        />
+                    </div>
+
+                    <div className="builder__settings">
+                        <SettingsPanel
+                            key={selected ? `${selected.kind}:${selected.id}` : 'none'}
+                            subject={subject}
+                            sources={fields.filter((field) => field.id !== selected?.id)}
+                            people={people}
+                            onElementChange={(patch) => selected && builder.updateElement(selected.id, patch)}
+                            onSectionChange={(patch) => selected && builder.updateSection(selected.id, patch)}
+                        />
+                    </div>
+
+                    <DragOverlay dropAnimation={null}>
+                        {draggingPalette && (
+                            <div className="palette-item palette-item--overlay">{paletteLabel(draggingPalette)}</div>
+                        )}
+                    </DragOverlay>
+                </DndContext>
+            </section>
         </>
     );
 }

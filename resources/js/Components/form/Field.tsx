@@ -6,27 +6,34 @@ interface FieldProps {
     htmlFor?: string;
     required?: boolean;
     error?: string;
-    /** Muted help text under the control. */
+    /** Muted help text under the control; an error takes its place. */
     hint?: ReactNode;
     className?: string;
     children: ReactNode;
 }
 
-/** A labelled form control with its validation message. */
+/** A labelled form control with its hint or validation message under it. */
 export default function Field({ label, htmlFor, required = false, error, hint, className, children }: FieldProps) {
     return (
-        <div className={clsx('form-field', className)}>
-            <label htmlFor={htmlFor} className="form-field__label custom-font-xsmall">
-                <b>{label}</b> :{required && <span className="form-field__required">*</span>}
+        <div className={clsx('form-field rd-field', error && 'has-error', className)}>
+            <label htmlFor={htmlFor} className="rd-field__label">
+                {label}
+                {required && (
+                    <span className="rd-field__required" aria-hidden="true">
+                        {' '}
+                        *
+                    </span>
+                )}
             </label>
-            {error && (
-                <span className="text-danger ms-1">
-                    <i className="fas fa-exclamation-triangle me-1" />
+            {children}
+            {error ? (
+                <span className="rd-field__error" id={htmlFor ? `${htmlFor}-error` : undefined} role="alert">
+                    <i className="mdi mdi-alert-circle-outline" aria-hidden="true" />
                     {error}
                 </span>
+            ) : (
+                hint && <span className="rd-field__hint">{hint}</span>
             )}
-            {children}
-            {hint && <div className="custom-font-xxsmall text-muted mt-1">{hint}</div>}
         </div>
     );
 }

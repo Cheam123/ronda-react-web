@@ -1,16 +1,17 @@
-import { router } from '@inertiajs/react';
+import { Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 import { useMemo, useState } from 'react';
-import BasicInfoStep, { type Access, type BasicInfo } from '@/Components/forms/builder/BasicInfoStep';
+import BasicInfoStep, { type Access, type BasicInfo, type InfoProblem } from '@/Components/forms/builder/BasicInfoStep';
 import DesignStep from '@/Components/forms/builder/DesignStep';
 import ProcessStep from '@/Components/forms/builder/ProcessStep';
 import { useFormDesign } from '@/Components/forms/builder/useFormDesign';
-import { ButtonLink } from '@/Components/ui/Button';
-import Button from '@/Components/ui/Button';
+import PageHeader from '@/Components/surface/PageHeader';
+import SurfacePage from '@/Components/surface/SurfacePage';
 import ErrorSummary from '@/Components/ui/ErrorSummary';
 import AppLayout from '@/Layouts/AppLayout';
 import { collectFields, collectSections, designFromSchema, serializeDesign, validateDesign } from '@/lib/forms/design';
 import { collectProblems, serializeProcess } from '@/lib/forms/process';
+import { pluralize } from '@/lib/format';
 import type { FormGroupOption, FormSchema, FormSettings, Person, ProcessDefinition, ProcessNode } from '@/types/forms';
 
 interface BuilderProps {
@@ -33,17 +34,13 @@ interface BuilderProps {
 
 type Step = 1 | 2 | 3;
 
-const STEPS: { step: Step; label: string }[] = [
-    { step: 1, label: 'Basic Info' },
-    { step: 2, label: 'Form Design' },
-    { step: 3, label: 'Process Design' },
+const STEPS: { step: Step; label: string; hint: string }[] = [
+    { step: 1, label: 'Details', hint: 'Name, group and who can submit' },
+    { step: 2, label: 'Fields', hint: 'What people fill in' },
+    { step: 3, label: 'Process', hint: 'What happens after they submit' },
 ];
 
-function pluralCount(count: number, word: string) {
-    return `${count} ${word}${count === 1 ? '' : 's'}`;
-}
-
-/** Create or edit a form: basic info, the fields, and the process after submission. */
+/** Make or change a form: its details, its fields, and the process after submitting. */
 export default function Builder({
     form,
     schema,
@@ -73,9 +70,9 @@ export default function Builder({
     const builder = useFormDesign(useMemo(() => designFromSchema(schema), [schema]));
     const [nodes, setNodes] = useState<ProcessNode[]>(() => structuredClone(process.nodes ?? []));
 
-    const [infoInvalid, setInfoInvalid] = useState<(keyof BasicInfo)[]>([]);
+    const [infoInvalid, setInfoInvalid] = useState<InfoProblem[]>([]);
     // Nothing is marked until the user first tries to move on; after that the
-    // marks follow the edits, so fixing a widget clears it straight away.
+    // marks follow the edits, so fixing a field clears it straight away.
     const [designChecked, setDesignChecked] = useState(false);
     const [processChecks, setProcessChecks] = useState(0);
     const [saving, setSaving] = useState(false);
@@ -88,15 +85,20 @@ export default function Builder({
     const submitters =
         access.submit_scope === 'selected'
             ? [
-                  access.user_ids.length && pluralCount(access.user_ids.length, 'member'),
-                  access.user_types.length && pluralCount(access.user_types.length, 'user type'),
+                  access.user_ids.length && pluralize(access.user_ids.length, 'person', 'people'),
+                  access.user_types.length && pluralize(access.user_types.length, 'user type'),
               ]
                   .filter(Boolean)
-                  .join(', ') || 'No one selected'
-            : 'All members';
+                  .join(' and ') || 'nobody yet'
+            : 'Everyone';
 
     const checkInfo = () => {
-        const bad = (['name', 'description', 'form_group_id'] as const).filter((key) => !info[key].trim());
+        const bad: InfoProblem[] = (['name', 'description', 'form_group_id'] as const).filter(
+            (key) => !info[key].trim(),
+        );
+        if (access.submit_scope === 'selected' && access.user_ids.length + access.user_types.length === 0) {
+            bad.push('access');
+        }
         setInfoInvalid(bad);
         return bad.length === 0;
     };
@@ -120,7 +122,7 @@ export default function Builder({
 
     const processError =
         processChecks > 0 && problems.errors.length > 0
-            ? problems.errors[0] + (problems.errors.length > 1 ? ` (+${problems.errors.length - 1} more)` : '')
+            ? problems.errors[0] + (problems.errors.length > 1 ? ` (and ${problems.errors.length - 1} more)` : '')
             : null;
 
     const save = () => {
@@ -134,7 +136,7 @@ export default function Builder({
             {
                 ...info,
                 form_elements: JSON.stringify(serializeDesign(builder.design)),
-                // No `record` key: following up on an earlier case is chosen per submission.
+                // No `record` key: following up on an earlier record is chosen per submission.
                 settings: JSON.stringify({ access }),
                 process_definition: JSON.stringify(serializeProcess(nodes)),
             },
@@ -147,113 +149,165 @@ export default function Builder({
         );
     };
 
-    return (
-        <AppLayout
-            title={form ? 'Edit Form' : 'Form Creation'}
-            breadcrumb={['Form List', form ? form.name : 'New form']}
-        >
-            <div className="page-title-box d-flex align-items-center">
-                <ButtonLink
-                    href={route('form.index')}
-                    variant="secondary"
-                    size="sm"
-                    className="me-3"
-                    icon="mdi mdi-arrow-left"
-                >
-                    Back
-                </ButtonLink>
-                <h4 className="mb-0">{form ? 'Edit Form' : 'Create Form'}</h4>
-            </div>
+    const saveLabel = form ? 'Save changes' : 'Create form';
+    const notSaved = `nothing is saved until you ${form ? 'save the changes' : 'create the form'}`;
+    const groupCount = sections.length;
+    const requiredCount = fields.filter((field) => field.mandatory).length;
+    const branchCount = nodes.filter((node) => node.type === 'branch').length;
+    // Steps on every path count; a branch itself is not a step.
+    const stepCount = nodes.reduce(
+        (count, node) =>
+            count + (node.type === 'branch' ? node.branches.reduce((inner, arm) => inner + arm.nodes.length, 0) : 1),
+        0,
+    );
 
-            <div className="card">
-                <div className="card-body py-3">
-                    <ul className="nav nav-pills nav-justified">
-                        {STEPS.map(({ step: target, label }) => (
-                            <li key={target} className="nav-item">
+    const nextButton = (
+        <button type="button" className="rd-btn rd-btn--primary rd-btn--lg" onClick={() => go((step + 1) as Step)}>
+            Next: {STEPS[step]?.label.toLowerCase()}
+            <i className="mdi mdi-arrow-right" aria-hidden="true" />
+        </button>
+    );
+
+    return (
+        <AppLayout title={form ? `Edit ${form.name}` : 'New form'}>
+            <SurfacePage className="form-builder">
+                <PageHeader
+                    crumbs={[
+                        { label: 'Home', href: '/index' },
+                        { label: 'Forms', href: route('form.index') },
+                        { label: form ? form.name : 'New form' },
+                    ]}
+                    title={form ? `Edit ${form.name}` : 'New form'}
+                />
+
+                <nav className="form-steps" aria-label="Form builder steps">
+                    {STEPS.map(({ step: target, label, hint }) => {
+                        const done = target < step;
+                        const current = target === step;
+                        return (
+                            <button
+                                key={target}
+                                type="button"
+                                className={clsx('form-steps__step', current && 'is-current', done && 'is-done')}
+                                aria-current={current ? 'step' : undefined}
+                                onClick={() => go(target)}
+                            >
+                                <span className="form-steps__mark" aria-hidden="true">
+                                    {done ? <i className="mdi mdi-check" /> : target}
+                                </span>
+                                <span className="form-steps__text">
+                                    <span className="form-steps__label">{label}</span>
+                                    <span className="form-steps__hint">{hint}</span>
+                                </span>
+                            </button>
+                        );
+                    })}
+                </nav>
+
+                <ErrorSummary />
+
+                {step === 1 && (
+                    <BasicInfoStep
+                        info={info}
+                        onInfo={(patch) => {
+                            setInfo((current) => ({ ...current, ...patch }));
+                            setInfoInvalid((current) => current.filter((key) => !(key in patch)));
+                        }}
+                        access={access}
+                        onAccess={(next) => {
+                            setAccess(next);
+                            setInfoInvalid((current) => current.filter((key) => key !== 'access'));
+                        }}
+                        groups={groups}
+                        onGroupCreated={(group) => {
+                            setGroups((current) => [...current, group]);
+                            setInfo((current) => ({ ...current, form_group_id: String(group.id) }));
+                            setInfoInvalid((current) => current.filter((key) => key !== 'form_group_id'));
+                        }}
+                        users={users}
+                        types={types}
+                        invalid={infoInvalid}
+                        submitters={submitters}
+                        fieldCount={fields.length}
+                        stepCount={stepCount}
+                        foot={
+                            <div className="rd-form__foot">
+                                <Link href={route('form.index')} className="rd-btn rd-btn--quiet rd-btn--lg">
+                                    Cancel
+                                </Link>
+                                {nextButton}
+                            </div>
+                        }
+                    />
+                )}
+
+                {step === 2 && (
+                    <DesignStep
+                        builder={builder}
+                        formName={info.name}
+                        people={users}
+                        invalid={designCheck.invalid}
+                        error={designCheck.message}
+                    />
+                )}
+
+                {step === 3 && (
+                    <ProcessStep
+                        nodes={nodes}
+                        onChange={setNodes}
+                        fields={fields}
+                        sections={sections}
+                        people={users}
+                        submitters={submitters}
+                        badNodes={processChecks > 0 ? problems.badNodes : {}}
+                        error={processError}
+                        checkCount={processChecks}
+                    />
+                )}
+
+                {step > 1 && (
+                    <div className="form-builder__foot">
+                        <span className="form-builder__tally">
+                            {step === 2 ? (
+                                <>
+                                    <strong>{pluralize(fields.length, 'field')}</strong>
+                                    {groupCount > 0 && ` in ${pluralize(groupCount, 'group')}`}
+                                    {requiredCount > 0 && ` · ${requiredCount} required`}
+                                </>
+                            ) : (
+                                <>
+                                    <strong>{pluralize(stepCount, 'step')}</strong>
+                                    {branchCount > 0 && ` with ${pluralize(branchCount, 'branch', 'branches')}`}
+                                    {` · ${notSaved}`}
+                                </>
+                            )}
+                        </span>
+                        <span className="form-builder__buttons">
+                            <button
+                                type="button"
+                                className="rd-btn rd-btn--lg"
+                                onClick={() => setStep((step - 1) as Step)}
+                            >
+                                <i className="mdi mdi-arrow-left" aria-hidden="true" />
+                                Back
+                            </button>
+                            {step < 3 ? (
+                                nextButton
+                            ) : (
                                 <button
                                     type="button"
-                                    className={clsx('nav-link wizard-pill', step === target && 'active')}
-                                    onClick={() => go(target)}
+                                    className="rd-btn rd-btn--primary rd-btn--lg"
+                                    disabled={saving}
+                                    onClick={save}
                                 >
-                                    <span className="badge rounded-pill bg-light text-dark me-1">{target}</span> {label}
+                                    {saving && <span className="spinner-border spinner-border-sm" aria-hidden="true" />}
+                                    {saveLabel}
                                 </button>
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-            </div>
-
-            <ErrorSummary />
-
-            {step === 1 && (
-                <BasicInfoStep
-                    info={info}
-                    onInfo={(patch) => {
-                        setInfo((current) => ({ ...current, ...patch }));
-                        setInfoInvalid((current) => current.filter((key) => !(key in patch)));
-                    }}
-                    access={access}
-                    onAccess={setAccess}
-                    groups={groups}
-                    onGroupCreated={(group) => {
-                        setGroups((current) => [...current, group]);
-                        setInfo((current) => ({ ...current, form_group_id: String(group.id) }));
-                        setInfoInvalid((current) => current.filter((key) => key !== 'form_group_id'));
-                    }}
-                    users={users}
-                    types={types}
-                    invalid={infoInvalid}
-                />
-            )}
-
-            {step === 2 && (
-                <DesignStep
-                    builder={builder}
-                    formName={info.name}
-                    people={users}
-                    invalid={designCheck.invalid}
-                    error={designCheck.message}
-                />
-            )}
-
-            {step === 3 && (
-                <ProcessStep
-                    nodes={nodes}
-                    onChange={setNodes}
-                    fields={fields}
-                    sections={sections}
-                    people={users}
-                    submitters={submitters}
-                    badNodes={processChecks > 0 ? problems.badNodes : {}}
-                    error={processError}
-                    checkCount={processChecks}
-                />
-            )}
-
-            <div className="text-center my-4">
-                <Button variant="warning" className="me-2" onClick={() => window.history.back()}>
-                    Cancel
-                </Button>
-                {step > 1 && (
-                    <Button
-                        variant="secondary"
-                        className="me-2"
-                        icon="mdi mdi-arrow-left"
-                        onClick={() => setStep((step - 1) as Step)}
-                    >
-                        Back
-                    </Button>
+                            )}
+                        </span>
+                    </div>
                 )}
-                {step < 3 ? (
-                    <Button className="me-2" onClick={() => go((step + 1) as Step)}>
-                        Next <i className="mdi mdi-arrow-right ms-1" />
-                    </Button>
-                ) : (
-                    <Button variant="success" loading={saving} onClick={save}>
-                        {form ? 'Save Changes' : 'Create Form'}
-                    </Button>
-                )}
-            </div>
+            </SurfacePage>
         </AppLayout>
     );
 }

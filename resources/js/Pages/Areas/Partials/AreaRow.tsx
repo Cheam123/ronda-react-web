@@ -1,14 +1,14 @@
 import { router, useForm } from '@inertiajs/react';
 import type { FormEvent } from 'react';
 import TextInput from '@/Components/form/TextInput';
-import Button from '@/Components/ui/Button';
 import { confirm } from '@/lib/dialogs';
+import { areaHue } from '@/lib/tags';
 import type { IfeArea } from '@/types/catalogue';
 
 /** One area, editable in place. Only an unused area can be deleted. */
 export default function AreaRow({ area }: { area: IfeArea }) {
     const formId = `area-form-${area.id}`;
-    const { data, setData, post, processing } = useForm({
+    const { data, setData, post, processing, isDirty } = useForm({
         area: area.area,
         description: area.description ?? '',
     });
@@ -28,19 +28,21 @@ export default function AreaRow({ area }: { area: IfeArea }) {
 
     return (
         <tr>
-            <td colSpan={2}>
-                <form id={formId} onSubmit={save} className="d-flex gap-2">
+            <td>
+                <form id={formId} onSubmit={save} className="area-row__fields">
+                    <span className={`area-row__swatch rd-tag--${areaHue(area.id)}`} aria-hidden="true" />
                     <TextInput
-                        aria-label="Area name"
+                        aria-label={`Name of ${area.area}`}
                         maxLength={30}
                         required
-                        style={{ maxWidth: 190 }}
+                        className="area-row__name"
                         value={data.area}
                         onChange={(event) => setData('area', event.target.value)}
                     />
                     <TextInput
-                        aria-label="Description"
+                        aria-label={`What ${area.area} covers`}
                         maxLength={500}
+                        placeholder="What it covers"
                         value={data.description}
                         onChange={(event) => setData('description', event.target.value)}
                     />
@@ -48,15 +50,25 @@ export default function AreaRow({ area }: { area: IfeArea }) {
             </td>
             <td className="num">{area.leads_count}</td>
             <td className="num">{area.reports_count}</td>
-            <td className="text-nowrap">
-                <Button type="submit" form={formId} size="sm" className="me-1" loading={processing}>
-                    Save
-                </Button>
-                {unused && (
-                    <Button variant="danger" size="sm" onClick={remove}>
-                        Delete
-                    </Button>
-                )}
+            <td className="rd-col-actions">
+                <div className="rd-actions">
+                    <button type="submit" form={formId} className="rd-btn" disabled={processing || !isDirty}>
+                        Save
+                    </button>
+                    {unused ? (
+                        <button
+                            type="button"
+                            className="rd-btn rd-btn--icon rd-btn--icon-danger"
+                            aria-label={`Delete ${area.area}`}
+                            title="Delete"
+                            onClick={remove}
+                        >
+                            <i className="mdi mdi-trash-can-outline" aria-hidden="true" />
+                        </button>
+                    ) : (
+                        <span className="area-row__keep" title="Outlets or visits are filed under it" />
+                    )}
+                </div>
             </td>
         </tr>
     );

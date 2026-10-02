@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\IfeReports;
 
+use App\Helpers\Helper;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -20,7 +21,10 @@ class IfeReportResource extends JsonResource
             'updated_at'           => $this->updated_at->format('M j, Y g:i A'),
             'task_title'           => optional($this->task)->title,
             'company_name'         => $this->company_name,
-            'nature_of_business'   => $this->nature_of_business,
+            // Filed from an existing lead it holds the lead's category id; typed in the app, free text.
+            'nature_of_business'   => is_numeric($this->nature_of_business)
+                ? (Helper::getBusinessCategory((int) $this->nature_of_business) ?: $this->nature_of_business)
+                : $this->nature_of_business,
             'status'               => $this->status,
             'shop_name'            => $this->shop_name,
             'ife_area'             => optional($this->area)->area,

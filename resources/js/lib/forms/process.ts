@@ -1,6 +1,8 @@
+import type { TagHue } from '@/lib/tags';
 import type {
     BranchArm,
     BranchNode,
+    ConditionOperator,
     ConditionSchema,
     FieldElement,
     ProcessDefinition,
@@ -18,31 +20,81 @@ import { uid } from './schema';
 
 export type StepType = StepNode['type'];
 
-export const STEP_META: Record<StepType, { label: string; icon: string; color: string; role: string; hint: string }> = {
+/**
+ * Each kind of step as the builder, the preview and "After you submit" name it.
+ * `hue` is its .rd-tag colour (lib/tags), so a kind looks the same everywhere.
+ */
+export const STEP_META: Record<
+    StepType,
+    { label: string; icon: string; hue: TagHue; role: string; people: string; hint: string }
+> = {
     fill: {
-        label: 'Handler',
-        icon: 'mdi-account-edit-outline',
-        color: '#7a56d1',
-        role: 'Handler',
-        hint: 'User fills their part of the form — no approval',
+        label: 'Fill in',
+        icon: 'mdi-pencil-outline',
+        hue: 'violet',
+        role: 'Fills in',
+        people: 'People',
+        hint: 'Someone fills in their part of the form. No approving.',
     },
     approval: {
         label: 'Approval',
         icon: 'mdi-account-check-outline',
-        color: '#e8871e',
-        role: 'Approver',
-        hint: 'Approve or reject the submission',
+        hue: 'orange',
+        role: 'Approves',
+        people: 'Approvers',
+        hint: 'Someone approves or rejects. All of them, or any one.',
     },
     cc: {
-        label: 'CC',
+        label: 'Copy to',
         icon: 'mdi-email-outline',
-        color: '#3370ff',
-        role: 'CC',
-        hint: 'Give someone read access',
+        hue: 'blue',
+        role: 'Copied to',
+        people: 'People to copy',
+        hint: 'Someone is told and can read it. Nothing waits on them.',
     },
 };
 
-export const BRANCH_META = { label: 'Conditional Branch', color: '#22a06b', hint: 'Different paths based on answers' };
+export const BRANCH_META = {
+    label: 'Branch',
+    icon: 'mdi-source-branch',
+    hue: 'teal' as TagHue,
+    hint: 'Different steps for different answers.',
+};
+
+/** Operators in words, for a branch path's condition. */
+const OPERATOR_WORDS: Record<ConditionOperator, string> = {
+    equals: 'is',
+    not_equals: 'is not',
+    includes: 'includes',
+    not_includes: 'does not include',
+    gt: 'is more than',
+    lt: 'is less than',
+    is_empty: 'is empty',
+    is_not_empty: 'is filled in',
+};
+
+/** "When Requested price is less than 70" (+N more), or null when there is no condition. */
+export function describeCondition(when: ConditionSchema | null | undefined, fields: FieldElement[]): string | null {
+    const groups = when?.groups ?? [];
+    const first = groups[0]?.conditions?.[0];
+    if (!first) return null;
+
+    const field = fields.find((candidate) => candidate.id === first.field);
+    const dated = field?.type === 'date' || field?.type === 'time';
+    const words =
+        dated && (first.operator === 'gt' || first.operator === 'lt')
+            ? first.operator === 'gt'
+                ? 'is after'
+                : 'is before'
+            : (OPERATOR_WORDS[first.operator] ?? first.operator);
+    let text = `When ${field ? field.label || 'an untitled field' : 'a removed field'} ${words}`;
+    if (first.value !== null && first.value !== undefined && !['is_empty', 'is_not_empty'].includes(first.operator)) {
+        text += ` ${first.value}`;
+    }
+    const total = groups.reduce((count, group) => count + (group.conditions ?? []).length, 0);
+
+    return total > 1 ? `${text} (+${total - 1} more)` : text;
+}
 
 const emptyPermissions = () => ({ default: 'read' as const, overrides: {} });
 
@@ -58,26 +110,26 @@ export function newNode(type: StepType | 'branch'): ProcessNode {
                 field_permissions: emptyPermissions(),
             };
         case 'fill':
-            return { id: uid('nd'), type, name: 'Handler', assignee_ids: [], field_permissions: emptyPermissions() };
+            return { id: uid('nd'), type, name: 'Fill in', assignee_ids: [], field_permissions: emptyPermissions() };
         case 'cc':
-            return { id: uid('nd'), type, name: 'CC', user_ids: [], field_permissions: emptyPermissions() };
+            return { id: uid('nd'), type, name: 'Copy to', user_ids: [], field_permissions: emptyPermissions() };
         default:
             return {
                 id: uid('nd'),
                 type: 'branch',
                 branches: [
-                    { id: uid('br'), name: 'Conditional branch 1', when: { logic: 'or', groups: [] }, nodes: [] },
-                    { id: uid('br'), name: 'Else', when: null, nodes: [] },
+                    { id: uid('br'), name: 'Path 1', when: { logic: 'or', groups: [] }, nodes: [] },
+                    { id: uid('br'), name: 'Otherwise', when: null, nodes: [] },
                 ],
             };
     }
 }
 
 export function newArm(position: number): BranchArm {
-    return { id: uid('br'), name: `Conditional branch ${position}`, when: { logic: 'or', groups: [] }, nodes: [] };
+    return { id: uid('br'), name: `Path ${position}`, when: { logic: 'or', groups: [] }, nodes: [] };
 }
 
-/** The ids a step goes to (approvers, handlers or recipients). */
+/** The ids a step goes to (approvers, the people filling in, or the people copied). */
 export function participantIds(node: StepNode): number[] {
     if (node.type === 'approval') return node.approver_ids ?? [];
     if (node.type === 'fill') return node.assignee_ids ?? [];
@@ -185,12 +237,12 @@ export function collectProblems(nodes: ProcessNode[], fields: FieldElement[]): P
                     fail(node.id, `Approval step "${node.name || '?'}" needs at least one approver.`);
             } else if (node.type === 'fill') {
                 const name = node.name || '?';
-                if (!node.name?.trim()) fail(node.id, 'Every handler step needs a name.');
+                if (!node.name?.trim()) fail(node.id, 'Every fill-in step needs a name.');
                 const mode = node.assignee_mode ?? 'fixed';
                 if (mode === 'fixed' && !node.assignee_ids?.length)
-                    fail(node.id, `Handler step "${name}" needs at least one handler.`);
+                    fail(node.id, `Fill-in step "${name}" needs at least one person.`);
                 if (mode === 'field' && !node.assignee_field) {
-                    fail(node.id, `Handler step "${name}" needs a Person field to take its handler from.`);
+                    fail(node.id, `Fill-in step "${name}" needs a Person field to take its person from.`);
                 }
                 if (mode === 'field' && node.assignee_field) {
                     // An optional person field can reach the step empty.
@@ -198,20 +250,17 @@ export function collectProblems(nodes: ProcessNode[], fields: FieldElement[]): P
                     if (source && !source.mandatory) {
                         fail(
                             node.id,
-                            `Handler step "${name}" takes its handler from "${source.label || node.assignee_field}". Set that field to Required in Form Design so it must always be answered.`,
+                            `Fill-in step "${name}" takes its person from "${source.label || node.assignee_field}". Make that field required in Fields so it must always be answered.`,
                         );
                     }
                 }
                 const overrides = node.field_permissions?.overrides ?? {};
                 if (!Object.values(overrides).includes('edit')) {
-                    fail(
-                        node.id,
-                        `Handler step "${name}" needs at least one field marked as "Fill" in Form Permissions.`,
-                    );
+                    fail(node.id, `Fill-in step "${name}" needs at least one field ticked under "Fill in".`);
                 }
             } else if (node.type === 'cc') {
                 if (!node.user_ids?.length)
-                    fail(node.id, `CC step "${node.name || '?'}" needs at least one recipient.`);
+                    fail(node.id, `Copy-to step "${node.name || '?'}" needs at least one person.`);
             } else if (node.type === 'branch') {
                 node.branches.forEach((arm, armIndex) => {
                     const isLast = armIndex === node.branches.length - 1;
@@ -227,7 +276,7 @@ export function collectProblems(nodes: ProcessNode[], fields: FieldElement[]): P
                         } else {
                             const range = list.slice(target, nodeIndex);
                             if (!hasBlockingStep(range)) {
-                                fail(node.id, `Branch "${name}" repeats a range with no Handler or Approval step.`);
+                                fail(node.id, `Branch "${name}" repeats a range with no fill-in or approval step.`);
                             } else if (!rangeCanChangeCondition(range, arm.when, fields)) {
                                 fail(
                                     node.id,
@@ -239,12 +288,12 @@ export function collectProblems(nodes: ProcessNode[], fields: FieldElement[]): P
                         if (!hasBlockingStep(arm.nodes)) {
                             fail(
                                 node.id,
-                                `Loop branch "${name}" needs at least one Handler or Approval step inside it.`,
+                                `Loop branch "${name}" needs at least one fill-in or approval step inside it.`,
                             );
                         } else if (!rangeCanChangeCondition(arm.nodes, arm.when, fields)) {
                             fail(
                                 node.id,
-                                `Loop branch "${name}" needs a Handler step that can fill the field(s) its condition checks — otherwise the loop can never end.`,
+                                `Loop branch "${name}" needs a fill-in step that can fill the field(s) its condition checks — otherwise the loop can never end.`,
                             );
                         }
                     }

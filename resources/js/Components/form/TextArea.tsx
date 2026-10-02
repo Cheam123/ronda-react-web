@@ -13,7 +13,8 @@ const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(function TextAre
         <textarea
             ref={ref}
             rows={rows}
-            className={clsx('form-control form-control-sm custom-font-small', invalid && 'is-invalid', className)}
+            aria-invalid={invalid || undefined}
+            className={clsx('rd-input', invalid && 'is-invalid', className)}
             {...props}
         />
     );

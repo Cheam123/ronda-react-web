@@ -1,9 +1,11 @@
-import clsx from 'clsx';
 import { useState } from 'react';
+import Field from '@/Components/form/Field';
 import { MultiSearchSelect } from '@/Components/form/SearchSelect';
-import Select from '@/Components/form/Select';
+import Switch from '@/Components/form/Switch';
 import TextArea from '@/Components/form/TextArea';
 import TextInput from '@/Components/form/TextInput';
+import { Choices } from '@/Components/surface/Choices';
+import { conditionCount } from '@/lib/forms/conditions';
 import type { DesignSection } from '@/lib/forms/design';
 import { TYPES_WITH_VALUES, typeLabel } from '@/lib/forms/schema';
 import type { ConditionSchema, FieldElement, FormElement, Person } from '@/types/forms';
@@ -21,15 +23,7 @@ interface SettingsPanelProps {
     onSectionChange: (patch: Partial<DesignSection>) => void;
 }
 
-function Label({ children, required = false }: { children: string; required?: boolean }) {
-    return (
-        <label className="form-label small fw-semibold">
-            {children} {required && <span className="text-danger">*</span>}
-        </label>
-    );
-}
-
-/** The right-hand panel: the selected widget's settings and its visibility conditions. */
+/** The right-hand panel: the selected field's settings and when it shows. */
 export default function SettingsPanel({
     subject,
     sources,
@@ -37,92 +31,128 @@ export default function SettingsPanel({
     onElementChange,
     onSectionChange,
 }: SettingsPanelProps) {
-    const [tab, setTab] = useState<'basic' | 'visibility'>('basic');
+    const conditions = subject
+        ? subject.kind === 'group'
+            ? subject.section.visible_when
+            : subject.element.visible_when
+        : null;
+    // The editor opens on "Add a condition", or straight away when there are some.
+    const [editing, setEditing] = useState(conditionCount(conditions) > 0);
 
     if (!subject) {
         return (
-            <div className="text-muted text-center py-5 px-3">
-                <i className="mdi mdi-gesture-tap display-6 d-block mb-2" />
-                Select a widget in the preview to configure it.
+            <div className="builder-settings__empty">
+                <span className="rd-icon rd-icon--neutral">
+                    <i className="mdi mdi-cursor-default-click-outline" aria-hidden="true" />
+                </span>
+                <p>Pick a field in the preview to change it.</p>
             </div>
         );
     }
 
     const subjectId = subject.kind === 'group' ? subject.section.id : subject.element.id;
-    const conditions = subject.kind === 'group' ? subject.section.visible_when : subject.element.visible_when;
     const setConditions = (schema: ConditionSchema | null) =>
         subject.kind === 'group'
             ? onSectionChange({ visible_when: schema })
             : onElementChange({ visible_when: schema });
 
-    const title =
+    const noun = subject.kind === 'group' ? 'group' : subject.element.kind === 'description' ? 'text' : 'field';
+    const kind =
         subject.kind === 'group'
             ? 'Group'
             : subject.element.kind === 'description'
               ? 'Description'
               : typeLabel(subject.element.type);
+    const name =
+        subject.kind === 'group'
+            ? subject.section.label
+            : subject.element.kind === 'description'
+              ? ''
+              : subject.element.label;
 
     return (
-        <div className="p-3">
-            <h5 className="mb-3">{title}</h5>
-            <ul className="nav nav-pills nav-fill mb-3">
-                {(['basic', 'visibility'] as const).map((name) => (
-                    <li key={name} className="nav-item">
-                        <button
-                            type="button"
-                            className={clsx('nav-link py-1', tab === name && 'active')}
-                            onClick={() => setTab(name)}
-                        >
-                            {name === 'basic' ? 'Basic Settings' : 'Visibility Settings'}
-                        </button>
-                    </li>
-                ))}
-            </ul>
+        <div className="builder-settings">
+            <div className="builder-settings__head">
+                <span className="builder-settings__title">
+                    <span className="builder-pane__sub">Selected {noun}</span>
+                    <span className="builder-pane__title">{name || `Untitled ${noun}`}</span>
+                </span>
+                <span className="rd-chip">{kind}</span>
+            </div>
 
-            {tab === 'basic' ? (
-                subject.kind === 'group' ? (
-                    <>
-                        <div className="mb-3">
-                            <Label required>Group name</Label>
-                            <TextInput
-                                placeholder="e.g. Customer Details"
-                                value={subject.section.label}
-                                onChange={(event) => onSectionChange({ label: event.target.value })}
-                            />
-                        </div>
-                        <p className="text-muted small mb-0">
-                            Drag fields into the group section in the preview. Hiding a group hides all fields inside
-                            it.
-                        </p>
-                    </>
+            <div className="builder-settings__body">
+                {subject.kind === 'group' ? (
+                    <Field label="Group name" htmlFor={`label-${subjectId}`} required>
+                        <TextInput
+                            id={`label-${subjectId}`}
+                            large
+                            placeholder="e.g. Outlet and price"
+                            value={subject.section.label}
+                            onChange={(event) => onSectionChange({ label: event.target.value })}
+                        />
+                        <span className="rd-field__hint">
+                            Drag fields into the group in the preview. Hiding the group hides every field in it.
+                        </span>
+                    </Field>
                 ) : subject.element.kind === 'description' ? (
-                    <div className="mb-3">
-                        <Label required>Text</Label>
+                    <Field
+                        label="Text"
+                        htmlFor={`text-${subjectId}`}
+                        required
+                        hint="Shown on the form as it is. Nobody fills it in."
+                    >
                         <TextArea
+                            id={`text-${subjectId}`}
                             rows={4}
-                            placeholder="Description shown on the form"
+                            placeholder="e.g. Attach the customer's quote if you have one."
                             value={subject.element.text}
                             onChange={(event) => onElementChange({ text: event.target.value })}
                         />
-                    </div>
+                    </Field>
                 ) : (
                     <FieldSettings element={subject.element} people={people} onChange={onElementChange} />
-                )
-            ) : (
-                <>
-                    <p className="text-muted small mb-2">
-                        Show this widget only when the conditions below match. Conditions in a block must{' '}
-                        <strong>all</strong> match (AND); any block matching is enough (OR). Leave empty to always show.
-                    </p>
-                    <ConditionEditor
-                        key={subjectId}
-                        initial={conditions}
-                        onChange={setConditions}
-                        sources={sources}
-                        people={people}
-                    />
-                </>
-            )}
+                )}
+
+                <div className="rd-field">
+                    <span className="rd-field__label">Show this {noun}</span>
+                    {editing ? (
+                        <>
+                            <ConditionEditor
+                                key={subjectId}
+                                initial={conditions}
+                                onChange={setConditions}
+                                sources={sources}
+                                people={people}
+                                startWithBlock
+                            />
+                            <span className="rd-field__hint">
+                                Everything in a set must match. With several sets, any one is enough. Remove every
+                                condition to show it always.
+                            </span>
+                        </>
+                    ) : (
+                        <>
+                            <div className="builder-settings__always">
+                                <span>Always</span>
+                                <button
+                                    type="button"
+                                    className="rd-btn rd-btn--sm"
+                                    disabled={sources.length === 0}
+                                    onClick={() => setEditing(true)}
+                                >
+                                    <i className="mdi mdi-plus" aria-hidden="true" />
+                                    Add a condition
+                                </button>
+                            </div>
+                            <span className="rd-field__hint">
+                                {sources.length === 0
+                                    ? 'Add another field first. A condition looks at its answer.'
+                                    : `For example, only when ${sources[0].label ? `"${sources[0].label}"` : 'another field'} has a certain answer.`}
+                            </span>
+                        </>
+                    )}
+                </div>
+            </div>
         </div>
     );
 }
@@ -136,139 +166,152 @@ function FieldSettings({
     people: Person[];
     onChange: (patch: Partial<FieldElement>) => void;
 }) {
+    const id = element.id;
     const hasMinMax = element.type === 'multi-select' || element.type === 'multi-choice';
 
     return (
         <>
-            <div className="mb-3">
-                <Label required>Title</Label>
+            <Field label="Label" htmlFor={`label-${id}`} required>
                 <TextInput
-                    placeholder="Field title"
+                    id={`label-${id}`}
+                    large
+                    placeholder="e.g. Requested price per kg"
                     value={element.label}
                     onChange={(event) => onChange({ label: event.target.value })}
                 />
-            </div>
-            <div className="mb-3">
-                <Label>Tooltip / placeholder</Label>
+            </Field>
+            <Field label="Placeholder" htmlFor={`placeholder-${id}`} hint="Shown in the empty box.">
                 <TextInput
-                    placeholder="Shown inside the empty input"
+                    id={`placeholder-${id}`}
+                    large
+                    placeholder="Leave it empty for the usual text"
                     value={element.placeholder ?? ''}
                     onChange={(event) => onChange({ placeholder: event.target.value })}
                 />
-            </div>
-            <div className="form-check form-switch mb-3">
-                <input
-                    className="form-check-input"
-                    type="checkbox"
-                    id={`required-${element.id}`}
+            </Field>
+            <div className="builder-settings__switch">
+                <Switch
+                    id={`required-${id}`}
                     checked={element.mandatory}
-                    onChange={(event) => onChange({ mandatory: event.target.checked })}
+                    onChange={(mandatory) => onChange({ mandatory })}
+                    label="Required"
+                    description="They can't submit without it."
                 />
-                <label className="form-check-label small" htmlFor={`required-${element.id}`}>
-                    Required
-                </label>
             </div>
 
             {element.type === 'date' && (
-                <div className="mb-3">
-                    <Label>Minimum date of request</Label>
-                    <div className="input-group input-group-sm settings-narrow">
-                        <span className="input-group-text">Today +</span>
-                        <TextInput
+                <Field
+                    label="Earliest date they can pick"
+                    htmlFor={`min-days-${id}`}
+                    hint="Leave it empty to allow any date."
+                >
+                    <div className="rd-affix">
+                        <span className="rd-affix__start">Today +</span>
+                        <input
+                            id={`min-days-${id}`}
                             type="number"
                             min={1}
                             max={365}
-                            placeholder="none"
+                            inputMode="numeric"
+                            placeholder="Any"
                             value={element.min_days ?? ''}
                             onChange={(event) =>
                                 onChange({ min_days: event.target.value ? parseInt(event.target.value, 10) : null })
                             }
                         />
-                        <span className="input-group-text">days</span>
+                        <span className="rd-affix__end">days</span>
                     </div>
-                    <div className="form-text small">The earliest date users may pick. Leave empty for no minimum.</div>
-                </div>
+                </Field>
             )}
 
             {hasMinMax && (
-                <div className="d-flex gap-2 mb-3">
-                    <div className="input-group input-group-sm">
-                        <span className="input-group-text">Min</span>
+                <div className="rd-form__row">
+                    <Field label="Pick at least" htmlFor={`min-${id}`}>
                         <TextInput
+                            id={`min-${id}`}
+                            large
                             type="number"
                             min={1}
+                            placeholder="Any"
                             value={element.min ?? ''}
                             onChange={(event) => onChange({ min: event.target.value || null })}
                         />
-                    </div>
-                    <div className="input-group input-group-sm">
-                        <span className="input-group-text">Max</span>
+                    </Field>
+                    <Field label="Pick at most" htmlFor={`max-${id}`}>
                         <TextInput
+                            id={`max-${id}`}
+                            large
                             type="number"
                             min={1}
+                            placeholder="No limit"
                             value={element.max ?? ''}
                             onChange={(event) => onChange({ max: event.target.value || null })}
                         />
-                    </div>
+                    </Field>
                 </div>
             )}
 
             {element.type === 'user' && (
-                <div className="mb-3">
-                    <Label>People to choose from</Label>
-                    <Select
-                        className="mb-2"
+                <>
+                    <Choices
+                        legend="People to choose from"
                         options={[
                             { value: 'all', label: 'Everyone' },
-                            { value: 'selected', label: 'Selected people only' },
+                            { value: 'selected', label: 'Only some people' },
                         ]}
                         value={element.user_source === 'selected' ? 'selected' : 'all'}
-                        onChange={(event) =>
+                        required
+                        onChange={(value) =>
                             onChange(
-                                event.target.value === 'selected'
+                                value === 'selected'
                                     ? { user_source: 'selected' }
                                     : { user_source: 'all', user_ids: [] },
                             )
                         }
                     />
                     {element.user_source === 'selected' && (
-                        <>
+                        <Field
+                            label="People"
+                            htmlFor={`people-${id}`}
+                            hint="Only these people show in the list on the form."
+                        >
                             <MultiSearchSelect
-                                placeholder="Search and select people..."
+                                id={`people-${id}`}
+                                placeholder="Add people"
                                 options={people.map((person) => ({ value: person.id, label: person.name }))}
                                 value={element.user_ids ?? []}
                                 onChange={(ids) => onChange({ user_ids: ids.map(Number) })}
                             />
-                            <div className="form-text small">Only these people appear in the picker on the form.</div>
-                        </>
+                        </Field>
                     )}
-                </div>
+                </>
             )}
 
             {element.type === 'gps' && (
-                <div className="mb-3">
-                    <Label>When to stamp</Label>
-                    <Select
-                        options={[
-                            { value: 'auto', label: 'As soon as the form opens' },
-                            { value: 'manual', label: 'When the user taps "Stamp location"' },
-                        ]}
-                        value={element.capture_mode === 'manual' ? 'manual' : 'auto'}
-                        onChange={(event) =>
-                            onChange({ capture_mode: event.target.value === 'manual' ? 'manual' : 'auto' })
-                        }
-                    />
-                    <div className="form-text small">
-                        The location always comes from the device. Nobody can type it in.
-                    </div>
-                </div>
+                <Choices
+                    legend="When to stamp it"
+                    options={[
+                        { value: 'auto', label: 'When the form opens' },
+                        { value: 'manual', label: 'When they tap Stamp location' },
+                    ]}
+                    value={element.capture_mode === 'manual' ? 'manual' : 'auto'}
+                    required
+                    onChange={(value) => onChange({ capture_mode: value === 'manual' ? 'manual' : 'auto' })}
+                    hint="The location always comes from the device. Nobody can type it in."
+                />
             )}
 
             {TYPES_WITH_VALUES.includes(element.type) && (
-                <>
-                    <Label required>Options</Label>
+                <div className="rd-field">
+                    <span className="rd-field__label">
+                        {element.type === 'multi-select' ? 'Categories and options' : 'Options'}
+                        <span className="rd-field__required" aria-hidden="true">
+                            {' '}
+                            *
+                        </span>
+                    </span>
                     <OptionsEditor key={element.id} element={element} onChange={(values) => onChange({ values })} />
-                </>
+                </div>
             )}
         </>
     );

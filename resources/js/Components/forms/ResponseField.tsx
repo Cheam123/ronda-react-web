@@ -25,7 +25,7 @@ const WIDE_TYPES = ['textarea', 'file', 'checkbox', 'multi-choice', 'multi-selec
 function Value({ field, onImageClick }: { field: ResponseFieldData; onImageClick?: (src: string) => void }) {
     const { type, value } = field;
 
-    if (isEmptyValue(value)) return <span className="rs-field-empty">&mdash;</span>;
+    if (isEmptyValue(value)) return <span className="rd-muted">&mdash;</span>;
 
     if (type === 'file') return <FileAnswerList value={value} onImageClick={onImageClick} />;
 
@@ -50,7 +50,7 @@ function Value({ field, onImageClick }: { field: ResponseFieldData; onImageClick
 
     if (type === 'gps') {
         const stamp = parseGpsStamp(value);
-        if (!stamp) return <span className="rs-field-empty">&mdash;</span>;
+        if (!stamp) return <span className="rd-muted">&mdash;</span>;
         const details = [
             typeof stamp.accuracy === 'number' ? `±${Math.round(stamp.accuracy)} m` : null,
             stamp.captured_at ? new Date(stamp.captured_at).toLocaleString() : null,
@@ -58,24 +58,24 @@ function Value({ field, onImageClick }: { field: ResponseFieldData; onImageClick
         return (
             <>
                 <div className="rs-field-value">
-                    <i className="mdi mdi-map-marker-outline me-1 text-muted" />
+                    <i className="mdi mdi-map-marker-outline" aria-hidden="true" />
                     {stamp.lat}, {stamp.lng}
-                    <a href={mapsUrl(stamp)} target="_blank" rel="noopener noreferrer" className="ms-1 small">
+                    <a href={mapsUrl(stamp)} target="_blank" rel="noopener noreferrer" className="rs-answer__link">
                         Open in Maps
                     </a>
                 </div>
-                {details.length > 0 && <div className="text-muted small">{details.join(' · ')}</div>}
+                {details.length > 0 && <div className="rd-muted">{details.join(' · ')}</div>}
             </>
         );
     }
 
     if (Array.isArray(value)) {
         return (
-            <div className="rs-tag-list">
+            <div className="rs-answer__tags">
                 {value
                     .filter((item) => item !== null && item !== '' && typeof item !== 'object')
                     .map((item, index) => (
-                        <span key={`${String(item)}-${index}`} className="rs-tag">
+                        <span key={`${String(item)}-${index}`} className="rd-tag">
                             {String(item)}
                         </span>
                     ))}
@@ -86,7 +86,7 @@ function Value({ field, onImageClick }: { field: ResponseFieldData; onImageClick
     if (type === 'user') {
         return (
             <div className="rs-field-value">
-                <i className="mdi mdi-account-outline me-1 text-muted" />
+                <i className="mdi mdi-account-outline" aria-hidden="true" />
                 {field.user_label}
             </div>
         );
@@ -105,7 +105,7 @@ function Value({ field, onImageClick }: { field: ResponseFieldData; onImageClick
     return <div className="rs-field-value">{String(value)}</div>;
 }
 
-/** A read-only answer on the record page. */
+/** A read-only answer on the record page: the question, then what was answered. */
 export default function ResponseField({
     field,
     onImageClick,
@@ -114,14 +114,16 @@ export default function ResponseField({
     onImageClick?: (src: string) => void;
 }) {
     return (
-        <div className={clsx('rs-field', WIDE_TYPES.includes(field.type) && 'rs-field-wide')}>
-            <div className="rs-field-label">{field.label}</div>
-            <Value field={field} onImageClick={onImageClick} />
+        <div className={clsx('rs-answer', WIDE_TYPES.includes(field.type) && 'is-wide')}>
+            <dt className="rs-answer__label">{field.label}</dt>
+            <dd className="rs-answer__value">
+                <Value field={field} onImageClick={onImageClick} />
+            </dd>
         </div>
     );
 }
 
-/** Answers laid out in the form's own sections. */
+/** Answers laid out in the form's own groups. */
 export function ResponseSections({
     sections,
     onImageClick,
@@ -132,18 +134,14 @@ export function ResponseSections({
     return (
         <>
             {sections.map((section, index) => (
-                <div key={`${section.label ?? 'fields'}-${index}`} className="rs-section">
-                    {section.label && (
-                        <div className="rs-section-head">
-                            <div className="rs-section-label">{section.label}</div>
-                        </div>
-                    )}
-                    <div className="rs-fields-grid">
+                <section key={`${section.label ?? 'fields'}-${index}`} className="rs-section">
+                    {section.label && <h3 className="rs-section__title">{section.label}</h3>}
+                    <dl className="rs-answers">
                         {section.fields.map((field, fieldIndex) => (
                             <ResponseField key={field.id ?? fieldIndex} field={field} onImageClick={onImageClick} />
                         ))}
-                    </div>
-                </div>
+                    </dl>
+                </section>
             ))}
         </>
     );

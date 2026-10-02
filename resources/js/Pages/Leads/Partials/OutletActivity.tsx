@@ -1,79 +1,92 @@
-import { Link, router, usePage } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import clsx from 'clsx';
-import DataTable from '@/Components/ui/DataTable';
-import SectionHeader from '@/Components/ui/SectionHeader';
-import Pill from '@/Components/ui/Pill';
+import Meter from '@/Components/surface/Meter';
 import { useAuth } from '@/hooks/useAuth';
 import { confirm } from '@/lib/dialogs';
 import { formatMoney, formatQuantity, pluralize } from '@/lib/format';
 import type { PageProps } from '@/types';
 import type { Order, Recommendation, Visit } from '@/types/leads';
 
-interface OutletActivityProps {
-    leadId: number;
-    visits: Visit[];
-    orders: Order[];
-    /** Admins / Managers get a read-only copy of the rep's "Recommended" tab. */
-    recommendation: Recommendation | null;
-}
+/** IFE reports filed at the outlet (newest first). */
+export function VisitHistory({ visits }: { visits: Visit[] }) {
+    if (visits.length === 0) {
+        return (
+            <p className="lead-activity__empty">
+                No visits recorded at this outlet yet. Visits filed from the app show up here.
+            </p>
+        );
+    }
 
-function VisitHistory({ visits }: { visits: Visit[] }) {
     return (
-        <div className="mt-3">
-            <SectionHeader title="Visit history" note={`(${visits.length})`} />
-            <div className="m-2">
-                {visits.length === 0 ? (
-                    <div className="text-muted custom-font-small py-2">
-                        No visits recorded at this outlet yet. Visits filed from the app show up here.
-                    </div>
-                ) : (
-                    <DataTable nowrap={false}>
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Visited by</th>
-                                <th>Status</th>
-                                <th>Summary</th>
-                                <th>Next follow-up</th>
-                                <th style={{ width: 30 }} />
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {visits.map((visit) => (
-                                <tr key={visit.id}>
-                                    <td className="text-nowrap">{visit.visited_at}</td>
-                                    <td>{visit.visited_by}</td>
-                                    <td>{visit.status}</td>
-                                    <td>{visit.summary}</td>
-                                    <td className="text-nowrap">
-                                        {visit.followup_date}
-                                        {visit.followup_plan && (
-                                            <div className="text-muted custom-font-xsmall text-wrap">
-                                                {visit.followup_plan}
-                                            </div>
+        <div className="rd-scroll">
+            <table className="rd-table rd-table--flush lead-activity__table">
+                <thead>
+                    <tr>
+                        <th scope="col">Visited</th>
+                        <th scope="col">By</th>
+                        <th scope="col">What happened</th>
+                        <th scope="col">Next follow-up</th>
+                        <th scope="col" className="rd-col-actions">
+                            <span className="visually-hidden">Report</span>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {visits.map((visit) => {
+                        const [date, time] = visit.visited_at.split(', ');
+
+                        return (
+                            <tr key={visit.id} className="lead-activity__top">
+                                <td className="text-nowrap">
+                                    <span className="rd-person__text">
+                                        <span className="lead-activity__strong">{date}</span>
+                                        {time && <span className="rd-person__sub">{time}</span>}
+                                    </span>
+                                </td>
+                                <td className="text-nowrap">{visit.visited_by ?? '—'}</td>
+                                <td>
+                                    <div className="lead-activity__stack">
+                                        {visit.status && (
+                                            <span className="rd-chip align-self-start">{visit.status}</span>
                                         )}
-                                    </td>
-                                    <td>
-                                        <a
-                                            href={route('ifereport.view', { id: visit.id })}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            title="Open report"
-                                        >
-                                            <i className="mdi mdi-clipboard-outline font-size-20" />
-                                        </a>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </DataTable>
-                )}
-            </div>
+                                        <span>{visit.summary}</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    {visit.followup_date ? (
+                                        <span className="rd-person__text">
+                                            <span className="lead-activity__strong">{visit.followup_date}</span>
+                                            {visit.followup_plan && (
+                                                <span className="lead-activity__note">{visit.followup_plan}</span>
+                                            )}
+                                        </span>
+                                    ) : (
+                                        <span className="rd-muted">—</span>
+                                    )}
+                                </td>
+                                <td className="rd-col-actions">
+                                    <a
+                                        href={route('ifereport.view', { id: visit.id })}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="rd-btn rd-btn--icon"
+                                        aria-label={`Open the IFE report from ${date}`}
+                                        title="Open the report"
+                                    >
+                                        <i className="mdi mdi-clipboard-text-outline" aria-hidden="true" />
+                                    </a>
+                                </td>
+                            </tr>
+                        );
+                    })}
+                </tbody>
+            </table>
         </div>
     );
 }
 
-function OrderHistory({ leadId, orders }: { leadId: number; orders: Order[] }) {
+/** Orders recorded for the outlet; a manager can cancel one. */
+export function OrderHistory({ orders }: { orders: Order[] }) {
     const { can } = useAuth();
     const { currency } = usePage<PageProps>().props.app;
 
@@ -88,166 +101,167 @@ function OrderHistory({ leadId, orders }: { leadId: number; orders: Order[] }) {
         }
     };
 
+    if (orders.length === 0) {
+        return <p className="lead-activity__empty">No orders recorded for this outlet yet.</p>;
+    }
+
     return (
-        <div className="mt-3">
-            <SectionHeader
-                title="Order history"
-                note={`(${orders.length})`}
-                actions={
-                    can('record_order') && (
-                        <Link href={route('lead.orders.create', leadId)} className="btn btn-sm btn-light py-0">
-                            + Record order
-                        </Link>
-                    )
-                }
-            />
-            <div className="m-2">
-                {orders.length === 0 ? (
-                    <div className="text-muted custom-font-small py-2">No orders recorded for this outlet yet.</div>
-                ) : (
-                    <DataTable nowrap={false}>
-                        <thead>
-                            <tr>
-                                <th>Order</th>
-                                <th>Date</th>
-                                <th>Products</th>
-                                <th className="num">Total ({currency})</th>
-                                <th>Recorded by</th>
-                                <th />
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {orders.map((order) => (
-                                <tr key={order.id} className={clsx(order.cancelled && 'opacity-50')}>
-                                    <td className="text-nowrap">
-                                        {order.order_no} {order.cancelled && <Pill tone="grey">Cancelled</Pill>}
-                                    </td>
-                                    <td className="text-nowrap">{order.order_date}</td>
-                                    <td>
-                                        {order.lines.map((line, index) => (
-                                            <div key={index}>
-                                                {formatQuantity(line.quantity)} {line.unit} &times; {line.product}
-                                            </div>
-                                        ))}
-                                        {order.remark && (
-                                            <div className="text-muted custom-font-xsmall">{order.remark}</div>
-                                        )}
-                                    </td>
-                                    <td className="num text-nowrap">{formatMoney(order.total_amount)}</td>
-                                    <td>{order.recorded_by}</td>
-                                    <td className="text-nowrap">
-                                        {can('manage_order') && !order.cancelled && (
-                                            <button
-                                                type="button"
-                                                className="btn btn-sm btn-outline-danger py-0"
-                                                onClick={() => cancel(order)}
-                                            >
-                                                Cancel
-                                            </button>
-                                        )}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </DataTable>
-                )}
-            </div>
+        <div className="rd-scroll">
+            <table className="rd-table rd-table--flush lead-activity__table">
+                <thead>
+                    <tr>
+                        <th scope="col">Order</th>
+                        <th scope="col">Date</th>
+                        <th scope="col">Products</th>
+                        <th scope="col" className="num">
+                            Total ({currency})
+                        </th>
+                        <th scope="col">Recorded by</th>
+                        <th scope="col" className="rd-col-actions">
+                            <span className="visually-hidden">Cancel</span>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {orders.map((order) => (
+                        <tr key={order.id} className={clsx('lead-activity__top', order.cancelled && 'is-inactive')}>
+                            <td className="text-nowrap">
+                                <div className="lead-activity__stack">
+                                    <span className="rd-mono lead-activity__strong">{order.order_no}</span>
+                                    {order.cancelled && <span className="rd-chip align-self-start">Cancelled</span>}
+                                </div>
+                            </td>
+                            <td className="text-nowrap">{order.order_date}</td>
+                            <td>
+                                <div className="lead-activity__stack lead-activity__stack--tight">
+                                    {order.lines.map((line, index) => (
+                                        <span key={index}>
+                                            {formatQuantity(line.quantity)} {line.unit} &times; {line.product}
+                                        </span>
+                                    ))}
+                                    {order.remark && <span className="lead-activity__note">{order.remark}</span>}
+                                </div>
+                            </td>
+                            <td className="num lead-activity__strong">{formatMoney(order.total_amount)}</td>
+                            <td className="text-nowrap">{order.recorded_by ?? '—'}</td>
+                            <td className="rd-col-actions">
+                                {can('manage_order') && !order.cancelled && (
+                                    <button
+                                        type="button"
+                                        className="rd-btn rd-btn--sm rd-btn--danger-soft"
+                                        onClick={() => cancel(order)}
+                                    >
+                                        Cancel
+                                    </button>
+                                )}
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
         </div>
     );
 }
 
-function SuggestedOrders({ recommendation }: { recommendation: Recommendation }) {
+/** A read-only copy of the rep's Suggested orders for the outlet (admins and managers). */
+export function SuggestedOrders({ recommendation }: { recommendation: Recommendation }) {
     const { currency } = usePage<PageProps>().props.app;
     const items = recommendation.items ?? [];
     const explanation = recommendation.explanation;
 
-    return (
-        <div className="mt-3 mb-3">
-            <SectionHeader title="Suggested Orders" note="(what the rep sees on the outlet screen)" />
-            <div className="m-2">
-                {recommendation.status !== 'ready' ? (
-                    <div className="text-muted custom-font-small py-2">
-                        We need more information to give you suggestions. Order history and outlet details from similar
-                        locations help us learn.
-                    </div>
-                ) : (
-                    <>
-                        <div className="custom-font-small mb-2">
-                            Based on the {recommendation.similar_outlets} most similar outlets.{' '}
-                            {pluralize(recommendation.gap_count ?? 0, 'product')} not ordered yet; estimated extra value{' '}
-                            <b>
-                                {currency} {formatMoney(recommendation.estimated_monthly_value)}
-                            </b>{' '}
-                            a month.
-                        </div>
-                        <DataTable nowrap={false}>
-                            <thead>
-                                <tr>
-                                    <th>Product</th>
-                                    <th />
-                                    <th className="num">Similar outlets buying</th>
-                                    <th className="num">Suggested / month</th>
-                                    <th className="num">Currently / month</th>
-                                    <th className="num">Value / month ({currency})</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {items.map((item) => (
-                                    <tr key={item.sku}>
-                                        <td>
-                                            {item.name}{' '}
-                                            <span className="text-muted custom-font-xsmall">{item.sku}</span>
-                                        </td>
-                                        <td>
-                                            <Pill tone={item.status === 'gap' ? 'green' : 'orange'}>
-                                                {item.status === 'gap' ? 'Not ordered' : 'Top up'}
-                                            </Pill>
-                                        </td>
-                                        <td className="num">
-                                            {item.buyers} of {item.neighbors_used} ({Math.round(item.support * 100)}%)
-                                        </td>
-                                        <td className="num">
-                                            {item.recommended_qty} {item.unit}
-                                        </td>
-                                        <td className="num">
-                                            {item.current_qty} {item.unit}
-                                        </td>
-                                        <td className="num">{formatMoney(item.est_monthly_value)}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </DataTable>
+    if (recommendation.status !== 'ready') {
+        return (
+            <p className="lead-activity__empty">
+                Not enough to go on yet. Order history and outlet details from similar outlets help the suggestions.
+            </p>
+        );
+    }
 
-                        {explanation?.why && (
-                            <div className="recommendation-why custom-font-small mt-2">
-                                <b>Why these?</b>
-                                <div>{explanation.why}</div>
-                                {explanation.opening_line && (
-                                    <div className="mt-2">
-                                        <b>Opening line:</b> &quot;{explanation.opening_line}&quot;
+    return (
+        <div className="lead-activity__suggested">
+            <p className="lead-activity__lede">
+                What the rep sees on this outlet in the app. Based on the{' '}
+                <strong>{pluralize(recommendation.similar_outlets ?? 0, 'most similar outlet')}</strong>:{' '}
+                {pluralize(recommendation.gap_count ?? 0, 'product')} not ordered yet, worth about{' '}
+                <strong>
+                    {currency} {formatMoney(recommendation.estimated_monthly_value)}
+                </strong>{' '}
+                more a month.
+            </p>
+            <div className="rd-scroll">
+                <table className="rd-table rd-table--flush lead-activity__table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Product</th>
+                            <th scope="col">
+                                <span className="visually-hidden">Kind</span>
+                            </th>
+                            <th scope="col">Similar outlets buying</th>
+                            <th scope="col" className="num">
+                                Suggested / mo
+                            </th>
+                            <th scope="col" className="num">
+                                Now / mo
+                            </th>
+                            <th scope="col" className="num">
+                                Value / mo ({currency})
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {items.map((item) => (
+                            <tr key={item.sku}>
+                                <td>
+                                    <span className="rd-person__text">
+                                        <span className="lead-activity__strong">{item.name}</span>
+                                        <span className="rd-person__sub rd-mono">{item.sku}</span>
+                                    </span>
+                                </td>
+                                <td>
+                                    <span
+                                        className={
+                                            item.status === 'gap' ? 'rd-chip rd-chip--good' : 'rd-chip rd-chip--serious'
+                                        }
+                                    >
+                                        {item.status === 'gap' ? 'Not ordered' : 'Top up'}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div className="lead-activity__support">
+                                        <Meter value={item.support} max={1} thin />
+                                        <span className="text-nowrap">
+                                            {item.buyers} of {item.neighbors_used}
+                                        </span>
                                     </div>
-                                )}
-                                <div className="text-muted custom-font-xsmall mt-1">
-                                    {explanation.source === 'bedrock'
-                                        ? 'Written by Claude (Amazon Bedrock).'
-                                        : 'Template explanation (AI not configured).'}
-                                </div>
-                            </div>
-                        )}
-                    </>
-                )}
+                                </td>
+                                <td className="num">
+                                    {item.recommended_qty} {item.unit}
+                                </td>
+                                <td className="num">
+                                    {item.current_qty} {item.unit}
+                                </td>
+                                <td className="num lead-activity__strong">{formatMoney(item.est_monthly_value)}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
             </div>
+            {explanation?.why && (
+                <div className="lead-activity__why">
+                    <strong>Why these?</strong>
+                    <span>{explanation.why}</span>
+                    {explanation.opening_line && (
+                        <span>
+                            <strong>Opening line:</strong> “{explanation.opening_line}”
+                        </span>
+                    )}
+                    <span className="lead-activity__note">
+                        {explanation.source === 'bedrock'
+                            ? 'Written by Claude (Amazon Bedrock).'
+                            : 'Template explanation (AI not configured).'}
+                    </span>
+                </div>
+            )}
         </div>
-    );
-}
-
-/** The outlet's visits, orders and (for managers) suggested orders. */
-export default function OutletActivity({ leadId, visits, orders, recommendation }: OutletActivityProps) {
-    return (
-        <>
-            <VisitHistory visits={visits} />
-            <OrderHistory leadId={leadId} orders={orders} />
-            {recommendation && <SuggestedOrders recommendation={recommendation} />}
-        </>
     );
 }

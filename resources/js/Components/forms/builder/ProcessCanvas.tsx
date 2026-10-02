@@ -18,11 +18,11 @@ export interface ProcessCanvasHandle {
 
 /** Things that keep their own clicks; dragging from them does not pan. */
 const INTERACTIVE =
-    '.lk-node, .lk-cond-card, .lk-branch-pill, button, input, select, a, .lk-add-menu, .lk-zoom-controls';
+    '.flow-step, .flow-path__card, .flow-branch__head, .flow-add__menu, .process-zoom, button, input, a';
 
 const clampZoom = (z: number) => Math.min(1.5, Math.max(0.4, Math.round(z * 10) / 10));
 
-/** A pannable, zoomable viewport for the process flow (drag empty space to pan). */
+/** A pannable, zoomable view of the process flow (drag empty space to pan). */
 const ProcessCanvas = forwardRef<ProcessCanvasHandle, { children: ReactNode }>(function ProcessCanvas(
     { children },
     ref,
@@ -103,7 +103,7 @@ const ProcessCanvas = forwardRef<ProcessCanvasHandle, { children: ReactNode }>(f
     return (
         <div
             ref={viewportRef}
-            className={`process-viewport${panning ? ' lk-panning' : ''}`}
+            className={`process-viewport${panning ? ' is-panning' : ''}`}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onPointerUp={endPan}
@@ -116,22 +116,19 @@ const ProcessCanvas = forwardRef<ProcessCanvasHandle, { children: ReactNode }>(f
             >
                 {children}
             </div>
-            <div className="lk-zoom-controls">
-                <button type="button" title="Zoom out" onClick={() => zoom(-0.1)}>
-                    <i className="mdi mdi-minus" />
+            <div className="process-zoom">
+                <button type="button" className="rd-btn rd-btn--icon" aria-label="Zoom out" onClick={() => zoom(-0.1)}>
+                    <i className="mdi mdi-minus" aria-hidden="true" />
                 </button>
-                <span>{Math.round(view.z * 100)}%</span>
-                <button type="button" title="Zoom in" onClick={() => zoom(0.1)}>
-                    <i className="mdi mdi-plus" />
+                <span className="process-zoom__value">{Math.round(view.z * 100)}%</span>
+                <button type="button" className="rd-btn rd-btn--icon" aria-label="Zoom in" onClick={() => zoom(0.1)}>
+                    <i className="mdi mdi-plus" aria-hidden="true" />
                 </button>
-                <button type="button" title="Reset view" onClick={reset}>
-                    <i className="mdi mdi-fit-to-screen-outline" />
+                <button type="button" className="rd-btn rd-btn--icon" aria-label="Fit to view" onClick={reset}>
+                    <i className="mdi mdi-fit-to-page-outline" aria-hidden="true" />
                 </button>
             </div>
-            <div className="lk-canvas-hint">
-                <i className="mdi mdi-cursor-move me-1" />
-                Drag empty space to pan
-            </div>
+            <span className="process-hint">Drag an empty space to move around</span>
         </div>
     );
 });

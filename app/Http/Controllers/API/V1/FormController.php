@@ -379,11 +379,11 @@ class FormController extends Controller
         $process = $form->process;
 
         return Inertia::render('Forms/Preview', [
-            'form'          => ['id' => $form->id, 'name' => $form->name, 'description' => $form->description],
-            'schema'        => $form->schema,
-            'process'       => $process,
-            'approverNames' => (object) $this->userNamesInProcess($process),
-            'people'        => User::orderBy('name')->get(['id', 'name']),
+            'form'         => ['id' => $form->id, 'name' => $form->name, 'description' => $form->description],
+            'schema'       => $form->schema,
+            'process'      => $process,
+            'processNames' => (object) $this->userNamesInProcess($process),
+            'people'       => User::orderBy('name')->get(['id', 'name']),
         ]);
     }
 
@@ -410,6 +410,9 @@ class FormController extends Controller
             'schema'        => $schema,
             'answers'       => (object) $answers,
             'deferredIds'   => $this->processService->deferredFieldIds($form->process, $schema, $this->schemaService),
+            // "After you submit": the steps the submission goes through, and who takes them.
+            'process'       => $form->process,
+            'processNames'  => (object) $this->userNamesInProcess($form->process),
             'people'        => User::orderBy('name')->get(['id', 'name']),
             'parentOptions' => CaseLinkResource::collection($parentOptions)->resolve(),
             'parentId'      => optional($parentCase)->id,
@@ -729,6 +732,8 @@ class FormController extends Controller
             'schema'      => $schema,
             'answers'     => (object) $this->schemaService->answersById($submission->form_elements, $schema),
             'deferredIds' => $this->processService->deferredFieldIds($form->process, $schema, $this->schemaService),
+            'process'      => $form->process,
+            'processNames' => (object) $this->userNamesInProcess($form->process),
             'people'      => User::orderBy('name')->get(['id', 'name']),
             // Editing answers never changes which case this follows up on — that
             // link is set once, when the case is opened.
@@ -1425,8 +1430,8 @@ class FormController extends Controller
     }
 
     /**
-     * user id => name map for every approver/recipient referenced anywhere
-     * in a process definition (used by the preview page).
+     * user id => name map for everyone a process definition names: approvers,
+     * fill-in people and copy-to people (the preview, fill and edit pages).
      */
     private function userNamesInProcess(array $process): array
     {
@@ -1434,11 +1439,10 @@ class FormController extends Controller
 
         $collect = function ($nodes) use (&$collect, &$ids) {
             foreach ($nodes as $node) {
-                foreach (($node['approver_ids'] ?? []) as $id) {
-                    $ids[] = (int) $id;
-                }
-                foreach (($node['user_ids'] ?? []) as $id) {
-                    $ids[] = (int) $id;
+                foreach (['approver_ids', 'assignee_ids', 'user_ids'] as $key) {
+                    foreach (($node[$key] ?? []) as $id) {
+                        $ids[] = (int) $id;
+                    }
                 }
                 foreach (($node['branches'] ?? []) as $branch) {
                     $collect($branch['nodes'] ?? []);

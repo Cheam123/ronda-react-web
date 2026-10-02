@@ -1,6 +1,12 @@
 import { Link } from '@inertiajs/react';
-import DataTable from '@/Components/ui/DataTable';
+import clsx from 'clsx';
+import { useState } from 'react';
+import Initials from '@/Components/surface/Initials';
+import PageHeader from '@/Components/surface/PageHeader';
+import SurfacePage from '@/Components/surface/SurfacePage';
 import AppLayout from '@/Layouts/AppLayout';
+import { STEP_META } from '@/lib/forms/process';
+import { tagClass } from '@/lib/tags';
 
 interface FormTask {
     submission_id: number;
@@ -15,84 +21,119 @@ interface FormTask {
     stage_type: 'fill' | 'approval' | string | null;
 }
 
-/** Form Tasks: sections to fill and approvals waiting on the signed-in user. */
+type Tab = 'all' | 'approval' | 'fill';
+
+/** My tasks: approvals waiting on the signed-in user, and parts of forms for them to fill in. */
 export default function FormTasks({ tasks }: { tasks: FormTask[] }) {
+    const [tab, setTab] = useState<Tab>('all');
+    const isFill = (task: FormTask) => task.stage_type === 'fill';
+    const shown = tasks.filter((task) => tab === 'all' || (tab === 'fill' ? isFill(task) : !isFill(task)));
+
+    const tabs: { key: Tab; label: string; count: number }[] = [
+        { key: 'all', label: 'All', count: tasks.length },
+        { key: 'approval', label: 'To approve', count: tasks.filter((task) => !isFill(task)).length },
+        { key: 'fill', label: 'To fill in', count: tasks.filter(isFill).length },
+    ];
+
     return (
-        <AppLayout title="Form Tasks" breadcrumb={['Form Tasks']}>
-            <div className="page-title-box">
-                <h4 className="mb-0">Form Tasks</h4>
-            </div>
+        <AppLayout title="My tasks">
+            <SurfacePage>
+                <PageHeader
+                    crumbs={[{ label: 'Home', href: '/index' }, { label: 'My tasks' }]}
+                    title="My tasks"
+                    lede="Forms waiting on you: approvals to give and parts to fill in."
+                />
 
-            <div className="card">
-                <div className="card-body">
-                    <p className="text-muted mb-4">
-                        Forms waiting for <strong>your</strong> action — sections assigned to you and approvals on your
-                        desk.
-                    </p>
+                <section className="rd-panel rd-list records-list" aria-label="Waiting on you">
+                    <nav className="rd-tabs records-list__tabs" aria-label="Kind of task">
+                        {tabs.map((item) => (
+                            <button
+                                key={item.key}
+                                type="button"
+                                className={clsx('rd-tabs__tab', tab === item.key && 'is-active')}
+                                aria-pressed={tab === item.key}
+                                onClick={() => setTab(item.key)}
+                            >
+                                {item.label} <span className="rd-count">{item.count}</span>
+                            </button>
+                        ))}
+                    </nav>
 
-                    {tasks.length === 0 ? (
-                        <div className="text-center text-muted py-5">
-                            <i className="mdi mdi-check-all display-4 empty-icon" />
-                            <p className="mt-2 mb-0">All caught up — nothing is waiting on you.</p>
-                        </div>
-                    ) : (
-                        <DataTable className="table-hover align-middle mb-0" nowrap={false}>
+                    <div className="rd-scroll">
+                        <table className="rd-table rd-table--band records-table">
                             <thead>
                                 <tr>
-                                    <th>#</th>
-                                    <th>Record</th>
-                                    <th>Submitted By</th>
-                                    <th>Submitted At</th>
-                                    <th>Waiting For</th>
-                                    <th className="text-center">Action</th>
+                                    <th scope="col">Record</th>
+                                    <th scope="col">Submitted</th>
+                                    <th scope="col">Waiting for you to</th>
+                                    <th scope="col" className="rd-col-actions">
+                                        <span className="visually-hidden">Open</span>
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {tasks.map((task, index) => {
-                                    const fill = task.stage_type === 'fill';
+                                {shown.map((task) => {
+                                    const fill = isFill(task);
+                                    const meta = STEP_META[fill ? 'fill' : 'approval'];
                                     const href = route('form.records.show', task.record_id);
+
                                     return (
                                         <tr key={task.submission_id}>
-                                            <td>{index + 1}</td>
-                                            <td>
-                                                <Link href={href} className="fw-semibold text-body d-block">
+                                            <td className="records-table__record">
+                                                <Link href={href} className="records-table__title">
                                                     {task.record_title}
                                                 </Link>
-                                                <div className="text-muted small">
-                                                    {task.form_name} &middot;{' '}
-                                                    <span className="badge bg-light text-dark border">
-                                                        {task.record_ref}
-                                                    </span>
-                                                </div>
-                                            </td>
-                                            <td>{task.submitted_by}</td>
-                                            <td>
-                                                {task.submitted_at}
-                                                <div className="text-muted small">{task.submitted_ago}</div>
-                                            </td>
-                                            <td>
-                                                <span
-                                                    className={`badge ${fill ? 'stage-badge--fill' : 'stage-badge--approval'}`}
-                                                >
-                                                    <i
-                                                        className={`mdi ${fill ? 'mdi-account-edit-outline' : 'mdi-account-check-outline'} me-1`}
-                                                    />
-                                                    {fill ? 'Handler' : 'Approve'}: {task.stage_name}
+                                                <span className="records-table__sub">
+                                                    <span className="rd-mono">{task.record_ref}</span>
+                                                    {task.form_name}
                                                 </span>
                                             </td>
-                                            <td className="text-center">
-                                                <Link href={href} className="btn btn-sm btn-primary">
-                                                    {fill ? 'Fill Section' : 'Review'}
+                                            <td>
+                                                <span className="rd-person rd-person--sm">
+                                                    <Initials name={task.submitted_by} size="sm" />
+                                                    <span className="rd-person__text">
+                                                        <span className="rd-person__name">{task.submitted_by}</span>
+                                                        <span
+                                                            className="rd-person__sub"
+                                                            title={task.submitted_at ?? undefined}
+                                                        >
+                                                            {task.submitted_ago ?? task.submitted_at}
+                                                        </span>
+                                                    </span>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span className={tagClass(meta.hue)}>
+                                                    {fill ? 'Fill in' : 'Approve'}: {task.stage_name ?? meta.label}
+                                                </span>
+                                            </td>
+                                            <td className="rd-col-actions">
+                                                <Link href={href} className="rd-btn">
+                                                    {fill ? 'Fill in' : 'Review'}
+                                                    <i className="mdi mdi-arrow-right" aria-hidden="true" />
                                                 </Link>
                                             </td>
                                         </tr>
                                     );
                                 })}
+                                {shown.length === 0 && (
+                                    <tr>
+                                        <td colSpan={4} className="rd-list__empty">
+                                            {tasks.length === 0 ? 'Nothing is waiting on you.' : 'None of this kind.'}
+                                        </td>
+                                    </tr>
+                                )}
                             </tbody>
-                        </DataTable>
+                        </table>
+                    </div>
+
+                    {tasks.length > 0 && (
+                        <p className="rd-muted records-list__note">
+                            When you finish one it leaves this list. The Form menu shows how many are waiting.
+                        </p>
                     )}
-                </div>
-            </div>
+                </section>
+            </SurfacePage>
         </AppLayout>
     );
 }

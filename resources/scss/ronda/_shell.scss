@@ -1,0 +1,384 @@
+//
+// App shell (Layouts/AppLayout): the top bar, its menus, the phone menu
+// sheet and the page frame. Uses the surface tokens (ronda/_surface.scss).
+//
+
+.rd-skip {
+    position: absolute;
+    top: -60px;
+    left: 16px;
+    z-index: 1100;
+    padding: 10px 14px;
+    border-radius: 8px;
+    background: $rd-ink;
+    color: #fff;
+    font: 600 14px/1 $rd-sans;
+    text-decoration: none;
+
+    &:focus {
+        top: 10px;
+        color: #fff;
+    }
+}
+
+// The page-loading bar (Inertia's progress, set in app.tsx): a little
+// thicker than its 2px so a slow page is noticed. Inertia adds its own
+// styles after ours, hence the html prefix.
+html #nprogress .bar {
+    height: 3px;
+}
+
+.rd-shell {
+    min-height: 100vh;
+
+    &__main {
+        outline: none;
+    }
+
+    &__page {
+        padding: 28px 40px 48px;
+
+        @media (max-width: 1199.98px) {
+            padding: 24px 24px 40px;
+        }
+
+        @media (max-width: 575.98px) {
+            padding: 20px 16px 32px;
+        }
+    }
+
+    // The legacy breadcrumb, for pages without a PageHeader.
+    &__crumbs {
+        margin-bottom: 16px;
+        font-family: $rd-sans;
+    }
+}
+
+// ----------------------------------------------------------------- Top bar
+
+.rd-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 1030;
+    border-bottom: 1px solid $rd-line;
+    background: $rd-panel;
+    font-family: $rd-sans;
+
+    &__inner {
+        display: flex;
+        align-items: center;
+        gap: 36px;
+        height: 64px;
+        padding: 0 40px;
+    }
+
+    &__brand {
+        display: flex;
+        flex-shrink: 0;
+        align-items: center;
+
+        img {
+            display: block;
+            width: auto;
+            height: 26px;
+        }
+    }
+
+    &__end {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-left: auto;
+    }
+
+    &__toggle {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        border: 1px solid $rd-line;
+        border-radius: 10px;
+        background: $rd-panel;
+        color: $rd-body;
+        font-size: 22px;
+        line-height: 1;
+
+        &[aria-expanded="true"] {
+            background: $rd-row-alt;
+        }
+
+        &:focus-visible {
+            outline: 2px solid $rd-brand;
+            outline-offset: 2px;
+        }
+    }
+
+    @media (max-width: 1199.98px) {
+        &__inner {
+            gap: 20px;
+            padding: 0 24px;
+        }
+    }
+
+    // Phones and small tablets: the bar keeps the logo and the menu button.
+    @media (max-width: 991.98px) {
+        &__inner {
+            padding: 0 12px 0 16px;
+        }
+
+        .rd-nav,
+        &__end > .dropdown {
+            display: none;
+        }
+
+        &__toggle {
+            display: inline-flex;
+        }
+    }
+}
+
+.rd-nav {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    min-width: 0;
+
+    &__link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        height: 40px;
+        padding: 0 12px;
+        border: 0;
+        border-radius: 8px;
+        background: transparent;
+        color: $rd-ink-2;
+        font: 500 14px/1 $rd-sans;
+        text-decoration: none;
+        white-space: nowrap;
+        cursor: pointer;
+
+        > i:first-child {
+            font-size: 18px;
+            line-height: 1;
+        }
+
+        &:hover {
+            background: $rd-row-alt;
+            color: $rd-ink;
+        }
+
+        &:focus-visible {
+            outline: 2px solid $rd-brand;
+            outline-offset: 2px;
+        }
+
+        &.is-active,
+        &[aria-expanded="true"] {
+            background: $rd-track;
+            color: $rd-ink;
+            font-weight: 600;
+        }
+    }
+
+    &__chevron {
+        margin-left: -2px;
+        font-size: 16px;
+        line-height: 1;
+        transition: transform 0.15s;
+
+        [aria-expanded="true"] > & {
+            transform: rotate(180deg);
+        }
+    }
+
+    // A count waiting in a group (pending form tasks).
+    &__count {
+        padding: 1px 7px;
+        border-radius: 999px;
+        background: $rd-critical-tint;
+        color: $rd-critical;
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 1.5;
+    }
+
+    &__menu {
+        min-width: 248px;
+
+        .dropdown-item {
+            justify-content: space-between;
+
+            &.is-current {
+                background: $rd-track;
+                color: $rd-ink;
+                font-weight: 600;
+            }
+        }
+
+        .rd-nav__tick {
+            color: $rd-brand;
+            font-size: 16px;
+        }
+    }
+
+    // Tight desktops: labels only.
+    @media (max-width: 1099.98px) {
+        &__link > i:first-child {
+            display: none;
+        }
+
+        &__link {
+            padding: 0 10px;
+        }
+    }
+}
+
+.rd-account {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    height: 44px;
+    padding: 0 12px 0 6px;
+    border: 1px solid $rd-line;
+    border-radius: 999px;
+    background: $rd-panel;
+    color: $rd-ink-2;
+    font: 600 14px/1 $rd-sans;
+    cursor: pointer;
+
+    &:hover,
+    &[aria-expanded="true"] {
+        border-color: $rd-control;
+        background: $rd-row-alt;
+    }
+
+    &:focus-visible {
+        outline: 2px solid $rd-brand;
+        outline-offset: 2px;
+    }
+
+    &__name {
+        max-width: 180px;
+        overflow: hidden;
+        color: $rd-ink;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+
+        @media (max-width: 1199.98px) {
+            display: none;
+        }
+    }
+
+    &__menu {
+        min-width: 264px;
+    }
+
+    &__who {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 4px;
+        padding: 10px 10px 12px;
+        border-bottom: 1px solid $rd-line-soft;
+    }
+}
+
+// ------------------------------------------------------ Phone menu sheet
+
+.rd-sheet {
+    display: none;
+    max-height: calc(100vh - 64px);
+    overflow-y: auto;
+    border-top: 1px solid $rd-line;
+    background: $rd-panel;
+
+    @media (max-width: 991.98px) {
+        display: block;
+    }
+
+    &__nav {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        padding: 12px;
+    }
+
+    &__link {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+        height: 48px;
+        padding: 0 12px;
+        border: 0;
+        border-radius: 10px;
+        background: transparent;
+        color: $rd-body;
+        font: 500 15px/1 $rd-sans;
+        text-decoration: none;
+
+        > i:first-child {
+            color: $rd-muted;
+            font-size: 20px;
+            line-height: 1;
+        }
+
+        &.is-active {
+            background: $rd-track;
+            color: $rd-ink;
+            font-weight: 600;
+
+            > i:first-child {
+                color: $rd-brand;
+            }
+        }
+    }
+
+    &__chevron {
+        color: $rd-muted;
+        font-size: 18px;
+    }
+
+    &__group {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        margin-left: 22px;
+        padding-left: 12px;
+        border-left: 1px solid $rd-line;
+    }
+
+    &__sublink {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        height: 44px;
+        padding: 0 12px;
+        border-radius: 10px;
+        color: $rd-ink-2;
+        font: 500 14px/1 $rd-sans;
+        text-decoration: none;
+
+        &.is-active {
+            background: $rd-track;
+            color: $rd-ink;
+            font-weight: 600;
+        }
+    }
+
+    &__account {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding: 16px;
+        border-top: 1px solid $rd-line;
+    }
+
+    &__account-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+}

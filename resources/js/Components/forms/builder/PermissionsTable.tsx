@@ -1,9 +1,9 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import type { DesignSection } from '@/lib/forms/design';
 import type { FieldElement, FieldPermissions, PermissionLevel } from '@/types/forms';
 
 interface PermissionsTableProps {
-    /** fill: Read + Fill; approval: Read + Edit; cc: Read only. */
+    /** fill: See + Fill in; approval: See + Edit; cc: See only. */
     stepType: 'fill' | 'approval' | 'cc';
     fields: FieldElement[];
     sections: DesignSection[];
@@ -11,12 +11,14 @@ interface PermissionsTableProps {
     onChange: (permissions: FieldPermissions) => void;
 }
 
-/** A master checkbox that shows "some" as indeterminate. */
+/** A column's "all" checkbox, showing "some" as indeterminate. */
 function MasterCheckbox({
+    label,
     checked,
     indeterminate,
     onChange,
 }: {
+    label: string;
     checked: boolean;
     indeterminate: boolean;
     onChange: (on: boolean) => void;
@@ -29,17 +31,24 @@ function MasterCheckbox({
         <input
             ref={ref}
             type="checkbox"
-            className="form-check-input me-1"
+            className="rd-check"
+            aria-label={label}
             checked={checked}
             onChange={(event) => onChange(event.target.checked)}
         />
     );
 }
 
+const HINT = {
+    approval: 'Untick See to hide a field from the approvers. Tick Edit to let them change it.',
+    fill: 'Tick Fill in for the fields they complete. The person who submits does not see those fields.',
+    cc: 'People copied in can only read, so there is no Edit column.',
+} as const;
+
 /**
- * "Form Permissions": per field, whether this step's people may read it and
- * edit (or, for a Handler, fill) it. A section's name spans its fields' rows.
- * Saved as explicit per-field overrides; the default stays for fields added later.
+ * "What they can see": per field, whether this step's people can see it and
+ * edit (or, for a fill-in step, fill) it. Saved as explicit per-field
+ * overrides; the default stays for fields added later.
  */
 export default function PermissionsTable({ stepType, fields, sections, permissions, onChange }: PermissionsTableProps) {
     const overrides = permissions.overrides ?? {};
@@ -51,12 +60,12 @@ export default function PermissionsTable({ stepType, fields, sections, permissio
 
     const levels = Object.fromEntries(fields.map((field) => [field.id, levelOf(field)]));
     const canEdit = stepType !== 'cc';
-    const editLabel = stepType === 'fill' ? 'Fill' : 'Edit';
+    const editLabel = stepType === 'fill' ? 'Fill in' : 'Edit';
 
     const apply = (next: Record<string, PermissionLevel>) =>
         onChange({ default: permissions.default ?? 'read', overrides: { ...next } });
 
-    // Edit implies Read; unticking Read clears Edit.
+    // Edit implies See; unticking See clears Edit.
     const setRead = (id: string, on: boolean) =>
         apply({ ...levels, [id]: on ? (levels[id] === 'edit' ? 'edit' : 'read') : 'hidden' });
     const setEdit = (id: string, on: boolean) => apply({ ...levels, [id]: on ? 'edit' : 'read' });
@@ -72,119 +81,96 @@ export default function PermissionsTable({ stepType, fields, sections, permissio
     const readCount = fields.filter((field) => levels[field.id] !== 'hidden').length;
     const editCount = fields.filter((field) => levels[field.id] === 'edit').length;
 
-    const cells = (field: FieldElement) => (
-        <>
-            <td className="text-center">
+    const row = (field: FieldElement, grouped: boolean) => (
+        <tr key={field.id}>
+            <th scope="row" className={grouped ? 'perm-table__field is-grouped' : 'perm-table__field'}>
+                {field.label || 'Untitled field'}
+            </th>
+            <td className="perm-table__check">
                 <input
                     type="checkbox"
-                    className="form-check-input"
-                    aria-label={`Read ${field.label}`}
+                    className="rd-check"
+                    aria-label={`See ${field.label || 'untitled field'}`}
                     checked={levels[field.id] !== 'hidden'}
                     onChange={(event) => setRead(field.id, event.target.checked)}
                 />
             </td>
-            {canEdit ? (
-                <td className="text-center">
+            {canEdit && (
+                <td className="perm-table__check">
                     <input
                         type="checkbox"
-                        className="form-check-input"
-                        aria-label={`${editLabel} ${field.label}`}
+                        className="rd-check"
+                        aria-label={`${editLabel} ${field.label || 'untitled field'}`}
                         checked={levels[field.id] === 'edit'}
                         onChange={(event) => setEdit(field.id, event.target.checked)}
                     />
                 </td>
-            ) : (
-                <td className="text-center text-muted">—</td>
             )}
-        </>
+        </tr>
     );
 
-    // In form order: loose fields span both label columns; a section's name spans its fields.
-    const rows: JSX.Element[] = [];
+    // In form order: loose fields on their own, a group's name above its fields.
+    const rows: ReactNode[] = [];
     const done = new Set<string>();
     fields.forEach((field) => {
         if (!field.group_id) {
-            rows.push(
-                <tr key={field.id}>
-                    <td className="lk-perm-field" colSpan={2}>
-                        {field.label || '(untitled)'}
-                    </td>
-                    {cells(field)}
-                </tr>,
-            );
+            rows.push(row(field, false));
             return;
         }
         if (done.has(field.group_id)) return;
         done.add(field.group_id);
 
-        const members = fields.filter((member) => member.group_id === field.group_id);
         const section = sections.find((candidate) => candidate.id === field.group_id);
-        members.forEach((member, index) =>
-            rows.push(
-                <tr key={member.id}>
-                    {index === 0 && (
-                        <td className="lk-perm-group" rowSpan={members.length}>
-                            {section?.label || '(unnamed group)'}
-                        </td>
-                    )}
-                    <td className="lk-perm-field">{member.label || '(untitled)'}</td>
-                    {cells(member)}
-                </tr>,
-            ),
+        rows.push(
+            <tr key={field.group_id} className="perm-table__group">
+                <th scope="rowgroup" colSpan={canEdit ? 3 : 2}>
+                    {section?.label || 'Untitled group'}
+                </th>
+            </tr>,
         );
+        fields.filter((member) => member.group_id === field.group_id).forEach((member) => rows.push(row(member, true)));
     });
 
     return (
-        <>
-            <div className="small text-muted mb-2">
-                {stepType === 'fill' ? (
-                    <>
-                        Tick <strong>Fill</strong> for the fields this handler must complete. Untick{' '}
-                        <strong>Read</strong> to hide a field from them.
-                    </>
-                ) : stepType === 'cc' ? (
-                    <>
-                        Untick <strong>Read</strong> to hide a field from the CC recipients.
-                    </>
-                ) : (
-                    <>
-                        Untick <strong>Read</strong> to hide a field from the approvers; tick <strong>Edit</strong> to
-                        let them change it.
-                    </>
-                )}
-            </div>
-            <div className="table-responsive">
-                <table className="table table-sm table-bordered lk-perm-table mb-0">
+        <div className="rd-field">
+            <span className="rd-field__label">What they can see</span>
+            <span className="rd-field__hint perm-table__hint">{HINT[stepType]}</span>
+            {fields.length === 0 ? (
+                <p className="rd-muted">The form has no fields yet.</p>
+            ) : (
+                <table className="perm-table">
                     <thead>
                         <tr>
-                            <th colSpan={2} className="small">
-                                Form fields
+                            <th scope="col">Field</th>
+                            <th scope="col" className="perm-table__check">
+                                <span className="perm-table__head">
+                                    <MasterCheckbox
+                                        label="See every field"
+                                        checked={readCount === fields.length}
+                                        indeterminate={readCount > 0 && readCount < fields.length}
+                                        onChange={setAllRead}
+                                    />
+                                    See
+                                </span>
                             </th>
-                            <th className="text-center small lk-perm-col">
-                                <MasterCheckbox
-                                    checked={fields.length > 0 && readCount === fields.length}
-                                    indeterminate={readCount > 0 && readCount < fields.length}
-                                    onChange={setAllRead}
-                                />
-                                Read
-                            </th>
-                            <th className="text-center small lk-perm-col">
-                                {canEdit && (
-                                    <>
+                            {canEdit && (
+                                <th scope="col" className="perm-table__check">
+                                    <span className="perm-table__head">
                                         <MasterCheckbox
-                                            checked={fields.length > 0 && editCount === fields.length}
+                                            label={`${editLabel} every field`}
+                                            checked={editCount === fields.length}
                                             indeterminate={editCount > 0 && editCount < fields.length}
                                             onChange={setAllEdit}
                                         />
                                         {editLabel}
-                                    </>
-                                )}
-                            </th>
+                                    </span>
+                                </th>
+                            )}
                         </tr>
                     </thead>
                     <tbody>{rows}</tbody>
                 </table>
-            </div>
-        </>
+            )}
+        </div>
     );
 }

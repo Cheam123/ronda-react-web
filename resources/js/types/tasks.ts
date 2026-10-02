@@ -43,7 +43,8 @@ export interface TaskListItem {
     flagged: boolean;
     status: TaskStatus;
     status_label: string;
-    due: string | null;
+    /** Overdue: past due while the task is still New or In Progress (TaskRisk). */
+    due: { date: string; time: string | null; overdue: boolean } | null;
     appointment: string | null;
     reminder: string | null;
     created_at: string | null;
@@ -51,6 +52,7 @@ export interface TaskListItem {
     aging: { tone: AgingTone; label: string };
     sales: string | null;
     lead: {
+        id: number | null;
         name: string | null;
         mobile: string | null;
         customer_id: string | null;

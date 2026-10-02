@@ -1,143 +1,501 @@
 //
-// Dashboard (Pages/Dashboard).
+// Dashboards (Pages/Dashboard): the admin overview and the team / personal
+// view. Built on the surface styles (ronda/_surface.scss).
 //
 
-.dash {
-    --surface: #fff;
-    --ink: #0b0b0b;
-    --ink-2: #52514e;
-    --muted: #898781;
-    --hair: #e1e0d9;
-    --critical: #d03b3b;
-    --serious: #ec835a;
+// Morning Round-Up: the AI brief, on a warm paper tint.
+.dash-roundup {
+    border-color: #e6dfcc;
+    background: #fbf8f1;
 
-    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-    color: var(--ink);
-}
+    .rd-panel__title {
+        font-family: $rd-serif;
+        font-size: 26px;
+        font-weight: 400;
+        line-height: 1.1;
+    }
 
-.dash-tiles {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 12px;
-}
+    &__source {
+        margin-top: -8px;
+        font-size: 12px;
+        color: $rd-muted;
+    }
 
-.dash-tile {
-    background: var(--surface);
-    border: 1px solid rgba(11, 11, 11, 0.1);
-    border-radius: 8px;
-    padding: 12px 14px;
+    &__status {
+        padding: 8px 12px;
+        border-radius: 8px;
+        background: $rd-brand-tint;
+        color: $rd-brand-ink;
+        font-size: 13px;
+    }
+
+    &__body {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding-top: 16px;
+        border-top: 1px solid #e6dfcc;
+        font-size: 14px;
+        line-height: 1.55;
+        color: #2a2c2f;
+
+        ul {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin: 0 0 8px;
+            padding-left: 18px;
+        }
+    }
 
     &__label {
-        font-size: 0.78rem;
-        color: var(--ink-2);
-        display: flex;
+        margin-top: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: $rd-muted;
+
+        &:first-child {
+            margin-top: 0;
+        }
+    }
+}
+
+// Needs attention: level, task, owner, due.
+.dash-attention {
+    &__row {
+        display: grid;
+        grid-template-columns: 96px minmax(0, 1fr) 160px 132px;
         align-items: center;
-        gap: 6px;
+        gap: 16px;
+        padding: 11px 0;
+        border-bottom: 1px solid $rd-line-soft;
     }
 
-    &__value {
-        font-size: 1.6rem;
+    &__row--head {
+        padding: 8px 0;
+        border-bottom-color: $rd-line;
+        color: $rd-muted;
+        font-size: 12px;
         font-weight: 600;
-        line-height: 1.2;
-        margin-top: 4px;
     }
 
-    &__note {
-        font-size: 0.72rem;
-        color: var(--muted);
-        margin-top: 2px;
+    &__task {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+
+        a {
+            overflow: hidden;
+            color: $rd-ink;
+            font-weight: 600;
+            text-decoration: none;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+
+            &:hover {
+                color: $rd-brand-ink;
+            }
+        }
     }
-}
 
-.dash-card {
-    background: var(--surface);
-    border: 1px solid rgba(11, 11, 11, 0.1);
-    border-radius: 8px;
-    padding: 14px 16px;
-    height: 100%;
-
-    h6 {
-        font-size: 0.9rem;
-        font-weight: 600;
-        margin: 0 0 10px;
-        color: var(--ink);
-    }
-}
-
-.dash-sub {
-    font-size: 0.75rem;
-    color: var(--muted);
-}
-
-.dash-table {
-    width: 100%;
-    font-size: 0.8rem;
-    border-collapse: collapse;
-
-    th {
-        color: var(--ink-2);
-        font-weight: 600;
-        border-bottom: 1px solid var(--hair);
-        padding: 6px 8px;
+    &__meta {
+        overflow: hidden;
+        font-size: 12px;
+        color: $rd-muted;
+        text-overflow: ellipsis;
         white-space: nowrap;
     }
 
-    td {
-        border-bottom: 1px solid var(--hair);
-        padding: 6px 8px;
-        vertical-align: top;
+    &__owner {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+        font-size: 13px;
+    }
+
+    &__due {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        text-align: right;
+        font-size: 13px;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+
+        small {
+            font-size: 11px;
+            font-weight: 400;
+            color: $rd-muted;
+        }
+
+        &--overdue {
+            color: $rd-critical;
+        }
+
+        &--at_risk {
+            color: $rd-serious;
+        }
+    }
+
+    @media (max-width: 767.98px) {
+        &__row {
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 6px 12px;
+        }
+
+        &__row--head {
+            display: none;
+        }
+
+        &__owner {
+            grid-column: 1;
+        }
+    }
+}
+
+// Visits per day on the team dashboard.
+.dash-minibars {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    height: 48px;
+
+    span {
+        width: 16px;
+        min-height: 2px;
+        border-radius: 3px 3px 0 0;
+        background: $rd-brand;
+
+        &.is-today {
+            background: #9cc3d5;
+        }
+
+        &.is-zero {
+            background: $rd-control;
+        }
+    }
+}
+
+// A block of the "Field output" panel.
+.dash-output {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 16px 0;
+    border-top: 1px solid $rd-line-soft;
+
+    &:last-child {
+        padding-bottom: 0;
+    }
+
+    &__row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+    }
+
+    &__label {
+        font-size: 13px;
+        color: $rd-ink-2;
+    }
+
+    &__value {
+        font-size: 28px;
+        font-weight: 600;
+        line-height: 1.1;
+        letter-spacing: -0.02em;
+        font-variant-numeric: tabular-nums;
+    }
+
+    &__note {
+        font-size: 12px;
+        color: $rd-muted;
+    }
+}
+
+// The admin to-do list.
+.dash-todo {
+    li {
+        align-items: flex-start;
+        gap: 14px;
+        padding: 16px 0;
+    }
+
+    &__text {
+        display: flex;
+        flex-grow: 1;
+        flex-direction: column;
+        gap: 4px;
+        min-width: 0;
+    }
+
+    &__title {
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    &__detail {
+        font-size: 13px;
+        line-height: 1.45;
+        color: $rd-muted;
+    }
+
+    &__action {
+        align-self: center;
+        font-size: 13px;
+        font-weight: 600;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+}
+
+// A titled block under a rule inside a panel.
+.dash-subsection {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-top: 20px;
+    border-top: 1px solid $rd-line-soft;
+    font-size: 13px;
+
+    &__head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 4px 12px;
+    }
+
+    .dash-subsection__title {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 600;
+    }
+}
+
+// Rows of name, bar and figures (categories, areas).
+.dash-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+
+    li {
+        display: grid;
+        grid-template-columns: 140px minmax(0, 1fr) 104px 44px;
+        align-items: center;
+        gap: 16px;
+        font-size: 13px;
+    }
+
+    &--areas li {
+        grid-template-columns: 116px minmax(0, 1fr) 44px 44px;
+        gap: 12px;
+    }
+
+    &__head {
+        color: $rd-muted;
+        font-size: 12px;
+        font-weight: 600;
     }
 
     .num {
         text-align: right;
         font-variant-numeric: tabular-nums;
     }
-}
 
-.dash-level {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 0.75rem;
-    white-space: nowrap;
+    @media (max-width: 575.98px) {
+        li {
+            grid-template-columns: 100px minmax(0, 1fr) 88px;
 
-    i {
-        font-size: 1rem;
-    }
+            > :nth-child(4) {
+                display: none;
+            }
+        }
 
-    &--overdue i {
-        color: var(--critical);
-    }
+        &--areas li {
+            grid-template-columns: 100px minmax(0, 1fr) 40px 40px;
 
-    &--at_risk i {
-        color: var(--serious);
+            > :nth-child(4) {
+                display: block;
+            }
+        }
     }
 }
 
-.dash-digest {
-    font-size: 0.85rem;
-    line-height: 1.5;
+// Top products: rank, name, value, and a bar under them.
+.dash-top {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
 
-    &__label {
+    li {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    &__line {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    &__rank {
+        width: 20px;
+        color: $rd-muted;
+        font-size: 13px;
         font-weight: 600;
-        margin-top: 8px;
+        font-variant-numeric: tabular-nums;
     }
 
-    ul {
-        padding-left: 18px;
-        margin: 2px 0 0;
+    &__name {
+        display: flex;
+        flex-grow: 1;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+
+        a {
+            color: $rd-ink;
+            font-weight: 600;
+            text-decoration: none;
+
+            &:hover {
+                color: $rd-brand-ink;
+            }
+        }
+    }
+
+    &__value {
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+
+    .rd-meter {
+        margin-left: 32px;
     }
 }
 
-.dash-chart {
-    position: relative;
-    height: 260px;
+// The activity feed: when, who, what, amount.
+.dash-feed {
+    li {
+        display: grid;
+        grid-template-columns: 124px 30px minmax(0, 1fr) auto;
+        gap: 14px;
+        padding: 10px 0;
+    }
+
+    &__when {
+        color: $rd-muted;
+        font-size: 12px;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .dash-feed__icon {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        font-size: 15px;
+    }
+
+    &__what {
+        min-width: 0;
+        line-height: 1.4;
+    }
+
+    &__amount {
+        color: $rd-muted;
+        font-size: 13px;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+
+    @media (max-width: 767.98px) {
+        li {
+            grid-template-columns: 30px minmax(0, 1fr);
+        }
+
+        &__when {
+            grid-column: 2;
+            grid-row: 2;
+        }
+
+        &__amount {
+            grid-column: 2;
+            text-align: left;
+        }
+    }
 }
 
-.dash-icon--critical {
-    color: var(--critical);
+// Automations: one block per scheduled job.
+.dash-job {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 16px 0;
+    border-top: 1px solid $rd-line-soft;
+
+    &:last-child {
+        padding-bottom: 0;
+    }
+
+    &__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    &__text {
+        font-size: 13px;
+        line-height: 1.45;
+        color: $rd-muted;
+    }
 }
 
-.dash-icon--serious {
-    color: var(--serious);
+// The team table's workload column.
+.dash-load {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 180px;
+
+    &__count {
+        width: 24px;
+        font-weight: 600;
+        text-align: right;
+    }
+}
+
+.dash-person {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    &__name {
+        display: flex;
+        flex-direction: column;
+        font-weight: 600;
+
+        small {
+            color: $rd-muted;
+            font-size: 12px;
+            font-weight: 400;
+        }
+    }
 }

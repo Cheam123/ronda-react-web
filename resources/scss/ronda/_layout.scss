@@ -40,16 +40,6 @@ body[data-layout="horizontal"] {
     font-size: 13px;
 }
 
-// Breadcrumb in the header ("Home > Users > Total: 12")
-.header-breadcrumb {
-    font-size: 10pt;
-    padding-left: 30px;
-
-    i {
-        margin: 0 4px;
-    }
-}
-
 // Bottom-right "back to top" button
 .scroll-to-top {
     position: fixed;

@@ -1,0 +1,2035 @@
+//
+// Surface: the look of the redesigned pages (dashboards, products, leads,
+// users). A cool grey ground, white panels, Instrument Sans throughout, a
+// near-black primary button and Ronda blue for what is selected.
+// Everything sits under .rd so the rest of the app keeps its Minible look.
+// The React side is Components/surface.
+//
+
+$rd-ground: #f5f6f8;
+$rd-panel: #fff;
+$rd-line: #eaecf0;
+$rd-line-soft: #f2f4f7;
+$rd-control: #d0d5dd;
+$rd-control-hover: #98a2b3;
+$rd-track: #f2f4f7;
+$rd-row-alt: #f9fafb;
+$rd-ink: #101828;
+$rd-body: #344054;
+$rd-ink-2: #475467;
+$rd-muted: #667085;
+$rd-brand: #0d729e;
+$rd-brand-ink: #0a5a7d;
+$rd-brand-tint: #e5f0f5;
+$rd-brand-soft: #bfd8e3;
+$rd-good: #067647;
+$rd-good-tint: #ecfdf3;
+$rd-good-dot: #17b26a;
+$rd-warning: #f79009;
+$rd-serious: #b54708;
+$rd-serious-tint: #fffaeb;
+$rd-critical: #b42318;
+$rd-critical-tint: #fef3f2;
+$rd-critical-line: #fecdca;
+
+$rd-sans: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+$rd-serif: "Instrument Serif", Georgia, "Times New Roman", serif;
+$rd-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+$rd-focus: 0 0 0 3px rgba(13, 114, 158, 0.18);
+$rd-shadow-xs: 0 1px 2px rgba(16, 24, 40, 0.05);
+
+// The grey ground behind a surface page (SurfacePage sets data-surface).
+body[data-layout="horizontal"][data-surface="grey"] {
+    background-color: $rd-ground;
+
+    .main-content {
+        background-color: $rd-ground;
+    }
+}
+
+// The shell (_shell.scss) pads the page; .rd only spaces what is on it.
+.rd {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    font-family: $rd-sans;
+    font-size: 14px;
+    line-height: 1.45;
+    color: $rd-ink;
+    -webkit-font-smoothing: antialiased;
+
+    h1,
+    h2,
+    h3 {
+        font-family: $rd-sans;
+        color: $rd-ink;
+    }
+
+    p {
+        margin: 0;
+    }
+}
+
+// Plain links; .rd-btn and friends set their own colour.
+:where(.rd) a {
+    color: $rd-brand-ink;
+
+    &:hover {
+        color: darken($rd-brand-ink, 8%);
+    }
+}
+
+// ---------------------------------------------------------------- Page header
+
+.rd-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px 24px;
+
+    &__text {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        min-width: 0;
+    }
+
+    &__eyebrow {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: $rd-muted;
+    }
+
+    .rd-head__title {
+        margin: 0;
+        font-family: $rd-sans;
+        font-weight: 600;
+        font-size: 26px;
+        line-height: 34px;
+        letter-spacing: -0.02em;
+    }
+
+    &__lede {
+        max-width: 760px;
+        font-size: 14px;
+        line-height: 1.5;
+        color: $rd-ink-2;
+    }
+
+    &__meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        color: $rd-muted;
+    }
+
+    &__actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    @media (max-width: 767.98px) {
+        .rd-head__title {
+            font-size: 22px;
+            line-height: 30px;
+        }
+    }
+}
+
+.rd-crumbs {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 13px;
+    color: $rd-muted;
+
+    li {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    li + li::before {
+        content: "\F0142"; // mdi-chevron-right
+        font-family: "Material Design Icons";
+        font-size: 14px;
+    }
+
+    a {
+        color: $rd-muted;
+        text-decoration: none;
+
+        &:hover {
+            color: $rd-ink;
+        }
+    }
+
+    [aria-current] {
+        color: $rd-ink;
+        font-weight: 500;
+    }
+}
+
+// ------------------------------------------------------------------- Buttons
+
+.rd-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 40px;
+    padding: 0 14px;
+    border: 1px solid $rd-control;
+    border-radius: 10px;
+    background: $rd-panel;
+    box-shadow: $rd-shadow-xs;
+    color: $rd-body;
+    font: 600 14px/1 $rd-sans;
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+        background-color 0.15s,
+        border-color 0.15s;
+
+    i {
+        font-size: 17px;
+        line-height: 1;
+    }
+
+    &:hover {
+        border-color: $rd-control-hover;
+        background: $rd-row-alt;
+        color: $rd-ink;
+    }
+
+    &:focus-visible {
+        outline: 2px solid $rd-brand;
+        outline-offset: 2px;
+    }
+
+    &:disabled,
+    &.is-disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+
+    // The one main action on a page: near-black.
+    &--primary {
+        border-color: $rd-ink;
+        background: $rd-ink;
+        color: #fff;
+
+        &:hover {
+            border-color: #1d2939;
+            background: #1d2939;
+            color: #fff;
+        }
+    }
+
+    &--danger {
+        border-color: $rd-critical;
+        background: $rd-critical;
+        color: #fff;
+
+        &:hover {
+            border-color: darken($rd-critical, 7%);
+            background: darken($rd-critical, 7%);
+            color: #fff;
+        }
+    }
+
+    // A destructive action that is not the page's main one (the bulk bar's Delete).
+    &--danger-soft {
+        border-color: $rd-critical-line;
+        color: $rd-critical;
+
+        &:hover {
+            border-color: #fda29b;
+            background: $rd-critical-tint;
+            color: $rd-critical;
+        }
+    }
+
+    &--quiet {
+        border-color: transparent;
+        background: transparent;
+        box-shadow: none;
+        color: $rd-ink-2;
+
+        &:hover {
+            border-color: transparent;
+            background: $rd-track;
+        }
+    }
+
+    &--lg {
+        height: 44px;
+        padding: 0 18px;
+    }
+
+    &--sm {
+        height: 32px;
+        padding: 0 10px;
+        font-size: 13px;
+
+        i {
+            font-size: 15px;
+        }
+    }
+
+    // A square icon-only button (row actions).
+    &--icon {
+        width: 40px;
+        height: 40px;
+        padding: 0;
+        border-color: transparent;
+        border-radius: 8px;
+        background: transparent;
+        box-shadow: none;
+        color: $rd-ink-2;
+
+        i {
+            font-size: 19px;
+        }
+
+        &:hover {
+            border-color: transparent;
+            background: $rd-track;
+            color: $rd-ink;
+        }
+    }
+
+    &--icon-danger {
+        color: #d92d20;
+
+        &:hover {
+            background: $rd-critical-tint;
+            color: $rd-critical;
+        }
+    }
+
+    &--icon-good {
+        color: $rd-good;
+
+        &:hover {
+            color: $rd-good;
+        }
+    }
+}
+
+// An arrow link at the foot of a panel ("Manage products ->").
+.rd-more {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: auto;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+
+    i {
+        font-size: 16px;
+    }
+}
+
+// ---------------------------------------------------------------------- Tabs
+
+// The rule under the tabs is an inset shadow, so the tabs scroll sideways
+// without a vertical scrollbar and the active underline paints over it.
+.rd-tabs {
+    display: flex;
+    gap: 28px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    box-shadow: inset 0 -1px 0 $rd-line;
+
+    &__tab {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 2px 13px;
+        border: 0;
+        border-bottom: 2px solid transparent;
+        background: none;
+        color: $rd-muted;
+        font: 500 15px/1.2 $rd-sans;
+        text-decoration: none;
+        white-space: nowrap;
+        cursor: pointer;
+
+        &:hover {
+            color: $rd-ink;
+        }
+
+        &:focus-visible {
+            outline: 2px solid $rd-brand;
+            outline-offset: -2px;
+        }
+
+        &.is-active {
+            border-bottom-color: $rd-brand;
+            color: $rd-ink;
+            font-weight: 600;
+
+            .rd-count {
+                background: $rd-brand-tint;
+                color: $rd-brand-ink;
+            }
+        }
+    }
+}
+
+.rd-count {
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: $rd-track;
+    color: $rd-ink-2;
+    font-size: 12px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+}
+
+// A title with its count beside it ("All users  8 users").
+.rd-count--label {
+    padding: 2px 10px;
+    color: $rd-body;
+}
+
+// Segmented control: a few mutually exclusive choices, joined buttons.
+.rd-seg {
+    display: inline-flex;
+    height: 40px;
+    overflow: hidden;
+    border: 1px solid $rd-control;
+    border-radius: 10px;
+    background: $rd-panel;
+    box-shadow: $rd-shadow-xs;
+
+    &__btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0 14px;
+        border: 0;
+        border-right: 1px solid $rd-control;
+        background: transparent;
+        color: $rd-ink-2;
+        font: 500 14px/1 $rd-sans;
+        white-space: nowrap;
+        cursor: pointer;
+
+        &:last-child {
+            border-right: 0;
+        }
+
+        &:hover {
+            background: $rd-row-alt;
+            color: $rd-ink;
+        }
+
+        &:focus-visible {
+            outline: 2px solid $rd-brand;
+            outline-offset: -2px;
+        }
+
+        &[aria-pressed="true"] {
+            background: $rd-track;
+            color: $rd-ink;
+            font-weight: 600;
+        }
+    }
+}
+
+// -------------------------------------------------------------------- Panels
+
+.rd-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+    padding: 24px;
+    border: 1px solid $rd-line;
+    border-radius: 16px;
+    background: $rd-panel;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+
+    &__head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 8px 16px;
+    }
+
+    .rd-panel__title {
+        margin: 0;
+        font-size: 17px;
+        font-weight: 600;
+        line-height: 1.3;
+    }
+
+    &__sub {
+        margin-top: 2px;
+        font-size: 13px;
+        color: $rd-muted;
+    }
+
+    &--flush {
+        gap: 0;
+        padding: 0;
+    }
+
+    @media (max-width: 575.98px) {
+        padding: 18px;
+
+        &--flush {
+            padding: 0;
+        }
+    }
+}
+
+// A 12-column grid of panels; everything stacks below 1200px.
+.rd-grid {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    align-items: start;
+    gap: 24px;
+
+    > * {
+        grid-column: span 12;
+    }
+
+    &--stretch {
+        align-items: stretch;
+    }
+
+    @media (min-width: 768px) and (max-width: 1199.98px) {
+        > .rd-span-4 {
+            grid-column: span 6;
+        }
+    }
+
+    @media (min-width: 1200px) {
+        > .rd-span-4 {
+            grid-column: span 4;
+        }
+
+        > .rd-span-5 {
+            grid-column: span 5;
+        }
+
+        > .rd-span-7 {
+            grid-column: span 7;
+        }
+
+        > .rd-span-8 {
+            grid-column: span 8;
+        }
+    }
+}
+
+// ----------------------------------------------------------------- KPI tiles
+
+.rd-kpis {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+
+    @media (max-width: 1199.98px) {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    @media (max-width: 575.98px) {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.rd-kpi {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-width: 0;
+    padding: 20px;
+    border: 1px solid $rd-line;
+    border-radius: 14px;
+    background: $rd-panel;
+    color: $rd-ink;
+    font: inherit;
+    text-align: left;
+    text-decoration: none;
+
+    &__label {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 14px;
+        font-weight: 500;
+        color: $rd-ink-2;
+
+        > i {
+            font-size: 18px;
+            line-height: 1;
+        }
+    }
+
+    &__body {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    &__value {
+        font-size: 32px;
+        font-weight: 600;
+        line-height: 1;
+        letter-spacing: -0.02em;
+        font-variant-numeric: tabular-nums;
+    }
+
+    &__of {
+        font-size: 15px;
+        font-weight: 500;
+        letter-spacing: 0;
+        color: $rd-muted;
+    }
+
+    &__note {
+        margin-top: 6px;
+        font-size: 13px;
+        color: $rd-muted;
+    }
+
+    &__foot {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-top: auto;
+        padding-top: 14px;
+        border-top: 1px solid $rd-line-soft;
+        font-size: 13px;
+        color: $rd-muted;
+    }
+
+    // A coloured top rule for the team dashboard's "today" tiles.
+    &--accent {
+        padding-top: 18px;
+        border-top: 4px solid var(--rd-accent, #{$rd-control});
+    }
+
+    &--critical {
+        --rd-accent: #{$rd-critical};
+
+        .rd-kpi__label {
+            color: $rd-critical;
+            font-weight: 600;
+        }
+    }
+
+    &--serious {
+        --rd-accent: #{$rd-serious};
+
+        .rd-kpi__label {
+            color: $rd-serious;
+            font-weight: 600;
+        }
+    }
+
+    &--brand {
+        --rd-accent: #{$rd-brand};
+
+        .rd-kpi__label {
+            color: $rd-brand-ink;
+            font-weight: 600;
+        }
+    }
+
+    @at-root button#{&} {
+        cursor: pointer;
+    }
+
+    @at-root button#{&}:hover,
+        a#{&}:hover {
+        border-color: $rd-control-hover;
+        color: $rd-ink;
+    }
+
+    @at-root button#{&}:focus-visible,
+        a#{&}:focus-visible {
+        outline: 2px solid $rd-brand;
+        outline-offset: 2px;
+    }
+
+    &.is-selected {
+        box-shadow: 0 0 0 2px var(--rd-accent, #{$rd-brand});
+    }
+
+    .rd-kpi--accent &__value {
+        font-size: 40px;
+    }
+}
+
+// Quiet counts at the top of a list: a dot, a label, a figure. The dot
+// matches the chip the figure counts (green for customers, amber for prospects).
+.rd-stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+
+    @media (max-width: 991.98px) {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+.rd-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+    padding: 16px 20px;
+    border: 1px solid $rd-line;
+    border-radius: 12px;
+    background: $rd-panel;
+
+    &__label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        color: $rd-ink-2;
+
+        &::before {
+            content: "";
+            flex-shrink: 0;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--rd-stat-dot, #{$rd-brand});
+        }
+    }
+
+    &__value {
+        font-size: 28px;
+        font-weight: 600;
+        line-height: 36px;
+        letter-spacing: -0.02em;
+        font-variant-numeric: tabular-nums;
+    }
+
+    &--good {
+        --rd-stat-dot: #{$rd-good-dot};
+    }
+
+    &--serious {
+        --rd-stat-dot: #{$rd-warning};
+    }
+
+    &--violet {
+        --rd-stat-dot: #7a5af8;
+    }
+}
+
+// A tinted square holding an icon.
+.rd-icon {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: $rd-brand-tint;
+    color: $rd-brand;
+    font-size: 18px;
+    line-height: 1;
+
+    &--lg {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+    }
+
+    &--serious {
+        background: $rd-serious-tint;
+        color: $rd-serious;
+    }
+
+    &--critical {
+        background: $rd-critical-tint;
+        color: $rd-critical;
+    }
+
+    &--good {
+        background: $rd-good-tint;
+        color: $rd-good;
+    }
+
+    &--neutral {
+        background: $rd-track;
+        color: $rd-ink-2;
+    }
+
+    &--dark {
+        background: $rd-ink;
+        color: #fff;
+    }
+}
+
+// ------------------------------------------------------------- Chips, badges
+
+.rd-chip {
+    --rd-chip-dot: #{$rd-muted};
+
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: $rd-track;
+    color: $rd-body;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.5;
+    white-space: nowrap;
+
+    i {
+        font-size: 14px;
+        line-height: 1;
+    }
+
+    // The dot is a brighter shade of the chip's text colour.
+    .rd-dot:not(.rd-dot--hollow) {
+        background: var(--rd-chip-dot);
+    }
+
+    &--good {
+        --rd-chip-dot: #{$rd-good-dot};
+
+        background: $rd-good-tint;
+        color: $rd-good;
+    }
+
+    &--serious {
+        --rd-chip-dot: #{$rd-warning};
+
+        background: $rd-serious-tint;
+        color: $rd-serious;
+    }
+
+    &--critical {
+        --rd-chip-dot: #f04438;
+
+        background: $rd-critical-tint;
+        color: $rd-critical;
+    }
+
+    &--brand {
+        background: $rd-brand-tint;
+        color: $rd-brand-ink;
+    }
+
+    &--plum {
+        background: #f4f3ff;
+        color: #5925dc;
+    }
+
+    &--dark {
+        background: $rd-ink;
+        color: #fff;
+    }
+
+    &--outline {
+        border: 1px solid $rd-line;
+        background: $rd-panel;
+        color: $rd-ink;
+    }
+}
+
+// A label that sorts, not a state: an IFE area, a team. No dot. The hue
+// comes from lib/tags (the same area or team always gets the same one).
+.rd-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: $rd-track;
+    color: $rd-body;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.5;
+    white-space: nowrap;
+
+    $hues: (
+        "blue": (#175cd3, #eff8ff),
+        "indigo": (#3538cd, #eef4ff),
+        "violet": (#5925dc, #f4f3ff),
+        "pink": (#c11574, #fdf2fa),
+        "orange": (#c4320a, #fff6ed),
+        "teal": (#107569, #f0fdf9),
+        "green": (#067647, #ecfdf3),
+        "slate": (#363f72, #f8f9fc),
+    );
+
+    @each $name, $pair in $hues {
+        &--#{$name} {
+            background: nth($pair, 2);
+            color: nth($pair, 1);
+        }
+    }
+}
+
+.rd-dot {
+    display: inline-block;
+    flex-shrink: 0;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+
+    &--hollow {
+        border: 1.5px solid currentColor;
+        background: transparent;
+    }
+}
+
+// Coloured text with an icon ("Ran 7:00 AM", "2 not linked").
+.rd-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+
+    i {
+        font-size: 14px;
+        line-height: 1;
+    }
+
+    &--good {
+        color: $rd-good;
+    }
+
+    &--serious {
+        color: $rd-serious;
+    }
+
+    &--critical {
+        color: $rd-critical;
+    }
+}
+
+// ------------------------------------------------------------ Bars, legends
+
+.rd-meter {
+    flex-grow: 1;
+    min-width: 40px;
+    height: 8px;
+    overflow: hidden;
+    border-radius: 4px;
+    background: $rd-track;
+
+    &__fill {
+        height: 100%;
+        border-radius: 4px;
+        background: $rd-brand;
+    }
+
+    &--thin {
+        height: 6px;
+    }
+}
+
+// Parts of a whole with a 2px gap between them.
+.rd-stack {
+    display: flex;
+    gap: 2px;
+    height: 8px;
+
+    > span {
+        flex-basis: 0;
+        min-width: 3px;
+
+        &:first-child {
+            border-radius: 4px 0 0 4px;
+        }
+
+        &:last-child {
+            border-radius: 0 4px 4px 0;
+        }
+
+        &:only-child {
+            border-radius: 4px;
+        }
+    }
+
+    &--thin {
+        height: 6px;
+    }
+}
+
+.rd-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    font-size: 12px;
+    color: $rd-ink-2;
+
+    > span {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+}
+
+.rd-swatch {
+    display: inline-block;
+    flex-shrink: 0;
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+}
+
+.rd-chart {
+    position: relative;
+    height: 240px;
+}
+
+// "Show as table" under a chart.
+.rd-chart-table {
+    font-size: 13px;
+
+    summary {
+        color: $rd-muted;
+        cursor: pointer;
+    }
+}
+
+// -------------------------------------------------------------------- People
+
+.rd-avatar {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: $rd-brand;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+
+    &--sm {
+        width: 24px;
+        height: 24px;
+        font-size: 10px;
+    }
+
+    &--lg {
+        width: 40px;
+        height: 40px;
+        font-size: 14px;
+    }
+
+    &--xl {
+        width: 56px;
+        height: 56px;
+        font-size: 19px;
+    }
+
+    &--stacked {
+        margin-left: -8px;
+        border: 2px solid $rd-panel;
+
+        &:first-child {
+            margin-left: 0;
+        }
+    }
+}
+
+// ----------------------------------------------------------- Lists, tables
+
+.rd-rows {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+
+    > li {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 0;
+        border-top: 1px solid $rd-line-soft;
+    }
+}
+
+.rd-scroll {
+    overflow-x: auto;
+}
+
+.rd-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+
+    th {
+        padding: 8px 12px;
+        border-bottom: 1px solid $rd-line;
+        color: $rd-ink-2;
+        font-size: 12px;
+        font-weight: 500;
+        text-align: left;
+        white-space: nowrap;
+    }
+
+    td {
+        padding: 12px;
+        border-bottom: 1px solid $rd-line-soft;
+        vertical-align: middle;
+    }
+
+    th:first-child,
+    td:first-child {
+        padding-left: 0;
+    }
+
+    th:last-child,
+    td:last-child {
+        padding-right: 0;
+    }
+
+    .num {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+
+    tfoot th,
+    tfoot td {
+        border-bottom: 0;
+        color: $rd-ink;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    // A list page's table inside a padded panel: a grey header band with
+    // round ends, then tall rows (Leads).
+    &--band {
+        thead th {
+            height: 44px;
+            padding: 0 12px;
+            border-bottom: 0;
+            background: $rd-row-alt;
+            font-size: 13px;
+
+            &:first-child {
+                padding-left: 12px;
+                border-radius: 10px 0 0 10px;
+            }
+
+            &:last-child {
+                padding-right: 12px;
+                border-radius: 0 10px 10px 0;
+            }
+        }
+
+        td {
+            height: 68px;
+            padding: 10px 12px;
+
+            &:first-child {
+                padding-left: 12px;
+            }
+
+            &:last-child {
+                padding-right: 12px;
+            }
+        }
+    }
+
+    // A table that runs to the edges of a flush panel: lines above and
+    // below the header, 24px in from each side (Users).
+    &--flush {
+        th {
+            height: 44px;
+            padding-top: 0;
+            padding-bottom: 0;
+            border-top: 1px solid $rd-line;
+        }
+
+        td {
+            height: 72px;
+            padding-top: 10px;
+            padding-bottom: 10px;
+            border-bottom-color: $rd-line;
+        }
+
+        th:first-child,
+        td:first-child {
+            padding-left: 24px;
+        }
+
+        th:last-child,
+        td:last-child {
+            padding-right: 24px;
+        }
+
+        tbody tr:last-child td {
+            border-bottom: 0;
+        }
+    }
+
+    &--striped tbody tr:nth-child(even) td {
+        background: $rd-row-alt;
+    }
+
+    tbody tr.is-selected td {
+        background: $rd-row-alt;
+    }
+
+    .rd-col-check {
+        width: 44px;
+        padding-right: 0;
+    }
+
+    .rd-col-actions {
+        width: 1%;
+        white-space: nowrap;
+    }
+}
+
+// A header cell showing the order the rows are in.
+.rd-sorted {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: $rd-ink;
+
+    i {
+        font-size: 15px;
+        line-height: 1;
+    }
+}
+
+// A person or an outlet in a table cell: avatar, name, a line under it.
+.rd-person {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+
+    &__text {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }
+
+    &__name {
+        overflow: hidden;
+        color: $rd-ink;
+        font-size: 14px;
+        font-weight: 600;
+        line-height: 20px;
+        text-decoration: none;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    @at-root a#{&}__name:hover {
+        color: $rd-brand-ink;
+    }
+
+    &__sub {
+        overflow: hidden;
+        color: $rd-muted;
+        font-size: 13px;
+        line-height: 18px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    // Small avatar and plain name (who an outlet is assigned to).
+    &--sm {
+        gap: 8px;
+
+        .rd-person__name {
+            color: $rd-body;
+            font-weight: 400;
+        }
+    }
+}
+
+.rd-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 4px;
+}
+
+// A native checkbox in the ink colour.
+.rd-check {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    vertical-align: middle;
+    accent-color: $rd-ink;
+    cursor: pointer;
+
+    &:focus-visible {
+        outline: 2px solid $rd-brand;
+        outline-offset: 2px;
+    }
+
+    &:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+}
+
+// ------------------------------------------------------------- List pages
+
+// The pieces of a list page's panel: a title row, tabs with the filters on
+// their right, the table, and a foot with the range and the pager.
+.rd-list {
+    gap: 20px;
+
+    &.rd-panel--flush {
+        gap: 0;
+    }
+
+    &__head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px 16px;
+
+        .rd-panel--flush > & {
+            padding: 20px 24px;
+        }
+    }
+
+    &__heading {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .rd-list__title {
+        margin: 0;
+        font-size: 20px;
+        font-weight: 600;
+        line-height: 28px;
+        letter-spacing: -0.01em;
+    }
+
+    &--flush .rd-list__title {
+        font-size: 18px;
+    }
+
+    &__actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+    }
+
+    // Tabs on the left, filters on the right, one line under both. The line
+    // is an inset shadow so the active tab's underline paints over it.
+    &__bar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 0 16px;
+        box-shadow: inset 0 -1px 0 $rd-line;
+
+        .rd-tabs {
+            box-shadow: none;
+        }
+    }
+
+    &__filters {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+        padding: 6px 0 10px;
+
+        .rd-search {
+            width: 280px;
+            max-width: 100%;
+        }
+
+        select.rd-input {
+            width: auto;
+        }
+
+        .search-select {
+            width: 190px;
+        }
+    }
+
+    &__foot {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px 16px;
+        color: $rd-ink-2;
+        font-size: 14px;
+
+        strong {
+            color: $rd-ink;
+            font-weight: 600;
+        }
+    }
+
+    &__empty {
+        padding: 48px 12px !important;
+        color: $rd-muted;
+        text-align: center;
+    }
+}
+
+// Previous, page numbers, Next.
+.rd-pager {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+
+    &__page {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 40px;
+        height: 40px;
+        padding: 0 8px;
+        border: 1px solid $rd-control;
+        border-radius: 10px;
+        background: $rd-panel;
+        color: $rd-body;
+        font: 600 14px/1 $rd-sans;
+        font-variant-numeric: tabular-nums;
+        text-decoration: none;
+
+        &:hover {
+            border-color: $rd-control-hover;
+            background: $rd-row-alt;
+            color: $rd-ink;
+        }
+
+        &:focus-visible {
+            outline: 2px solid $rd-brand;
+            outline-offset: 2px;
+        }
+
+        &.is-current {
+            border-color: $rd-brand;
+            background: $rd-brand;
+            color: #fff;
+        }
+    }
+
+    &__gap {
+        min-width: 24px;
+        color: $rd-muted;
+        text-align: center;
+    }
+
+    @media (max-width: 575.98px) {
+        &__page:not(.is-current),
+        &__gap {
+            display: none;
+        }
+    }
+}
+
+// Floats at the foot of the window while rows are ticked.
+.rd-bulkbar {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    z-index: 1040;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    max-width: calc(100% - 32px);
+    padding: 8px;
+    border: 1px solid $rd-line;
+    border-radius: 14px;
+    background: $rd-panel;
+    box-shadow:
+        0 16px 32px -6px rgba(16, 24, 40, 0.16),
+        0 4px 8px -2px rgba(16, 24, 40, 0.06);
+    font-family: $rd-sans;
+    transform: translateX(-50%);
+    animation: rd-bulkbar-in 0.15s ease-out;
+
+    &__count {
+        padding: 0 10px 0 8px;
+        color: $rd-body;
+        font-size: 14px;
+        white-space: nowrap;
+
+        strong {
+            color: $rd-ink;
+            font-weight: 600;
+        }
+    }
+
+    &__sep {
+        width: 1px;
+        height: 24px;
+        background: $rd-line;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        animation: none;
+    }
+}
+
+@keyframes rd-bulkbar-in {
+    from {
+        opacity: 0;
+        transform: translate(-50%, 8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+}
+
+// A react-bootstrap Dropdown.Menu of row actions (View, Add task, ...).
+.dropdown-menu.rd-menu {
+    min-width: 188px;
+    padding: 6px;
+    border: 1px solid $rd-line;
+    border-radius: 10px;
+    box-shadow: 0 12px 24px -4px rgba(16, 24, 40, 0.12);
+    font-family: $rd-sans;
+    // The theme's slide-in keeps a transform that overrides Popper's.
+    animation: none;
+
+    // The theme drops open menus to top: 100%, which puts a fixed-position
+    // menu (one inside a scrolling table) at the foot of the window.
+    // Popper places it from the top unless it flipped above the toggle.
+    &.show:not([data-popper-placement^="top"]) {
+        top: 0 !important;
+    }
+
+    // A menu given Popper's fixed strategy (popperConfig) starts fixed too:
+    // Popper's first placement measures from whatever the menu sits in.
+    &--fixed {
+        position: fixed;
+    }
+
+    .dropdown-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px;
+        border-radius: 6px;
+        color: $rd-body;
+        font-size: 14px;
+        font-weight: 500;
+
+        i {
+            color: $rd-muted;
+            font-size: 17px;
+            line-height: 1;
+        }
+
+        &:hover,
+        &:focus {
+            background: $rd-track;
+            color: $rd-ink;
+        }
+
+        // Delete: last, under a divider.
+        &.is-danger,
+        &.is-danger i {
+            color: $rd-critical;
+        }
+
+        &.is-danger:hover,
+        &.is-danger:focus {
+            background: $rd-critical-tint;
+        }
+    }
+
+    .dropdown-divider {
+        margin: 4px 0;
+        border-color: $rd-line-soft;
+    }
+}
+
+// A react-bootstrap Dropdown.Menu holding a small form (the date filter).
+.dropdown-menu.rd-pop {
+    min-width: 300px;
+    padding: 16px;
+    border: 1px solid $rd-line;
+    border-radius: 12px;
+    box-shadow: 0 12px 24px -4px rgba(16, 24, 40, 0.12);
+    font-family: $rd-sans;
+    color: $rd-ink;
+
+    .rd-pop__fields {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .rd-pop__foot {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 16px;
+    }
+}
+
+// ----------------------------------------------------------------- Helpers
+
+.rd-mono {
+    font-family: $rd-mono;
+    font-size: 12px;
+}
+
+.rd-num {
+    font-variant-numeric: tabular-nums;
+}
+
+.rd-muted {
+    color: $rd-muted;
+}
+
+.rd-label {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: $rd-muted;
+}
+
+.rd-empty {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 0;
+    color: $rd-muted;
+    font-size: 14px;
+
+    i {
+        color: $rd-good;
+        font-size: 20px;
+    }
+}
+
+.rd-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 16px;
+    border: 1px solid #fedf89;
+    border-radius: 10px;
+    background: $rd-serious-tint;
+    color: #93370d;
+    font-size: 14px;
+
+    i {
+        color: $rd-serious;
+        font-size: 18px;
+        line-height: 1.2;
+    }
+
+    // Something stops the user going on (a failed check).
+    &--critical {
+        border-color: $rd-critical-line;
+        background: $rd-critical-tint;
+        color: $rd-critical;
+
+        i {
+            color: $rd-critical;
+        }
+    }
+}
+
+// -------------------------------------------------------------------- Forms
+
+.rd-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+
+    &__label {
+        margin: 0;
+        color: $rd-ink;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    &__required {
+        color: $rd-critical;
+    }
+
+    &__hint {
+        font-size: 12px;
+        color: $rd-muted;
+    }
+
+    &__error {
+        font-size: 12px;
+        font-weight: 600;
+        color: $rd-critical;
+    }
+}
+
+.rd-input {
+    width: 100%;
+    height: 44px;
+    padding: 0 12px;
+    border: 1px solid $rd-control;
+    border-radius: 10px;
+    background: $rd-panel;
+    color: $rd-ink;
+    font: 400 15px/1.4 $rd-sans;
+
+    &::placeholder {
+        color: $rd-muted;
+    }
+
+    &:focus {
+        border-color: $rd-brand;
+        outline: none;
+        box-shadow: $rd-focus;
+    }
+
+    &.is-invalid {
+        border-color: $rd-critical;
+    }
+
+    &--mono {
+        font-family: $rd-mono;
+        font-size: 14px;
+    }
+
+    &--sm {
+        height: 36px;
+        font-size: 13px;
+    }
+
+    // Toolbars and filter rows.
+    &--md {
+        height: 40px;
+        font-size: 14px;
+    }
+
+    @at-root textarea#{&} {
+        height: auto;
+        padding: 10px 12px;
+        line-height: 1.5;
+        resize: vertical;
+    }
+
+    @at-root select#{&} {
+        padding-right: 32px;
+        font-size: 14px;
+    }
+}
+
+// An input with a search icon inside it.
+.rd-search {
+    position: relative;
+    display: flex;
+    align-items: center;
+    // It is a <label>; the theme's label margin would lift it above the
+    // selects and buttons beside it.
+    margin: 0;
+
+    i {
+        position: absolute;
+        left: 12px;
+        color: $rd-muted;
+        font-size: 18px;
+        pointer-events: none;
+    }
+
+    .rd-input {
+        height: 40px;
+        padding-left: 38px;
+        font-size: 14px;
+    }
+}
+
+// An input with text fixed on either side ("RM [ 105.00 ] per kg").
+.rd-affix {
+    display: flex;
+    align-items: stretch;
+    max-width: 320px;
+    height: 44px;
+    overflow: hidden;
+    border: 1px solid $rd-control;
+    border-radius: 8px;
+    background: $rd-panel;
+
+    &:focus-within {
+        border-color: $rd-brand;
+        box-shadow: $rd-focus;
+    }
+
+    &.is-invalid {
+        border-color: $rd-critical;
+    }
+
+    &__start,
+    &__end {
+        display: flex;
+        align-items: center;
+        padding: 0 12px;
+        white-space: nowrap;
+    }
+
+    &__start {
+        border-right: 1px solid $rd-control;
+        background: $rd-ground;
+        color: $rd-ink-2;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    &__end {
+        color: $rd-muted;
+        font-size: 13px;
+    }
+
+    input {
+        flex-grow: 1;
+        min-width: 0;
+        padding: 0 12px;
+        border: 0;
+        background: transparent;
+        color: $rd-ink;
+        font: 400 15px $rd-sans;
+        font-variant-numeric: tabular-nums;
+        outline: none;
+    }
+}
+
+// A pill you pick (categories) or a square one (units).
+.rd-choice {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 36px;
+    padding: 0 14px;
+    border: 1px solid $rd-control;
+    border-radius: 999px;
+    background: $rd-panel;
+    color: $rd-ink;
+    font: 600 13px/1 $rd-sans;
+    cursor: pointer;
+
+    &:hover {
+        border-color: $rd-control-hover;
+    }
+
+    &:focus-visible {
+        outline: 2px solid $rd-brand;
+        outline-offset: 2px;
+    }
+
+    &[aria-pressed="true"] {
+        border-color: $rd-brand;
+        background: $rd-brand-tint;
+        color: $rd-brand-ink;
+    }
+
+    &--square {
+        justify-content: center;
+        min-width: 56px;
+        padding: 0 12px;
+        border-radius: 8px;
+    }
+
+    &--add {
+        border-style: dashed;
+        color: $rd-ink-2;
+    }
+
+    i {
+        font-size: 15px;
+    }
+}
+
+.rd-choices {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.rd-switch {
+    position: relative;
+    flex-shrink: 0;
+    width: 48px;
+    height: 28px;
+    padding: 0;
+    border: 0;
+    border-radius: 14px;
+    background: $rd-control;
+    cursor: pointer;
+    transition: background-color 0.15s;
+
+    &::after {
+        content: "";
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: #fff;
+        box-shadow: 0 1px 2px rgba(16, 24, 40, 0.2);
+        transition: left 0.15s;
+    }
+
+    &[aria-checked="true"] {
+        background: $rd-brand;
+
+        &::after {
+            left: 23px;
+        }
+    }
+
+    &:focus-visible {
+        outline: 2px solid $rd-brand;
+        outline-offset: 2px;
+    }
+}
+
+// ------------------------------------------------------------------ Dialogs
+
+// react-bootstrap Modal with dialogClassName="rd-dialog".
+.rd-dialog {
+    max-width: 520px;
+
+    .modal-content {
+        overflow: hidden;
+        border: 0;
+        border-radius: 16px;
+        box-shadow: 0 24px 48px rgba(0, 0, 0, 0.25);
+        font-family: $rd-sans;
+        color: $rd-ink;
+    }
+
+    &__body {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        padding: 24px 24px 0;
+    }
+
+    &__head {
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    &__title {
+        margin: 0 0 6px;
+        font-family: $rd-sans;
+        font-size: 20px;
+        font-weight: 600;
+        line-height: 1.25;
+        color: $rd-ink;
+    }
+
+    &__text {
+        margin: 0;
+        font-size: 14px;
+        line-height: 1.5;
+        color: $rd-ink-2;
+    }
+
+    &__box {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding: 16px;
+        border: 1px solid $rd-line-soft;
+        border-radius: 12px;
+        background: $rd-row-alt;
+    }
+
+    &__foot {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 24px;
+        padding: 16px 24px;
+        border-top: 1px solid $rd-line-soft;
+    }
+
+    // An editor in a dialog (a branch path's conditions).
+    &--wide {
+        max-width: 760px;
+    }
+}
+
+// Ticks and crosses in "what changes" lists.
+.rd-checks {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 14px;
+    line-height: 1.45;
+
+    li {
+        display: flex;
+        gap: 10px;
+    }
+
+    i {
+        flex-shrink: 0;
+        font-size: 16px;
+        line-height: 1.3;
+    }
+
+    .is-good {
+        color: $rd-good;
+    }
+
+    .is-bad {
+        color: $rd-critical;
+    }
+
+    .is-info {
+        color: $rd-brand;
+    }
+}

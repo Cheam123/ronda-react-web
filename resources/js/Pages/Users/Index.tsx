@@ -1,37 +1,46 @@
 import { Link, router } from '@inertiajs/react';
-import Select from '@/Components/form/Select';
-import TextInput from '@/Components/form/TextInput';
-import Button, { ButtonLink } from '@/Components/ui/Button';
-import Card from '@/Components/ui/Card';
-import DataTable, { EmptyRow } from '@/Components/ui/DataTable';
-import FilterPanel from '@/Components/ui/FilterPanel';
+import type { FormEvent } from 'react';
+import SearchSelect from '@/Components/form/SearchSelect';
+import Initials from '@/Components/surface/Initials';
+import PageHeader from '@/Components/surface/PageHeader';
+import Segmented from '@/Components/surface/Segmented';
+import SurfacePage from '@/Components/surface/SurfacePage';
 import { useFilters } from '@/hooks/useFilters';
 import AppLayout from '@/Layouts/AppLayout';
-import { breadcrumbFrom } from '@/lib/breadcrumbs';
 import { confirm, promptText } from '@/lib/dialogs';
-import { digitsOnly } from '@/lib/input';
-import type { BreadcrumbProps, QueryParams, SelectOption } from '@/types';
+import { pluralize } from '@/lib/format';
+import { formatPhone } from '@/lib/phone';
+import { tagClass, teamHue } from '@/lib/tags';
+import type { QueryParams, SelectOption } from '@/types';
 import type { User } from './types';
 
-const STATUS_OPTIONS: SelectOption[] = [
-    { value: '1', label: 'Active' },
-    { value: '2', label: 'Inactive' },
-];
+/** The status filter: users.status 1 (active), 2 (inactive), or both. */
+type Status = '1' | '2' | 'all';
 
-interface UsersIndexProps extends BreadcrumbProps {
+interface UsersIndexProps {
     users: User[];
+    /** What the other filters leave, per status. */
+    counts: { active: number; inactive: number; all: number };
     filters: QueryParams;
     userTypes: SelectOption[];
 }
 
-export default function UsersIndex({ users, filters, userTypes, ...breadcrumb }: UsersIndexProps) {
+export default function UsersIndex({ users, counts, filters, userTypes }: UsersIndexProps) {
     const { values, set, apply, reset } = useFilters(route('users.index'), {
         active: filters.active ?? '1',
         user_type: filters.user_type ?? '',
-        name: filters.name ?? '',
-        mobile: filters.mobile ?? '',
-        email: filters.email ?? '',
+        search: filters.search ?? '',
     });
+
+    const choose = (key: keyof typeof values, value: string) => {
+        set(key, value);
+        apply({ [key]: value });
+    };
+
+    const search = (event: FormEvent) => {
+        event.preventDefault();
+        apply();
+    };
 
     const resetPassword = async (user: User) => {
         const password = await promptText({
@@ -53,128 +62,193 @@ export default function UsersIndex({ users, filters, userTypes, ...breadcrumb }:
         }
     };
 
+    const filtered = Boolean(filters.search || filters.user_type);
+
     return (
-        <AppLayout title="Users" breadcrumb={breadcrumbFrom(breadcrumb)}>
-            <Card>
-                <FilterPanel
-                    onSearch={() => apply()}
-                    onReset={reset}
-                    actions={
-                        <ButtonLink href={route('users.create')} size="sm" className="filter-button">
-                            Add
-                        </ButtonLink>
-                    }
-                >
-                    <div className="row g-2">
-                        <div className="col-md-3">
-                            <TextInput
-                                placeholder="Name"
-                                value={values.name}
-                                onChange={(event) => set('name', event.target.value)}
-                            />
+        <AppLayout title="Users">
+            <SurfacePage>
+                <PageHeader crumbs={[{ label: 'Admin' }, { label: 'Users' }]} title="Users" />
+
+                <section className="rd-panel rd-panel--flush rd-list rd-list--flush" aria-labelledby="users-title">
+                    <div className="rd-list__head">
+                        <div className="rd-list__heading">
+                            <h2 id="users-title" className="rd-list__title">
+                                All users
+                            </h2>
+                            <span className="rd-count rd-count--label">{pluralize(users.length, 'user')}</span>
                         </div>
-                        <div className="col-md-3">
-                            <Select
-                                placeholder="-- Select User Type --"
-                                options={userTypes}
+                        <div className="rd-list__actions">
+                            <Segmented<Status>
+                                label="Status"
+                                value={values.active as Status}
+                                onChange={(value) => choose('active', value)}
+                                options={[
+                                    { value: '1', label: `Active ${counts.active}` },
+                                    { value: '2', label: `Inactive ${counts.inactive}` },
+                                    { value: 'all', label: `All ${counts.all}` },
+                                ]}
+                            />
+                            <form role="search" onSubmit={search}>
+                                <label className="rd-search users-search">
+                                    <i className="mdi mdi-magnify" aria-hidden="true" />
+                                    <input
+                                        type="search"
+                                        className="rd-input"
+                                        aria-label="Search users"
+                                        placeholder="Name, email or mobile"
+                                        maxLength={255}
+                                        value={values.search}
+                                        onChange={(event) => set('search', event.target.value)}
+                                    />
+                                </label>
+                            </form>
+                            <SearchSelect
+                                compact
+                                ariaLabel="User type"
+                                options={[{ value: '', label: 'All user types' }, ...userTypes]}
+                                clearable={false}
+                                searchable={false}
                                 value={values.user_type}
-                                onChange={(event) => set('user_type', event.target.value)}
+                                onChange={(value) => choose('user_type', value)}
                             />
-                        </div>
-                        <div className="col-md-3">
-                            <TextInput
-                                placeholder="Mobile"
-                                maxLength={15}
-                                onKeyDown={digitsOnly}
-                                value={values.mobile}
-                                onChange={(event) => set('mobile', event.target.value)}
-                            />
-                        </div>
-                        <div className="col-md-3">
-                            <TextInput
-                                type="email"
-                                placeholder="Email"
-                                maxLength={255}
-                                value={values.email}
-                                onChange={(event) => set('email', event.target.value)}
-                            />
+                            <Link href={route('users.create')} className="rd-btn rd-btn--primary">
+                                <i className="mdi mdi-plus" aria-hidden="true" />
+                                Add user
+                            </Link>
                         </div>
                     </div>
-                </FilterPanel>
 
-                <hr />
-
-                <div className="py-2 fw-semibold" style={{ maxWidth: 240 }}>
-                    <Select
-                        aria-label="Status"
-                        placeholder="-- Select Status --"
-                        options={STATUS_OPTIONS}
-                        value={values.active}
-                        onChange={(event) => {
-                            set('active', event.target.value);
-                            apply({ active: event.target.value });
-                        }}
-                    />
-                </div>
-
-                <DataTable>
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th style={{ width: '30%' }}>Name</th>
-                            <th>User Type</th>
-                            <th>Team</th>
-                            <th />
-                            <th />
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {users.map((user, index) => (
-                            <tr key={user.id}>
-                                <td>{index + 1}</td>
-                                <td>{user.name}</td>
-                                <td>{user.type_label}</td>
-                                <td>{user.team_label}</td>
-                                <td className="text-center">
-                                    <Button
-                                        variant="warning"
-                                        size="sm"
-                                        shadow={false}
-                                        onClick={() => resetPassword(user)}
-                                    >
-                                        Reset Password
-                                    </Button>
-                                </td>
-                                <td>
-                                    <div className="d-flex gap-1">
-                                        <Button
-                                            variant="danger"
-                                            size="sm"
-                                            className="me-3"
-                                            onClick={() => deleteUser(user)}
-                                        >
-                                            Delete
-                                        </Button>
-                                        <Link
-                                            className="btn btn-sm btn-primary custom-button-shadow"
-                                            href={route('users.view', user.id)}
-                                        >
-                                            View
-                                        </Link>
-                                        <Link
-                                            className="btn btn-sm btn-primary custom-button-shadow"
-                                            href={route('users.edit', user.id)}
-                                        >
-                                            Edit
-                                        </Link>
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
-                        {users.length === 0 && <EmptyRow colSpan={6}>No users found.</EmptyRow>}
-                    </tbody>
-                </DataTable>
-            </Card>
+                    <div className="rd-scroll">
+                        <table className="rd-table rd-table--flush rd-table--striped users-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col" aria-sort="ascending">
+                                        <span className="rd-sorted">
+                                            Name
+                                            <i className="mdi mdi-arrow-down" aria-hidden="true" />
+                                        </span>
+                                    </th>
+                                    <th scope="col">Status</th>
+                                    <th scope="col">Email address</th>
+                                    <th scope="col">Mobile</th>
+                                    <th scope="col">User type</th>
+                                    <th scope="col">Team</th>
+                                    <th scope="col" className="rd-col-actions">
+                                        <span className="visually-hidden">Actions</span>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {users.map((user) => (
+                                    <UserRow
+                                        key={user.id}
+                                        user={user}
+                                        onResetPassword={() => resetPassword(user)}
+                                        onDelete={() => deleteUser(user)}
+                                    />
+                                ))}
+                                {users.length === 0 && (
+                                    <tr>
+                                        <td colSpan={7} className="rd-list__empty">
+                                            No users match.{' '}
+                                            {filtered && (
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-link p-0 align-baseline"
+                                                    onClick={reset}
+                                                >
+                                                    Clear the filters
+                                                </button>
+                                            )}
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </SurfacePage>
         </AppLayout>
+    );
+}
+
+interface UserRowProps {
+    user: User;
+    onResetPassword: () => void;
+    onDelete: () => void;
+}
+
+function UserRow({ user, onResetPassword, onDelete }: UserRowProps) {
+    const active = user.status === 1;
+
+    return (
+        <tr>
+            <td>
+                <div className="rd-person">
+                    <Initials name={user.name} colorKey={user.id} size="lg" />
+                    <span className="rd-person__text">
+                        <Link href={route('users.view', user.id)} className="rd-person__name">
+                            {user.name}
+                        </Link>
+                        {user.username && <span className="rd-person__sub rd-mono">{user.username}</span>}
+                    </span>
+                </div>
+            </td>
+            <td>
+                {active ? (
+                    <span className="rd-chip rd-chip--good">
+                        <span className="rd-dot" />
+                        Active
+                    </span>
+                ) : (
+                    <span className="rd-chip">
+                        <span className="rd-dot" />
+                        Inactive
+                    </span>
+                )}
+            </td>
+            <td className="users-table__soft">{user.email}</td>
+            <td className="rd-num text-nowrap users-table__soft">
+                {user.mobile ? formatPhone(user.mobile) : <span className="rd-muted">—</span>}
+            </td>
+            <td>{user.type_label}</td>
+            <td>
+                {user.team_label ? (
+                    <span className={tagClass(teamHue(user.team))}>{user.team_label}</span>
+                ) : (
+                    <span className="rd-muted">—</span>
+                )}
+            </td>
+            <td className="rd-col-actions">
+                <div className="rd-actions">
+                    <button
+                        type="button"
+                        className="rd-btn rd-btn--icon"
+                        aria-label={`Reset the password for ${user.name}`}
+                        title="Reset password"
+                        onClick={onResetPassword}
+                    >
+                        <i className="mdi mdi-key-outline" aria-hidden="true" />
+                    </button>
+                    <button
+                        type="button"
+                        className="rd-btn rd-btn--icon rd-btn--icon-danger"
+                        aria-label={`Delete ${user.name}`}
+                        title="Delete"
+                        onClick={onDelete}
+                    >
+                        <i className="mdi mdi-trash-can-outline" aria-hidden="true" />
+                    </button>
+                    <Link
+                        href={route('users.edit', user.id)}
+                        className="rd-btn rd-btn--icon"
+                        aria-label={`Edit ${user.name}`}
+                        title="Edit"
+                    >
+                        <i className="mdi mdi-pencil-outline" aria-hidden="true" />
+                    </Link>
+                </div>
+            </td>
+        </tr>
     );
 }

@@ -45,18 +45,25 @@ export default function FileDropzone({
     return (
         <div {...getRootProps({ className: clsx('file-dropzone', { 'is-active': isDragActive, 'is-busy': busy }) })}>
             <input {...getInputProps()} />
-            {busy ? (
-                <span>
-                    <span className="spinner-border spinner-border-sm me-2" aria-hidden="true" />
-                    Uploading...
-                </span>
-            ) : (
-                <span>
-                    <i className="mdi mdi-cloud-upload-outline me-1" />
-                    {isDragActive ? 'Drop the files here' : 'Drop files here or click to upload'}
-                </span>
-            )}
-            {hint && <div className="custom-font-xxsmall text-muted mt-1">{hint}</div>}
+            <span className="file-dropzone__icon" aria-hidden="true">
+                {busy ? (
+                    <span className="spinner-border spinner-border-sm" />
+                ) : (
+                    <i className="mdi mdi-cloud-upload-outline" />
+                )}
+            </span>
+            <span className="file-dropzone__text">
+                {busy ? (
+                    'Uploading…'
+                ) : isDragActive ? (
+                    'Drop the files here'
+                ) : (
+                    <>
+                        <strong>Choose files</strong> or drop them here
+                    </>
+                )}
+            </span>
+            {hint && <span className="file-dropzone__hint">{hint}</span>}
         </div>
     );
 }

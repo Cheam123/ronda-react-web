@@ -11,46 +11,46 @@ import type {
 
 /** Every widget the builder offers, in palette order. */
 export const FIELD_TYPES: { type: FieldType; label: string; short: string; icon: string; section: string }[] = [
-    { type: 'text', label: 'Single-line Text', short: 'Single line', icon: 'mdi-form-textbox', section: 'Text' },
-    { type: 'textarea', label: 'Multi-line Text', short: 'Multi line', icon: 'mdi-text-long', section: 'Text' },
+    { type: 'text', label: 'Single-line text', short: 'Single line', icon: 'mdi-form-textbox', section: 'Text' },
+    { type: 'textarea', label: 'Multi-line text', short: 'Multi line', icon: 'mdi-text-subject', section: 'Text' },
     { type: 'email', label: 'Email', short: 'Email', icon: 'mdi-email-outline', section: 'Text' },
     { type: 'tel', label: 'Telephone', short: 'Telephone', icon: 'mdi-phone-outline', section: 'Text' },
-    { type: 'number', label: 'Number', short: 'Number', icon: 'mdi-numeric', section: 'Numerical' },
+    { type: 'number', label: 'Number', short: 'Number', icon: 'mdi-numeric', section: 'Numbers' },
     {
         type: 'select',
-        label: 'Single Select',
+        label: 'Single select',
         short: 'Single select',
         icon: 'mdi-arrow-down-drop-circle-outline',
-        section: 'Selection',
+        section: 'Choices',
     },
     {
         type: 'multi-choice',
-        label: 'Multiple Select',
+        label: 'Multiple select',
         short: 'Multiple select',
         icon: 'mdi-format-list-checks',
-        section: 'Selection',
+        section: 'Choices',
     },
     {
         type: 'multi-select',
-        label: 'Categorized Multi-select',
-        short: 'Categorized',
+        label: 'Categorised multi-select',
+        short: 'Categorised',
         icon: 'mdi-file-tree',
-        section: 'Selection',
+        section: 'Choices',
     },
     {
         type: 'checkbox',
         label: 'Checkbox',
         short: 'Checkbox',
         icon: 'mdi-checkbox-marked-outline',
-        section: 'Selection',
+        section: 'Choices',
     },
-    { type: 'date', label: 'Date', short: 'Date', icon: 'mdi-calendar-outline', section: 'Date & Time' },
-    { type: 'time', label: 'Time', short: 'Time', icon: 'mdi-clock-outline', section: 'Date & Time' },
+    { type: 'date', label: 'Date', short: 'Date', icon: 'mdi-calendar-outline', section: 'Date and time' },
+    { type: 'time', label: 'Time', short: 'Time', icon: 'mdi-clock-outline', section: 'Date and time' },
     { type: 'file', label: 'Attachment', short: 'Attachment', icon: 'mdi-paperclip', section: 'Other' },
-    // A Handler step can be assigned to whoever is chosen here.
+    // A Fill-in step can be assigned to whoever is chosen here.
     { type: 'user', label: 'Person', short: 'Person', icon: 'mdi-account-outline', section: 'Other' },
     // Device location, captured on open or on tap; never typed.
-    { type: 'gps', label: 'Location Stamp', short: 'Location Stamp', icon: 'mdi-crosshairs-gps', section: 'Other' },
+    { type: 'gps', label: 'Location stamp', short: 'Location stamp', icon: 'mdi-crosshairs-gps', section: 'Other' },
 ];
 
 export function typeLabel(type: string | undefined): string {

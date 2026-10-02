@@ -102,7 +102,7 @@ interface TaskStatusMenuProps {
     filters: TaskFilters;
 }
 
-/** The ⋮ menu of status changes the signed-in user may make on a task. */
+/** "Change status": the status changes the signed-in user may make on a task. */
 export default function TaskStatusMenu({ taskId, actions, filters }: TaskStatusMenuProps) {
     const [busy, setBusy] = useState(false);
     const available = ACTIONS.filter((action) => actions[action.flag]);
@@ -123,11 +123,13 @@ export default function TaskStatusMenu({ taskId, actions, filters }: TaskStatusM
     };
 
     return (
-        <Dropdown>
-            <Dropdown.Toggle variant="light" className="custom-button-shadow" disabled={busy} aria-label="Task actions">
-                <i className="fas fa-ellipsis-v me-1" /> Actions
+        <Dropdown align="end">
+            <Dropdown.Toggle as="button" type="button" bsPrefix="rd-btn rd-btn--lg" disabled={busy}>
+                <i className="mdi mdi-swap-horizontal" aria-hidden="true" />
+                Change status
+                <i className="mdi mdi-chevron-down rd-nav__chevron" aria-hidden="true" />
             </Dropdown.Toggle>
-            <Dropdown.Menu className="task-status-menu">
+            <Dropdown.Menu className="rd-menu task-status-menu">
                 {available.map((action) => (
                     <Dropdown.Item key={action.key} as="button" type="button" onClick={() => run(action)}>
                         {action.label}

@@ -2,54 +2,8 @@
 // Form controls (resources/js/Components/form).
 //
 
-.form-field {
-    padding-bottom: 10px;
-
-    &__required {
-        padding: 0 5px;
-        color: red;
-    }
-}
-
-// SearchSelect: react-select sized to match .form-control-sm
-.search-select {
-    .rs__control {
-        min-height: calc(1.5em + 0.5rem + 2px);
-        border-color: $input-border-color;
-        border-radius: $input-border-radius-sm;
-        box-shadow: none;
-
-        &--is-focused {
-            border-color: $input-focus-border-color;
-            box-shadow: $input-focus-box-shadow;
-        }
-    }
-
-    .rs__value-container {
-        padding: 0 8px;
-    }
-
-    .rs__indicator {
-        padding: 4px;
-    }
-
-    .rs__input-container {
-        margin: 0;
-        padding: 0;
-    }
-
-    &.is-invalid .rs__control {
-        border-color: $form-feedback-invalid-color;
-    }
-}
-
-.rs__menu {
-    font-size: 13px;
-}
-
-.rs__option--is-selected {
-    background-color: #04c !important;
-}
+// Field, SearchSelect and the other controls are drawn in _controls.scss,
+// with the surface tokens.
 
 // RichTextEditor (TipTap): a toolbar over a bordered editing area.
 .rich-text {

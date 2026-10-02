@@ -1,13 +1,21 @@
 import clsx from 'clsx';
-import SearchSelect from '@/Components/form/SearchSelect';
+import type { ReactNode } from 'react';
+import PendingFiles from '@/Components/documents/PendingFiles';
+import { useToast } from '@/Components/feedback/ToastProvider';
+import FileDropzone from '@/Components/form/FileDropzone';
 import GpsStampField from '@/Components/form/GpsStampField';
-import { formatFileSize } from '@/lib/files';
+import SearchSelect from '@/Components/form/SearchSelect';
+import TextArea from '@/Components/form/TextArea';
+import TextInput from '@/Components/form/TextInput';
 import { optionList, peopleFor } from '@/lib/forms/schema';
 import type { AnswerValue, FieldElement, GpsAnswer, OptionCategory, Person } from '@/types/forms';
 import FileAnswerList from './FileAnswerList';
 
 /** Attachments over this size are refused by the server (FormUploadService::MAX_KB). */
-const MAX_FILE_BYTES = 10240 * 1024;
+const MAX_FILE_MB = 10;
+
+/** Fields answered by ticking several boxes: a fieldset, not one labelled control. */
+const GROUPED = ['multi-choice', 'multi-select', 'checkbox'];
 
 interface FormFieldInputProps {
     element: FieldElement;
@@ -28,14 +36,13 @@ const asText = (value: AnswerValue): string =>
 
 const asList = (value: AnswerValue): string[] => (Array.isArray(value) ? value.map(String) : []);
 
-/** "(Select 2 to 4 options)" under a multiple-choice field. */
-function MinMaxHint({ element }: { element: FieldElement }) {
+/** "Pick 2 to 4." under a multiple-choice field. */
+function pickHint(element: FieldElement): string | null {
     const min = element.min ? Number(element.min) : null;
     const max = element.max ? Number(element.max) : null;
     if (!min && !max) return null;
 
-    const text = min && max ? `${min} to ${max} options` : min ? `at least ${min} option(s)` : `up to ${max} option(s)`;
-    return <small className="text-muted d-block mb-2">(Select {text})</small>;
+    return min && max ? `Pick ${min} to ${max}.` : min ? `Pick at least ${min}.` : `Pick up to ${max}.`;
 }
 
 /** One form field, labelled, with its validation message. */
@@ -50,39 +57,42 @@ export default function FormFieldInput({
     people,
     onImageClick,
 }: FormFieldInputProps) {
+    const toast = useToast();
     const id = `field-${element.id}`;
-    const placeholder = element.placeholder || `Enter ${element.label ?? ''}`;
+    const placeholder = element.placeholder || undefined;
+    const invalid = Boolean(error);
     const toggle = (option: string) => {
         const chosen = asList(value);
         onChange(chosen.includes(option) ? chosen.filter((item) => item !== option) : [...chosen, option]);
     };
 
-    const checkboxes = (options: string[], prefix: string) =>
-        options.map((option, index) => (
-            <div className="form-check" key={`${option}-${index}`}>
-                <input
-                    className="form-check-input"
-                    type="checkbox"
-                    id={`${prefix}_${element.id}_${index}`}
-                    checked={asList(value).includes(option)}
-                    disabled={disabled}
-                    onChange={() => toggle(option)}
-                />
-                <label className="form-check-label" htmlFor={`${prefix}_${element.id}_${index}`}>
-                    {option}
+    const checkboxes = (options: string[], prefix: string) => (
+        <div className="form-choices">
+            {options.map((option, index) => (
+                <label key={`${option}-${index}`} className="form-choice">
+                    <input
+                        type="checkbox"
+                        className="rd-check"
+                        id={`${prefix}_${element.id}_${index}`}
+                        checked={asList(value).includes(option)}
+                        disabled={disabled}
+                        onChange={() => toggle(option)}
+                    />
+                    <span>{option}</span>
                 </label>
-            </div>
-        ));
+            ))}
+        </div>
+    );
 
     const control = (() => {
         switch (element.type) {
             case 'textarea':
                 return (
-                    <textarea
+                    <TextArea
                         id={id}
-                        className={clsx('form-control', error && 'is-invalid')}
                         rows={4}
                         placeholder={placeholder}
+                        invalid={invalid}
                         disabled={disabled}
                         value={asText(value)}
                         onChange={(event) => onChange(event.target.value)}
@@ -94,11 +104,12 @@ export default function FormFieldInput({
                 const min =
                     minDays > 0 ? new Date(Date.now() + minDays * 86_400_000).toLocaleDateString('en-CA') : undefined;
                 return (
-                    <input
+                    <TextInput
                         id={id}
                         type="date"
-                        className={clsx('form-control', error && 'is-invalid')}
+                        large
                         min={min}
+                        invalid={invalid}
                         disabled={disabled}
                         value={asText(value)}
                         onChange={(event) => onChange(event.target.value)}
@@ -108,10 +119,11 @@ export default function FormFieldInput({
 
             case 'time':
                 return (
-                    <input
+                    <TextInput
                         id={id}
                         type="time"
-                        className={clsx('form-control', error && 'is-invalid')}
+                        large
+                        invalid={invalid}
                         disabled={disabled}
                         value={asText(value)}
                         onChange={(event) => onChange(event.target.value)}
@@ -123,9 +135,9 @@ export default function FormFieldInput({
                     <SearchSelect
                         id={id}
                         options={optionList(element).map((option) => ({ value: option, label: option }))}
-                        placeholder={element.placeholder || 'Select an option'}
+                        placeholder={element.placeholder || 'Choose one'}
                         disabled={disabled}
-                        invalid={!!error}
+                        invalid={invalid}
                         value={asText(value)}
                         onChange={(picked) => onChange(picked || null)}
                     />
@@ -136,83 +148,61 @@ export default function FormFieldInput({
                     <SearchSelect
                         id={id}
                         options={peopleFor(element, people).map((person) => ({ value: person.id, label: person.name }))}
-                        placeholder={element.placeholder || 'Select a person'}
+                        placeholder={element.placeholder || 'Choose a person'}
                         disabled={disabled}
-                        invalid={!!error}
+                        invalid={invalid}
                         value={asText(value)}
                         onChange={(picked) => onChange(picked || null)}
                     />
                 );
 
             case 'multi-choice':
-                return (
-                    <div id={id} className={clsx('border rounded p-3', error && 'border-danger')}>
-                        <MinMaxHint element={element} />
-                        {checkboxes(optionList(element), 'mc')}
-                    </div>
-                );
+                return checkboxes(optionList(element), 'mc');
 
             case 'multi-select':
                 return (
-                    <div id={id} className={clsx('border rounded p-3', error && 'border-danger')}>
-                        <MinMaxHint element={element} />
+                    <div className="form-categories">
                         {(element.values as OptionCategory[])
                             .filter((category) => category && typeof category === 'object')
                             .map((category, index) => (
-                                <div className="mb-3" key={`${category.group}-${index}`}>
-                                    <strong className="d-block mb-2">{category.group}</strong>
-                                    <div className="ms-3">
-                                        {checkboxes((category.options ?? []).filter(Boolean), `ms${index}`)}
-                                    </div>
+                                <div key={`${category.group}-${index}`} className="form-categories__group">
+                                    <span className="form-categories__name">{category.group}</span>
+                                    {checkboxes((category.options ?? []).filter(Boolean), `ms${index}`)}
                                 </div>
                             ))}
                     </div>
                 );
 
             case 'checkbox':
-                return <div id={id}>{checkboxes(optionList(element), 'cb')}</div>;
+                return checkboxes(optionList(element), 'cb');
 
-            case 'file': {
-                const tooBig = files.filter((file) => file.size > MAX_FILE_BYTES).length;
+            case 'file':
                 return (
-                    <>
+                    <div className="form-files">
                         {value && value !== '__files_attached__' && (
-                            <div className="mb-2">
-                                <div className="text-muted small mb-1">
-                                    <i className="mdi mdi-paperclip me-1" />
-                                    Attached
-                                </div>
+                            <div className="form-files__saved">
                                 <FileAnswerList value={value} onImageClick={onImageClick} />
-                                {!disabled && <div className="form-text small">Choosing new files replaces these.</div>}
-                            </div>
-                        )}
-                        <input
-                            id={id}
-                            type="file"
-                            multiple
-                            className="form-control"
-                            disabled={disabled}
-                            onChange={(event) => onFiles?.(Array.from(event.target.files ?? []))}
-                        />
-                        {files.length > 0 && (
-                            <div className="mt-1">
-                                {files.map((file, index) => (
-                                    <span key={`${file.name}-${index}`} className="file-answers__chip me-1 mb-1">
-                                        <i className="mdi mdi-paperclip me-1" />
-                                        {file.name} · {formatFileSize(file.size)}
-                                    </span>
-                                ))}
-                                {tooBig > 0 && (
-                                    <div className="text-danger small mt-1">
-                                        <i className="mdi mdi-alert-circle me-1" />
-                                        {tooBig} file(s) are over the 10 MB limit and will be rejected.
-                                    </div>
+                                {!disabled && (
+                                    <span className="rd-field__hint">Choosing new files replaces these.</span>
                                 )}
                             </div>
                         )}
-                    </>
+                        {!disabled && (
+                            <>
+                                <FileDropzone
+                                    maxSizeMb={MAX_FILE_MB}
+                                    hint={`Photos, PDFs and documents, up to ${MAX_FILE_MB} MB each`}
+                                    onFiles={(picked) => onFiles?.([...files, ...picked])}
+                                    onReject={(message) => toast(message, 'error')}
+                                />
+                                <PendingFiles
+                                    files={files}
+                                    onRemove={(index) => onFiles?.(files.filter((_, position) => position !== index))}
+                                />
+                            </>
+                        )}
+                    </div>
                 );
-            }
 
             case 'gps':
                 return (
@@ -226,11 +216,12 @@ export default function FormFieldInput({
 
             default:
                 return (
-                    <input
+                    <TextInput
                         id={id}
                         type={['email', 'tel', 'number'].includes(element.type) ? element.type : 'text'}
-                        className={clsx('form-control', error && 'is-invalid')}
+                        large
                         placeholder={placeholder}
+                        invalid={invalid}
                         disabled={disabled}
                         value={asText(value)}
                         onChange={(event) => onChange(event.target.value)}
@@ -239,14 +230,50 @@ export default function FormFieldInput({
         }
     })();
 
-    return (
+    const label: ReactNode = (
         <>
-            <label className="form-label fw-bold" htmlFor={id}>
-                {element.label || 'Untitled Field'}
-                {element.mandatory && <span className="text-danger"> *</span>}
-            </label>
-            {control}
-            {error && <div className="invalid-feedback d-block">{error}</div>}
+            {element.label || 'Untitled field'}
+            {element.mandatory && (
+                <span className="rd-field__required" aria-hidden="true">
+                    {' '}
+                    *
+                </span>
+            )}
         </>
+    );
+    const hint = element.type === 'multi-choice' || element.type === 'multi-select' ? pickHint(element) : null;
+    const message = error ? (
+        <span className="rd-field__error" role="alert">
+            <i className="mdi mdi-alert-circle-outline" aria-hidden="true" />
+            {error}
+        </span>
+    ) : (
+        hint && <span className="rd-field__hint">{hint}</span>
+    );
+
+    if (GROUPED.includes(element.type)) {
+        return (
+            <fieldset id={id} className={clsx('rd-fieldset', error && 'has-error')}>
+                <legend className="rd-field__label">{label}</legend>
+                {control}
+                {message}
+            </fieldset>
+        );
+    }
+
+    return (
+        <div className={clsx('rd-field', error && 'has-error')}>
+            {element.type === 'gps' || element.type === 'file' ? (
+                <span className="rd-field__label" id={id}>
+                    {label}
+                </span>
+            ) : (
+                <label htmlFor={id} className="rd-field__label">
+                    {label}
+                </label>
+            )}
+            {control}
+            {message}
+        </div>
     );
 }

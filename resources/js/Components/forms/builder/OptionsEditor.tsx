@@ -23,6 +23,37 @@ export default function OptionsEditor({ element, onChange }: OptionsEditorProps)
     );
 }
 
+function OptionRow({
+    value,
+    label,
+    placeholder = 'Option',
+    removeLabel,
+    onChange,
+    onRemove,
+}: {
+    value: string;
+    label: string;
+    placeholder?: string;
+    removeLabel: string;
+    onChange: (value: string) => void;
+    onRemove: () => void;
+}) {
+    return (
+        <div className="option-row">
+            <TextInput
+                large
+                placeholder={placeholder}
+                aria-label={label}
+                value={value}
+                onChange={(event) => onChange(event.target.value)}
+            />
+            <button type="button" className="rd-btn rd-btn--icon" aria-label={removeLabel} onClick={onRemove}>
+                <i className="mdi mdi-close" aria-hidden="true" />
+            </button>
+        </div>
+    );
+}
+
 function ListEditor({ values, onChange }: { values: string[]; onChange: (values: string[]) => void }) {
     const rows = values.length ? values : [''];
     const [expanded, setExpanded] = useState(rows.length <= COLLAPSE_AFTER);
@@ -35,46 +66,38 @@ function ListEditor({ values, onChange }: { values: string[]; onChange: (values:
     };
 
     return (
-        <div>
+        <div className="option-list">
             {shown.map((value, index) => (
-                <div key={index} className="d-flex align-items-center gap-1 mb-1">
-                    <i className="mdi mdi-drag-vertical text-muted" />
-                    <TextInput
-                        placeholder="Option"
-                        aria-label={`Option ${index + 1}`}
-                        value={value}
-                        onChange={(event) => set(index, event.target.value)}
-                    />
-                    <button
-                        type="button"
-                        className="btn btn-sm btn-outline-danger"
-                        title="Remove option"
-                        onClick={() => remove(index)}
-                    >
-                        <i className="mdi mdi-minus" />
-                    </button>
-                </div>
+                <OptionRow
+                    key={index}
+                    value={value}
+                    label={`Option ${index + 1}`}
+                    removeLabel={`Remove option ${index + 1}`}
+                    onChange={(next) => set(index, next)}
+                    onRemove={() => remove(index)}
+                />
             ))}
-            <div className="d-flex align-items-center gap-3 mt-1">
+            <div className="option-list__actions">
                 <button
                     type="button"
-                    className="btn btn-sm btn-link p-0"
+                    className="rd-btn rd-btn--sm rd-btn--quiet"
                     onClick={() => {
                         // Expand first so the new row is visible.
                         setExpanded(true);
                         onChange([...rows, '']);
                     }}
                 >
-                    <i className="mdi mdi-plus" /> Add option
+                    <i className="mdi mdi-plus" aria-hidden="true" />
+                    Add an option
                 </button>
                 {rows.length > COLLAPSE_AFTER && (
                     <button
                         type="button"
-                        className="btn btn-sm btn-link p-0 text-muted"
+                        className="rd-btn rd-btn--sm rd-btn--quiet"
                         onClick={() => setExpanded((open) => !open)}
                     >
-                        <i className={`mdi ${expanded ? 'mdi-chevron-up' : 'mdi-chevron-down'}`} />{' '}
-                        {expanded ? 'Show less' : `Show all (${rows.length})`}
+                        <i className={`mdi ${expanded ? 'mdi-chevron-up' : 'mdi-chevron-down'}`} aria-hidden="true" />
+                        {expanded ? 'Show fewer' : `Show all ${rows.length}`}
                     </button>
                 )}
             </div>
@@ -95,70 +118,57 @@ function CategoryEditor({
         onChange(rows.map((category, i) => (i === index ? { ...category, ...patch } : category)));
 
     return (
-        <div>
+        <div className="option-list">
             {rows.map((category, index) => {
                 const options = category.options?.length ? category.options : [''];
                 return (
-                    <div key={index} className="border rounded p-2 mb-2 bg-light">
-                        <div className="d-flex align-items-center gap-1 mb-1">
-                            <TextInput
-                                placeholder="Category name"
-                                aria-label={`Category ${index + 1}`}
-                                value={category.group}
-                                onChange={(event) => setCategory(index, { group: event.target.value })}
-                            />
-                            <button
-                                type="button"
-                                className="btn btn-sm btn-outline-danger"
-                                title="Remove category"
-                                onClick={() => onChange(rows.filter((_, i) => i !== index))}
-                            >
-                                <i className="mdi mdi-minus" />
-                            </button>
-                        </div>
-                        {options.map((option, optionIndex) => (
-                            <div key={optionIndex} className="d-flex align-items-center gap-1 mb-1">
-                                <i className="mdi mdi-drag-vertical text-muted" />
-                                <TextInput
-                                    placeholder="Option"
-                                    aria-label={`Option ${optionIndex + 1}`}
+                    <div key={index} className="option-category">
+                        <OptionRow
+                            value={category.group}
+                            label={`Category ${index + 1}`}
+                            placeholder="Category name"
+                            removeLabel={`Remove category ${index + 1}`}
+                            onChange={(group) => setCategory(index, { group })}
+                            onRemove={() => onChange(rows.filter((_, i) => i !== index))}
+                        />
+                        <div className="option-category__options">
+                            {options.map((option, optionIndex) => (
+                                <OptionRow
+                                    key={optionIndex}
                                     value={option}
-                                    onChange={(event) =>
+                                    label={`Option ${optionIndex + 1} in category ${index + 1}`}
+                                    removeLabel={`Remove option ${optionIndex + 1}`}
+                                    onChange={(next) =>
                                         setCategory(index, {
                                             options: options.map((existing, i) =>
-                                                i === optionIndex ? event.target.value : existing,
+                                                i === optionIndex ? next : existing,
                                             ),
                                         })
                                     }
-                                />
-                                <button
-                                    type="button"
-                                    className="btn btn-sm btn-outline-danger"
-                                    title="Remove option"
-                                    onClick={() =>
+                                    onRemove={() =>
                                         setCategory(index, { options: options.filter((_, i) => i !== optionIndex) })
                                     }
-                                >
-                                    <i className="mdi mdi-minus" />
-                                </button>
-                            </div>
-                        ))}
-                        <button
-                            type="button"
-                            className="btn btn-sm btn-link p-0"
-                            onClick={() => setCategory(index, { options: [...options, ''] })}
-                        >
-                            <i className="mdi mdi-plus" /> Option
-                        </button>
+                                />
+                            ))}
+                            <button
+                                type="button"
+                                className="rd-btn rd-btn--sm rd-btn--quiet"
+                                onClick={() => setCategory(index, { options: [...options, ''] })}
+                            >
+                                <i className="mdi mdi-plus" aria-hidden="true" />
+                                Add an option
+                            </button>
+                        </div>
                     </div>
                 );
             })}
             <button
                 type="button"
-                className="btn btn-sm btn-outline-success"
+                className="rd-btn rd-btn--sm option-list__category"
                 onClick={() => onChange([...rows, { group: '', options: [''] }])}
             >
-                <i className="mdi mdi-plus" /> Add category
+                <i className="mdi mdi-plus" aria-hidden="true" />
+                Add a category
             </button>
         </div>
     );

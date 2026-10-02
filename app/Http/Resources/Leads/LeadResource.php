@@ -35,6 +35,12 @@ class LeadResource extends JsonResource
             'segment'           => $this->segment,
             'gps'               => $stamp ? json_encode($stamp) : '',
             'remark'            => $this->remark,
+            // For the outlet page's header and details.
+            'assignee'          => $this->assign_to ? optional($this->assignee)->name : null,
+            'assignee_id'       => $this->assign_to,
+            'created_by'        => optional($this->createdBy)->name,
+            // A prospect gets one running task at a time; a customer any number (as LeadListResource).
+            'taskable'          => (bool) $this->customer_id || $this->runningTasks()->doesntExist(),
         ];
     }
 }

@@ -29,9 +29,29 @@ class Product extends Model
         'is_active'  => 'boolean',
     ];
 
+    /** Products with no confirmed order this many days are flagged for review. */
+    public const STALE_DAYS = 90;
+
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
+    }
+
+    /**
+     * Active products that have been in the catalogue for STALE_DAYS and
+     * were not on a confirmed order in that time. A product added last week
+     * is not stale just because nobody has ordered it yet.
+     */
+    public function scopeStale($query, ?\Carbon\CarbonInterface $now = null)
+    {
+        $cutoff = ($now ? $now->copy() : now())->subDays(self::STALE_DAYS);
+
+        return $query->active()
+            ->where('created_at', '<=', $cutoff)
+            ->whereDoesntHave('orderLines', fn ($lines) => $lines->whereHas(
+                'order',
+                fn ($orders) => $orders->confirmed()->where('order_date', '>=', $cutoff->toDateString())
+            ));
     }
 
     public function orderLines()

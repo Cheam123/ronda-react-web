@@ -1,0 +1,53 @@
+//
+// Users (Pages/Users/Index). Built on the surface styles
+// (ronda/_surface.scss); the list is a flush .rd-list with a striped table.
+//
+
+.users-search {
+    width: 260px;
+    max-width: 100%;
+}
+
+.users-table {
+    min-width: 1040px;
+
+    &__soft {
+        color: $rd-ink-2;
+    }
+}
+
+// ------------------------------------------ User form, page and profile
+
+// The alerts switch sits level with the input beside it.
+.user-form__switch {
+    padding-top: 30px;
+
+    @media (max-width: 767.98px) {
+        padding-top: 0;
+    }
+}
+
+// How the user will look in the list, beside the form.
+.user-preview {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px;
+    border: 1px solid $rd-line;
+    border-radius: 12px;
+
+    .rd-person__text {
+        flex-grow: 1;
+    }
+
+    &__tags {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 6px;
+    }
+}
+
+.user-card {
+    max-width: 760px;
+}
