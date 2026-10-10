@@ -3,10 +3,10 @@
 //
 
 body[data-layout="horizontal"] {
-    background-color: #fff;
+    background-color: $rd-panel;
 
     .main-content {
-        background-color: #fff;
+        background-color: $rd-panel;
     }
 }
 
@@ -22,7 +22,7 @@ body[data-layout="horizontal"] {
         font-size: 0.9rem;
         line-height: 2.4;
         color: #495057;
-        background-color: #f5f6f8;
+        background-color: $rd-ground;
     }
 }
 
@@ -77,5 +77,5 @@ body[data-layout="horizontal"] {
 
 .guest-layout {
     min-height: 100vh;
-    background-color: #f5f6f8;
+    background-color: $rd-ground;
 }

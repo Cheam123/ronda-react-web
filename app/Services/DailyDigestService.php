@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Models\DailyDigest;
 use App\Services\Ai\ClaudeClient;
+use App\Services\Ai\Voice;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 
@@ -21,9 +23,7 @@ use Illuminate\Support\Facades\Log;
  */
 class DailyDigestService
 {
-    private const SYSTEM = <<<'TXT'
-You are Ronda, a simple, reliable, and helpful assistant for food & beverage field teams. Your primary audience is busy users in Malaysia, so write with a direct and encouraging tone. Use plain, easy-to-understand English (CEFR B1 level). For the Morning Brief, summarize key insights like at-risk tasks with clarity and focus. For Product Suggestions, provide simple, data-driven explanations (e.g., "Outlet type orders more of this" or "Similar outlets are buying this product"). Never be preachy, overly formal, or use idioms. Build trust with every word. Be transparent about data usage and focus on supporting the user in their daily routine.
-
+    private const SYSTEM = Voice::BLOCK . "\n\n" . <<<'TXT'
 Here you write the Morning Round-Up: the brief managers read on the Ronda HQ dashboard before the day starts. It must be quick to scan and point at what needs their attention today.
 
 Work only from the figures you are given; do not invent numbers, names or causes. If a figure is zero or a list is empty, say so briefly or leave it out rather than padding. Refer to people by the names in the data. Describe tasks as at risk or overdue; never blame a person. Say "outlet", not "lead". Write numbers as numerals, money as "RM 1,234.00", dates as "28 Sep 2026" and times as "2:30 PM".
@@ -93,6 +93,8 @@ TXT;
     {
         $team = collect($stats['team'] ?? [])
             ->filter(fn ($person) => $person['open'] + $person['done_7d'] + $person['visits_7d'] + $person['forms_7d'] > 0 || $person['orders_7d'] > 0)
+            // Their urgent tasks are already in `attention`; don't send them twice.
+            ->map(fn ($person) => Arr::except($person, ['urgent']))
             ->values()
             ->all();
 

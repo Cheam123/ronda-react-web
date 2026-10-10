@@ -9,7 +9,7 @@
 .rich-text {
     border: 1px solid $input-border-color;
     border-radius: $input-border-radius-sm;
-    background: #fff;
+    background: $rd-panel;
 
     &.is-invalid {
         border-color: $form-feedback-invalid-color;

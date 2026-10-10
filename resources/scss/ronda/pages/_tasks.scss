@@ -95,7 +95,7 @@
         }
 
         &:hover {
-            background: darken($rd-track, 5%);
+            background: $rd-track-hover;
             color: $rd-ink;
         }
 

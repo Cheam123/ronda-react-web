@@ -90,8 +90,8 @@
     &__yours {
         border-color: $rd-brand-soft;
         box-shadow:
-            0 0 0 3px rgba(13, 114, 158, 0.08),
-            0 1px 2px rgba(16, 24, 40, 0.04);
+            0 0 0 3px rgba(var(--rd-brand-rgb), 0.08),
+            0 1px 2px rgba(var(--rd-shade), 0.04);
         scroll-margin-top: 96px;
 
         &.is-pulsing {
@@ -99,7 +99,7 @@
         }
 
         .form-record__card-head {
-            background: #f5fafc;
+            background: $rd-brand-wash;
             border-radius: 16px 16px 0 0;
         }
 
@@ -129,7 +129,7 @@
     &__turn {
         gap: 16px;
         border-color: $rd-brand-soft;
-        background: linear-gradient(180deg, #f5fafc 0%, $rd-panel 70%);
+        background: linear-gradient(180deg, $rd-brand-wash 0%, $rd-panel 70%);
 
         .rd-btn {
             width: 100%;
@@ -237,11 +237,11 @@
 
 @keyframes form-record-pulse {
     0% {
-        box-shadow: 0 0 0 0 rgba(13, 114, 158, 0.35);
+        box-shadow: 0 0 0 0 rgba(var(--rd-brand-rgb), 0.35);
     }
 
     100% {
-        box-shadow: 0 0 0 14px rgba(13, 114, 158, 0);
+        box-shadow: 0 0 0 14px rgba(var(--rd-brand-rgb), 0);
     }
 }
 
@@ -322,7 +322,7 @@
         }
 
         &.is-done::before {
-            background: #abefc6;
+            background: $rd-good-line;
         }
     }
 
@@ -353,8 +353,8 @@
         }
 
         .is-current & {
-            border-color: $rd-brand;
-            background: $rd-brand;
+            border-color: $rd-brand-fill;
+            background: $rd-brand-fill;
             color: #fff;
             box-shadow: 0 0 0 4px $rd-brand-tint;
         }

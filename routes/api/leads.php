@@ -23,6 +23,14 @@ Route::group(['middleware' => ['auth']], function () {
     Route::post('/{id}/orders', 'API\V1\OrderController@store')->name('lead.orders.store');
     Route::post('/orders/{order}/cancel', 'API\V1\OrderController@cancel')->name('lead.orders.cancel');
 
+    # Ronda assistant on the outlet page (Claude on Bedrock)
+    Route::middleware('throttle:assistant')->group(function () {
+        Route::post('/{id}/assistant/brief', 'API\V1\OutletAssistantController@brief')->name('lead.assistant.brief');
+        Route::post('/{id}/assistant/chat', 'API\V1\OutletAssistantController@chat')->name('lead.assistant.chat');
+        Route::post('/{id}/assistant/follow-up', 'API\V1\OutletAssistantController@followUp')->name('lead.assistant.followUp');
+        Route::post('/{id}/assistant/pitches', 'API\V1\OutletAssistantController@pitches')->name('lead.assistant.pitches');
+    });
+
     Route::post('/files/store', 'API\V1\LeadController@fileStore')->name('lead.file.store');
     Route::get('/files/download', 'API\V1\LeadController@download')->name('lead.file.download');
     Route::get('/files/remove', 'API\V1\LeadController@deleteDocument')->name('lead.file.delete');

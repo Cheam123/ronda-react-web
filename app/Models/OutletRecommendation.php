@@ -20,12 +20,16 @@ class OutletRecommendation extends Model
         'opening_line',
         'explanation_source',
         'explained_hash',
+        'pitches',
+        'pitches_source',
+        'pitched_hash',
         'computed_at',
     ];
 
     protected $casts = [
         'items'                   => 'array',
         'neighbors'               => 'array',
+        'pitches'                 => 'array',
         'gap_count'               => 'integer',
         'estimated_monthly_value' => 'float',
         'computed_at'             => 'datetime',
@@ -40,5 +44,11 @@ class OutletRecommendation extends Model
     public function hasFreshExplanation(): bool
     {
         return $this->explanation !== null && $this->explained_hash === $this->items_hash;
+    }
+
+    /** Whether the cached pitch tips were written for the current items. */
+    public function hasFreshPitches(): bool
+    {
+        return $this->pitches !== null && $this->pitched_hash === $this->items_hash;
     }
 }

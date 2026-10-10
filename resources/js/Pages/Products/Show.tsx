@@ -5,8 +5,9 @@ import { Bar } from 'react-chartjs-2';
 import PageHeader from '@/Components/surface/PageHeader';
 import SurfacePage from '@/Components/surface/SurfacePage';
 import AppLayout from '@/Layouts/AppLayout';
-import { BAR_STYLE, barOptions, CHART } from '@/lib/chartTheme';
+import { BAR_STYLE, barOptions, chartColors } from '@/lib/chartTheme';
 import { compactNumber, formatMoney, formatNumber, formatQuantity, pluralize } from '@/lib/format';
+import { useTheme } from '@/lib/theme';
 import ChangeChip from '@/Components/surface/ChangeChip';
 import type { PageProps } from '@/types';
 import type { Product } from '@/types/catalogue';
@@ -85,10 +86,12 @@ export default function ProductShow({
     const [retiring, setRetiring] = useState(false);
     const neverOrdered = product.order_lines_count === 0;
     const lastMonth = monthly.length - 1;
+    const colors = chartColors(useTheme().theme);
 
     const options = useMemo(
         () =>
             barOptions({
+                colors,
                 format: (value) => `${currency} ${formatMoney(value)}`,
                 formatTick: (value) => compactNumber(value),
                 titles: monthly.map((month, index) => {
@@ -99,7 +102,7 @@ export default function ProductShow({
                     return `${title}${index === lastMonth ? ' (so far)' : ''} · ${formatQuantity(month.quantity)} ${product.unit}`;
                 }),
             }),
-        [currency, monthly, lastMonth, product.unit],
+        [colors, currency, monthly, lastMonth, product.unit],
     );
 
     const chartData = {
@@ -108,7 +111,7 @@ export default function ProductShow({
             {
                 label: 'Sales',
                 data: monthly.map((month) => month.value),
-                backgroundColor: monthly.map((_, index) => (index === lastMonth ? CHART.brand : CHART.brandPast)),
+                backgroundColor: monthly.map((_, index) => (index === lastMonth ? colors.brand : colors.brandPast)),
                 ...BAR_STYLE,
                 maxBarThickness: 56,
             },

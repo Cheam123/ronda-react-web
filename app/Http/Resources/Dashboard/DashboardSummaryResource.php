@@ -17,6 +17,10 @@ class DashboardSummaryResource extends JsonResource
     {
         $summary = $this->resource;
 
+        $withDueLabel = fn (array $item) => $item + [
+            'due_label' => $item['due_at'] ? Carbon::parse($item['due_at'])->format('j M, g:i A') : '',
+        ];
+
         $summary['visits']['daily'] = array_map(fn (array $day) => $day + [
             'label' => Carbon::parse($day['date'])->format('D j M'),
         ], $summary['visits']['daily']);
@@ -28,9 +32,10 @@ class DashboardSummaryResource extends JsonResource
             'trend'           => array_map(fn (array $day) => $day + [
                 'label' => Carbon::parse($day['date'])->format('D j M'),
             ], $summary['trend']),
-            'attention'       => array_map(fn (array $item) => $item + [
-                'due_label' => $item['due_at'] ? Carbon::parse($item['due_at'])->format('j M, g:i A') : '',
-            ], $summary['attention']),
+            'attention'       => array_map($withDueLabel, $summary['attention']),
+            'team'            => array_map(fn (array $person) => array_merge($person, [
+                'urgent' => array_map($withDueLabel, $person['urgent']),
+            ]), $summary['team']),
         ]);
     }
 }

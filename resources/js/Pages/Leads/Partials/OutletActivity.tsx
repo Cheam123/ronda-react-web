@@ -1,11 +1,13 @@
 import { router, usePage } from '@inertiajs/react';
 import clsx from 'clsx';
+import { Fragment, useState } from 'react';
 import Meter from '@/Components/surface/Meter';
 import { useAuth } from '@/hooks/useAuth';
+import { assistantError, callAssistant } from '@/lib/assistant';
 import { confirm } from '@/lib/dialogs';
 import { formatMoney, formatQuantity, pluralize } from '@/lib/format';
 import type { PageProps } from '@/types';
-import type { Order, Recommendation, Visit } from '@/types/leads';
+import type { Order, PitchTip as PitchTipData, PitchTips, Recommendation, Visit } from '@/types/leads';
 
 /** IFE reports filed at the outlet (newest first). */
 export function VisitHistory({ visits }: { visits: Visit[] }) {
@@ -163,11 +165,35 @@ export function OrderHistory({ orders }: { orders: Order[] }) {
     );
 }
 
-/** A read-only copy of the rep's Suggested orders for the outlet (admins and managers). */
-export function SuggestedOrders({ recommendation }: { recommendation: Recommendation }) {
+/**
+ * The products similar outlets buy and this one does not (or too little of),
+ * each with "How to pitch" tips written the first time a row is opened.
+ */
+export function SuggestedOrders({ recommendation, leadId }: { recommendation: Recommendation; leadId: number }) {
     const { currency } = usePage<PageProps>().props.app;
     const items = recommendation.items ?? [];
     const explanation = recommendation.explanation;
+    const [open, setOpen] = useState<string | null>(null);
+    const [tips, setTips] = useState<PitchTips | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    // One call writes the tips for every product; they are cached server-side.
+    const toggle = async (sku: string) => {
+        const opening = open !== sku;
+        setOpen(opening ? sku : null);
+        if (!opening || tips || loading) return;
+
+        setLoading(true);
+        setError(null);
+        try {
+            setTips(await callAssistant<PitchTips>('pitches', leadId));
+        } catch (caught) {
+            setError(assistantError(caught, 'The tips could not be written. Close and open the row to try again.'));
+        } finally {
+            setLoading(false);
+        }
+    };
 
     if (recommendation.status !== 'ready') {
         return (
@@ -177,12 +203,14 @@ export function SuggestedOrders({ recommendation }: { recommendation: Recommenda
         );
     }
 
+    const gaps = recommendation.gap_count ?? 0;
+    const topUps = items.filter((item) => item.status === 'top_up').length;
+
     return (
         <div className="lead-activity__suggested">
             <p className="lead-activity__lede">
-                What the rep sees on this outlet in the app. Based on the{' '}
-                <strong>{pluralize(recommendation.similar_outlets ?? 0, 'most similar outlet')}</strong>:{' '}
-                {pluralize(recommendation.gap_count ?? 0, 'product')} not ordered yet, worth about{' '}
+                Based on the <strong>{pluralize(recommendation.similar_outlets ?? 0, 'most similar outlet')}</strong>:{' '}
+                {pluralize(gaps, 'product')} not ordered yet{topUps > 0 && ` and ${topUps} to top up`}, worth about{' '}
                 <strong>
                     {currency} {formatMoney(recommendation.estimated_monthly_value)}
                 </strong>{' '}
@@ -210,38 +238,69 @@ export function SuggestedOrders({ recommendation }: { recommendation: Recommenda
                     </thead>
                     <tbody>
                         {items.map((item) => (
-                            <tr key={item.sku}>
-                                <td>
-                                    <span className="rd-person__text">
-                                        <span className="lead-activity__strong">{item.name}</span>
-                                        <span className="rd-person__sub rd-mono">{item.sku}</span>
-                                    </span>
-                                </td>
-                                <td>
-                                    <span
-                                        className={
-                                            item.status === 'gap' ? 'rd-chip rd-chip--good' : 'rd-chip rd-chip--serious'
-                                        }
-                                    >
-                                        {item.status === 'gap' ? 'Not ordered' : 'Top up'}
-                                    </span>
-                                </td>
-                                <td>
-                                    <div className="lead-activity__support">
-                                        <Meter value={item.support} max={1} thin />
-                                        <span className="text-nowrap">
-                                            {item.buyers} of {item.neighbors_used}
+                            <Fragment key={item.sku}>
+                                <tr className={clsx(open === item.sku && 'is-open')}>
+                                    <td>
+                                        <span className="rd-person__text">
+                                            <span className="lead-activity__strong">{item.name}</span>
+                                            <span className="lead-pitch__line">
+                                                <span className="rd-person__sub rd-mono">{item.sku}</span>
+                                                <button
+                                                    type="button"
+                                                    className="lead-pitch__toggle"
+                                                    aria-expanded={open === item.sku}
+                                                    aria-controls={`pitch-${item.sku}`}
+                                                    onClick={() => toggle(item.sku)}
+                                                >
+                                                    How to pitch
+                                                    <i
+                                                        className={`mdi mdi-chevron-${open === item.sku ? 'up' : 'down'}`}
+                                                        aria-hidden="true"
+                                                    />
+                                                </button>
+                                            </span>
                                         </span>
-                                    </div>
-                                </td>
-                                <td className="num">
-                                    {item.recommended_qty} {item.unit}
-                                </td>
-                                <td className="num">
-                                    {item.current_qty} {item.unit}
-                                </td>
-                                <td className="num lead-activity__strong">{formatMoney(item.est_monthly_value)}</td>
-                            </tr>
+                                    </td>
+                                    <td>
+                                        <span
+                                            className={
+                                                item.status === 'gap'
+                                                    ? 'rd-chip rd-chip--good'
+                                                    : 'rd-chip rd-chip--serious'
+                                            }
+                                        >
+                                            {item.status === 'gap' ? 'Not ordered' : 'Top up'}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div className="lead-activity__support">
+                                            <Meter value={item.support} max={1} thin />
+                                            <span className="text-nowrap">
+                                                {item.buyers} of {item.neighbors_used}
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td className="num">
+                                        {item.recommended_qty} {item.unit}
+                                    </td>
+                                    <td className="num">
+                                        {item.current_qty} {item.unit}
+                                    </td>
+                                    <td className="num lead-activity__strong">{formatMoney(item.est_monthly_value)}</td>
+                                </tr>
+                                {open === item.sku && (
+                                    <tr className="lead-pitch__row">
+                                        <td colSpan={6} id={`pitch-${item.sku}`}>
+                                            <PitchTip
+                                                tip={tips?.pitches[item.sku]}
+                                                source={tips?.source ?? null}
+                                                loading={loading}
+                                                error={error}
+                                            />
+                                        </td>
+                                    </tr>
+                                )}
+                            </Fragment>
                         ))}
                     </tbody>
                 </table>
@@ -262,6 +321,64 @@ export function SuggestedOrders({ recommendation }: { recommendation: Recommenda
                     </span>
                 </div>
             )}
+        </div>
+    );
+}
+
+/** The opened "How to pitch" row: a pitch, a likely objection and a reply. */
+function PitchTip({
+    tip,
+    source,
+    loading,
+    error,
+}: {
+    tip: PitchTipData | undefined;
+    source: PitchTips['source'];
+    loading: boolean;
+    error: string | null;
+}) {
+    if (loading) {
+        return (
+            <div className="lead-pitch" role="status">
+                <span className="lead-activity__note">Writing tips from similar outlets and the product details…</span>
+            </div>
+        );
+    }
+
+    if (error || !tip) {
+        return (
+            <div className="lead-pitch">
+                <span className="lead-activity__note">{error ?? 'No tips for this product yet.'}</span>
+            </div>
+        );
+    }
+
+    return (
+        <div className="lead-pitch">
+            <dl className="lead-pitch__parts">
+                <div>
+                    <dt>Pitch</dt>
+                    <dd>{tip.pitch}</dd>
+                </div>
+                {tip.objection && (
+                    <div>
+                        <dt>If they say</dt>
+                        <dd>“{tip.objection}”</dd>
+                    </div>
+                )}
+                {tip.reply && (
+                    <div>
+                        <dt>You can say</dt>
+                        <dd>“{tip.reply}”</dd>
+                    </div>
+                )}
+            </dl>
+            <span className="lead-activity__note">
+                {source === 'bedrock'
+                    ? 'Written by Claude (Amazon Bedrock) from the product description and what similar outlets buy.'
+                    : 'From what similar outlets buy and the product description (AI not configured).'}{' '}
+                Check prices and stock before you promise anything.
+            </span>
         </div>
     );
 }

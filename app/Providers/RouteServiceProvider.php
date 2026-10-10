@@ -64,6 +64,12 @@ class RouteServiceProvider extends ServiceProvider
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(60)->by(optional($request->user())->id ?: $request->ip());
         });
+
+        // The rep assistant calls Claude on Bedrock: 20 a minute per person,
+        // counted apart from everything else.
+        RateLimiter::for('assistant', function (Request $request) {
+            return Limit::perMinute(20)->by('assistant:' . (optional($request->user())->id ?: $request->ip()));
+        });
     }
 
     protected function mapWebRoutes()

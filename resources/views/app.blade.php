@@ -6,6 +6,21 @@
     <meta name="description" content="Ronda: your simple, reliable partner for every F&amp;B field team round.">
     <meta name="theme-color" content="#0D729E">
 
+    {{-- Apply the saved (or system) theme before first paint so dark never flashes light.
+         Same rule as resources/js/lib/theme.ts. --}}
+    <script>
+        (function () {
+            try {
+                var saved = localStorage.getItem('ronda-theme');
+                var dark = saved === 'dark' || (saved !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+                var root = document.documentElement;
+                root.dataset.theme = root.dataset.swal2Theme = dark ? 'dark' : 'light';
+                root.style.colorScheme = dark ? 'dark' : 'light';
+                if (dark) document.querySelector('meta[name="theme-color"]').setAttribute('content', '#121823');
+            } catch (e) {}
+        })();
+    </script>
+
     <link rel="icon" href="{{ asset('assets/brand/favicon.ico') }}" sizes="any">
     <link rel="apple-touch-icon" href="{{ asset('assets/brand/apple-touch-icon.png') }}">
     <link rel="manifest" href="{{ asset('site.webmanifest') }}">

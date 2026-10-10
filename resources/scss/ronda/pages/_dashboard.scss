@@ -3,20 +3,49 @@
 // view. Built on the surface styles (ronda/_surface.scss).
 //
 
-// Morning Round-Up: the AI brief, on a warm paper tint.
+// Morning Round-Up: the AI brief across the top of the team dashboard, on a
+// warm paper tint. The summary in the serif on the left, today's focus and the
+// actions on the right, the other sections underneath when asked for.
 .dash-roundup {
-    border-color: #e6dfcc;
-    background: #fbf8f1;
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    gap: 20px 48px;
+    padding: 24px 28px;
+    border: 1px solid $rd-paper-line;
+    border-radius: 16px;
+    background: $rd-paper;
+    color: $rd-paper-ink;
 
-    .rd-panel__title {
-        font-family: $rd-serif;
-        font-size: 26px;
-        font-weight: 400;
-        line-height: 1.1;
+    @media (max-width: 991.98px) {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    @media (max-width: 575.98px) {
+        padding: 18px;
+    }
+
+    &__main,
+    &__side {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        min-width: 0;
+    }
+
+    &__head {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .dash-roundup__title {
+        margin: 0;
+        font-size: 17px;
+        font-weight: 600;
+        line-height: 1.3;
     }
 
     &__source {
-        margin-top: -8px;
         font-size: 12px;
         color: $rd-muted;
     }
@@ -29,36 +58,568 @@
         font-size: 13px;
     }
 
-    &__body {
+    &__empty {
+        color: $rd-muted;
+    }
+
+    &__summary {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        max-width: 760px;
+        font-family: $rd-serif;
+        font-size: 22px;
+        line-height: 1.38;
+
+        ul {
+            margin: 0;
+            padding-left: 22px;
+        }
+
+        @media (max-width: 575.98px) {
+            font-size: 19px;
+        }
+    }
+
+    .dash-roundup__label {
+        margin: 0 0 8px;
+        font-size: 12.5px;
+        font-weight: 600;
+        line-height: 1.4;
+        color: $rd-ink-2;
+    }
+
+    &__text {
         display: flex;
         flex-direction: column;
         gap: 6px;
-        padding-top: 16px;
-        border-top: 1px solid #e6dfcc;
         font-size: 14px;
         line-height: 1.55;
-        color: #2a2c2f;
 
         ul {
             display: flex;
             flex-direction: column;
             gap: 6px;
-            margin: 0 0 8px;
+            margin: 0;
             padding-left: 18px;
         }
     }
 
+    &__actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px 16px;
+        margin-top: auto;
+    }
+
+    &__more {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        padding: 0;
+        border: 0;
+        background: none;
+        color: $rd-brand-ink;
+        font: 600 13.5px/1.4 $rd-sans;
+        cursor: pointer;
+
+        &:hover {
+            color: $rd-brand-ink-hover;
+            text-decoration: underline;
+        }
+
+        i {
+            font-size: 18px;
+        }
+    }
+
+    &__rest {
+        display: grid;
+        grid-column: 1 / -1;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+        gap: 16px 48px;
+        padding-top: 16px;
+        border-top: 1px solid $rd-paper-line;
+
+        &[hidden] {
+            display: none;
+        }
+    }
+}
+
+// The team's open work by risk, then today's other counts: one panel of
+// cells, the panel's line colour showing through the 1px gaps as dividers
+// (so they stay right however the cells wrap).
+.dash-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1px;
+    overflow: hidden;
+    border: 1px solid $rd-line;
+    border-radius: 16px;
+    background: $rd-line;
+    box-shadow: $rd-shadow-panel;
+
+    &__cell {
+        display: flex;
+        flex: 1 1 180px;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+        padding: 18px 24px;
+        background: $rd-panel;
+        color: $rd-ink;
+
+        &--wide {
+            flex: 3 1 420px;
+            gap: 0;
+        }
+
+        &--link {
+            text-decoration: none;
+
+            &:hover {
+                background: $rd-row-alt;
+                color: $rd-ink;
+                text-decoration: none;
+            }
+
+            &:focus-visible {
+                outline: 2px solid $rd-brand;
+                outline-offset: -2px;
+            }
+        }
+    }
+
+    &__lead {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        font-weight: 500;
+        color: $rd-ink-2;
+    }
+
+    &__value {
+        font-size: 32px;
+        font-weight: 600;
+        line-height: 40px;
+        letter-spacing: -0.02em;
+        color: $rd-ink;
+        font-variant-numeric: tabular-nums;
+    }
+
+    &__bar.rd-stack {
+        height: 10px;
+        margin-top: 12px;
+    }
+
+    &__legend {
+        margin-top: 10px;
+        font-size: 13px;
+
+        strong {
+            font-weight: 600;
+            color: $rd-ink;
+        }
+    }
+
     &__label {
-        margin-top: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        font-size: 13px;
+        font-weight: 500;
+        color: $rd-ink-2;
+
+        i {
+            font-size: 18px;
+            line-height: 1;
+            color: $rd-muted;
+        }
+    }
+
+    &__figure {
+        font-size: 28px;
+        font-weight: 600;
+        line-height: 36px;
+        letter-spacing: -0.02em;
+        font-variant-numeric: tabular-nums;
+    }
+
+    &__note {
+        font-size: 12.5px;
+        color: $rd-muted;
+    }
+}
+
+// The team: a card per person (TeamBoard).
+.dash-team {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+
+    &__head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px 16px;
+    }
+
+    &__title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+
+        h2 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 600;
+            line-height: 28px;
+        }
+    }
+
+    &__sort {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 13px;
+        color: $rd-muted;
+    }
+
+    &__grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+        gap: 24px;
+
+        // The card fills its cell, so the cards in a row end level.
+        > li {
+            display: flex;
+            min-width: 0;
+        }
+    }
+
+    &__note {
+        font-size: 12.5px;
+        color: $rd-muted;
+    }
+}
+
+.dash-member {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid $rd-line;
+    border-radius: 16px;
+    background: $rd-panel;
+    box-shadow: $rd-shadow-panel;
+
+    &__head {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 20px 20px 0;
+    }
+
+    &__who {
+        display: flex;
+        flex: 1 1 auto;
+        flex-direction: column;
+        min-width: 0;
+    }
+
+    .dash-member__name {
+        margin: 0;
+        overflow: hidden;
+        font-size: 16px;
+        font-weight: 600;
+        line-height: 22px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+
+        a {
+            color: $rd-ink;
+            text-decoration: none;
+
+            &:hover {
+                color: $rd-brand-ink;
+                text-decoration: underline;
+            }
+        }
+    }
+
+    &__role {
+        font-size: 12.5px;
+        color: $rd-muted;
+    }
+
+    &__open {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        font-size: 12px;
+        color: $rd-muted;
+    }
+
+    &__count {
+        font-size: 22px;
+        font-weight: 600;
+        line-height: 28px;
+        color: $rd-ink;
+        font-variant-numeric: tabular-nums;
+    }
+
+    &__load {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        padding: 14px 20px 0;
+    }
+
+    // The bar's length is their load against the busiest person; its parts
+    // are overdue, at risk and on track.
+    &__track {
+        display: block;
+        height: 8px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: $rd-track;
+
+        .rd-stack {
+            height: 100%;
+        }
+    }
+
+    &__chips {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+        min-height: 24px;
+    }
+
+    &__quiet {
+        margin: 0;
+        font-size: 13px;
+        color: $rd-muted;
+    }
+
+    &__urgent {
+        flex: 1 1 auto;
+        padding: 16px 20px 18px;
+
+        .dash-member__quiet {
+            padding-top: 8px;
+            border-top: 1px solid $rd-line-soft;
+        }
+    }
+
+    .dash-member__label {
+        margin: 0 0 6px;
         font-size: 12px;
         font-weight: 600;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: $rd-muted;
+        line-height: 1.4;
+        color: $rd-ink-2;
+    }
 
-        &:first-child {
-            margin-top: 0;
+    &__task {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 8px 0;
+        border-top: 1px solid $rd-line-soft;
+    }
+
+    &__what {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+
+        a {
+            overflow: hidden;
+            color: $rd-ink;
+            font-weight: 600;
+            text-decoration: none;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+
+            &:hover {
+                color: $rd-brand-ink;
+                text-decoration: underline;
+            }
         }
+
+        > span {
+            overflow: hidden;
+            font-size: 12.5px;
+            color: $rd-muted;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    }
+
+    &__due {
+        display: flex;
+        flex: none;
+        flex-direction: column;
+        align-items: flex-end;
+        font-size: 13px;
+        font-weight: 600;
+        white-space: nowrap;
+
+        small {
+            font-size: 12px;
+            font-weight: 400;
+            color: $rd-muted;
+        }
+
+        &--overdue {
+            color: $rd-critical;
+        }
+
+        &--at_risk {
+            color: $rd-serious;
+        }
+    }
+
+    // Their last 7 days along the foot of the card.
+    &__week {
+        display: grid;
+        // Orders is wider: "Orders (RM)" and money on one line, even on a phone.
+        grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 1.5fr);
+        margin: 0;
+        border-top: 1px solid $rd-line;
+        background: $rd-row-alt;
+
+        > div {
+            padding: 12px 0 12px 12px;
+
+            &:first-child {
+                padding-left: 20px;
+            }
+
+            &:last-child {
+                padding-right: 20px;
+                text-align: right;
+            }
+        }
+
+        dt {
+            font-size: 11.5px;
+            font-weight: 400;
+            color: $rd-muted;
+            white-space: nowrap;
+        }
+
+        dd {
+            margin: 0;
+            font-size: 15px;
+            font-weight: 600;
+            color: $rd-ink;
+            font-variant-numeric: tabular-nums;
+        }
+    }
+}
+
+// A rep's Suggested orders: their outlets with the most to gain.
+.dash-suggested {
+    gap: 12px;
+
+    &__list {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+
+        > li + li {
+            border-top: 1px solid $rd-line-soft;
+        }
+    }
+
+    &__row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-height: 64px;
+        padding: 10px 0;
+        color: inherit;
+        text-decoration: none;
+
+        &:hover .dash-suggested__name {
+            color: $rd-brand-ink;
+        }
+
+        &:focus-visible {
+            border-radius: 8px;
+            outline: 2px solid $rd-brand;
+            outline-offset: 2px;
+        }
+    }
+
+    &__text {
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+        min-width: 0;
+    }
+
+    &__name {
+        color: $rd-ink;
+        font-size: 14px;
+        font-weight: 600;
+        line-height: 20px;
+    }
+
+    &__products {
+        overflow: hidden;
+        color: $rd-muted;
+        font-size: 13px;
+        line-height: 18px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    &__value {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        color: $rd-ink;
+        font-size: 14px;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+
+        small {
+            color: $rd-muted;
+            font-size: 12px;
+            font-weight: 400;
+        }
+    }
+
+    &__go {
+        color: $rd-muted;
+        font-size: 18px;
+    }
+
+    &__empty {
+        margin: 0;
+        padding: 12px 0;
+        color: $rd-ink-2;
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+    &__foot {
+        margin: auto 0 0;
+        padding-top: 12px;
+        border-top: 1px solid $rd-line-soft;
+        color: $rd-muted;
+        font-size: 12px;
+        line-height: 1.5;
     }
 }
 
@@ -171,7 +732,7 @@
         background: $rd-brand;
 
         &.is-today {
-            background: #9cc3d5;
+            background: $rd-brand-today;
         }
 
         &.is-zero {
@@ -465,37 +1026,5 @@
         font-size: 13px;
         line-height: 1.45;
         color: $rd-muted;
-    }
-}
-
-// The team table's workload column.
-.dash-load {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-width: 180px;
-
-    &__count {
-        width: 24px;
-        font-weight: 600;
-        text-align: right;
-    }
-}
-
-.dash-person {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-
-    &__name {
-        display: flex;
-        flex-direction: column;
-        font-weight: 600;
-
-        small {
-            color: $rd-muted;
-            font-size: 12px;
-            font-weight: 400;
-        }
     }
 }

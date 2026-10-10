@@ -1,0 +1,288 @@
+//
+// Theme tokens: every colour and shadow of the surface look.
+//
+// Each token is a CSS custom property, so one attribute on <html>
+// (data-theme="light" | "dark", set by resources/js/lib/theme.ts) swaps the
+// whole palette without recompiling. The SCSS variables are short names for
+// var(--rd-*), which keeps the rest of the stylesheets theme-agnostic: write
+// $rd-panel, never a hex. SCSS colour functions (darken, rgba) cannot take a
+// var(), so a state colour that needs one gets a token of its own. Shadows
+// are the exception: rgba(var(--rd-shade), .1) is plain CSS (16, 24, 40 in
+// light, black in dark).
+//
+// Dark is a cool blue-grey that follows the light grey's cast. Elevation reads
+// as lightness: the ground is darkest, panels sit one step up, and menus,
+// dialogs and drawers ($rd-raised) one more. Colours that carry text move to
+// a lighter shade (all pairs checked at 4.5:1); fills that carry white text
+// ($rd-brand-fill, $rd-critical-fill) keep their light-theme value.
+//
+
+// Surfaces
+$rd-ground: var(--rd-ground); // page background
+$rd-panel: var(--rd-panel); // panels, inputs
+$rd-raised: var(--rd-raised); // menus, popovers, dialogs, drawers, toasts
+$rd-line: var(--rd-line);
+$rd-line-soft: var(--rd-line-soft);
+$rd-control: var(--rd-control);
+$rd-control-hover: var(--rd-control-hover);
+$rd-track: var(--rd-track);
+$rd-track-hover: var(--rd-track-hover);
+$rd-row-alt: var(--rd-row-alt);
+
+// Text, and the near-black fill (the page's one primary button)
+$rd-ink: var(--rd-ink);
+$rd-on-ink: var(--rd-on-ink);
+$rd-ink-hover: var(--rd-ink-hover);
+$rd-on-ink-2: var(--rd-on-ink-2); // quieter text on the ink fill
+$rd-on-ink-hover: var(--rd-on-ink-hover); // a button on the ink fill, hovered
+$rd-on-ink-soft: var(--rd-on-ink-soft); // a chip on the ink fill
+$rd-body: var(--rd-body);
+$rd-ink-2: var(--rd-ink-2);
+$rd-muted: var(--rd-muted);
+
+// Ronda blue. $rd-brand is for lines and text; $rd-brand-fill for a fill
+// under white text.
+$rd-brand: var(--rd-brand);
+$rd-brand-ink: var(--rd-brand-ink);
+$rd-brand-ink-hover: var(--rd-brand-ink-hover);
+$rd-brand-tint: var(--rd-brand-tint);
+$rd-brand-soft: var(--rd-brand-soft);
+$rd-brand-wash: var(--rd-brand-wash);
+$rd-brand-fill: var(--rd-brand-fill);
+$rd-brand-today: var(--rd-brand-today); // today's bar in the visits chart
+
+// Status
+$rd-good: var(--rd-good);
+$rd-good-tint: var(--rd-good-tint);
+$rd-good-dot: var(--rd-good-dot);
+$rd-good-line: var(--rd-good-line);
+$rd-warning: var(--rd-warning);
+$rd-serious: var(--rd-serious);
+$rd-serious-tint: var(--rd-serious-tint);
+$rd-serious-line: var(--rd-serious-line);
+$rd-serious-ink: var(--rd-serious-ink);
+$rd-critical: var(--rd-critical);
+$rd-critical-tint: var(--rd-critical-tint);
+$rd-critical-wash: var(--rd-critical-wash);
+$rd-critical-line: var(--rd-critical-line);
+$rd-critical-line-hover: var(--rd-critical-line-hover);
+$rd-critical-ink: var(--rd-critical-ink);
+$rd-critical-dot: var(--rd-critical-dot);
+$rd-critical-icon: var(--rd-critical-icon);
+$rd-critical-fill: var(--rd-critical-fill);
+$rd-critical-fill-hover: var(--rd-critical-fill-hover);
+
+// Hues for chips and tags (ink on tint). Names match lib/tags.ts.
+$rd-hues: ("blue", "indigo", "violet", "pink", "orange", "teal", "green", "slate");
+
+// Teal marks a form's branches in the builder.
+$rd-teal: var(--rd-hue-teal);
+$rd-teal-tint: var(--rd-hue-teal-tint);
+$rd-teal-line: var(--rd-hue-teal-line);
+$rd-teal-wash: var(--rd-hue-teal-wash);
+
+// Warm paper of the dashboard's Morning Round-Up
+$rd-paper: var(--rd-paper);
+$rd-paper-line: var(--rd-paper-line);
+$rd-paper-ink: var(--rd-paper-ink);
+
+// Odds and ends (rgba(var(--rd-brand-rgb), .1) is a brand-coloured glow)
+$rd-inset: var(--rd-inset); // a screen drawn inside a panel (the product preview)
+$rd-scrim: var(--rd-scrim); // behind drawers
+$rd-dots: var(--rd-dots); // the form builder's canvas grid
+$rd-focus: 0 0 0 3px var(--rd-focus-ring);
+$rd-focus-critical: 0 0 0 3px var(--rd-focus-ring-critical);
+$rd-shadow-xs: var(--rd-shadow-xs);
+$rd-shadow-panel: var(--rd-shadow-panel);
+$rd-shadow-menu: var(--rd-shadow-menu);
+$rd-shadow-float: var(--rd-shadow-float);
+$rd-shadow-drawer: var(--rd-shadow-drawer);
+$rd-shadow-dialog: var(--rd-shadow-dialog);
+
+$rd-sans: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+$rd-serif: "Instrument Serif", Georgia, "Times New Roman", serif;
+$rd-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+:root {
+    color-scheme: light;
+
+    --rd-ground: #f5f6f8;
+    --rd-panel: #fff;
+    --rd-raised: #fff;
+    --rd-line: #eaecf0;
+    --rd-line-soft: #f2f4f7;
+    --rd-control: #d0d5dd;
+    --rd-control-hover: #98a2b3;
+    --rd-track: #f2f4f7;
+    --rd-track-hover: #e2e7ed;
+    --rd-row-alt: #f9fafb;
+
+    --rd-ink: #101828;
+    --rd-on-ink: #fff;
+    --rd-ink-hover: #1d2939;
+    --rd-on-ink-2: #d0d5dd;
+    --rd-on-ink-hover: rgba(255, 255, 255, 0.16);
+    --rd-on-ink-soft: rgba(255, 255, 255, 0.12);
+    --rd-body: #344054;
+    --rd-ink-2: #475467;
+    --rd-muted: #667085;
+
+    --rd-brand: #0d729e;
+    --rd-brand-ink: #0a5a7d;
+    --rd-brand-ink-hover: #073f57;
+    --rd-brand-tint: #e5f0f5;
+    --rd-brand-soft: #bfd8e3;
+    --rd-brand-wash: #f5fafc;
+    --rd-brand-fill: #0d729e;
+    --rd-brand-today: #9cc3d5;
+    --rd-brand-rgb: 13, 114, 158;
+
+    --rd-good: #067647;
+    --rd-good-tint: #ecfdf3;
+    --rd-good-dot: #17b26a;
+    --rd-good-line: #abefc6;
+    --rd-warning: #f79009;
+    --rd-pending: #d9a23a;
+    --rd-serious: #b54708;
+    --rd-serious-tint: #fffaeb;
+    --rd-serious-line: #fedf89;
+    --rd-serious-ink: #93370d;
+    --rd-critical: #b42318;
+    --rd-critical-tint: #fef3f2;
+    --rd-critical-wash: #fffbfa;
+    --rd-critical-line: #fecdca;
+    --rd-critical-line-hover: #fda29b;
+    --rd-critical-ink: #7a271a;
+    --rd-critical-dot: #f04438;
+    --rd-critical-icon: #d92d20;
+    --rd-critical-fill: #b42318;
+    --rd-critical-fill-hover: #951d14;
+
+    --rd-hue-blue: #175cd3;
+    --rd-hue-blue-tint: #eff8ff;
+    --rd-hue-indigo: #3538cd;
+    --rd-hue-indigo-tint: #eef4ff;
+    --rd-hue-violet: #5925dc;
+    --rd-hue-violet-tint: #f4f3ff;
+    --rd-hue-pink: #c11574;
+    --rd-hue-pink-tint: #fdf2fa;
+    --rd-hue-orange: #c4320a;
+    --rd-hue-orange-tint: #fff6ed;
+    --rd-hue-teal: #107569;
+    --rd-hue-teal-tint: #f0fdf9;
+    --rd-hue-teal-line: #99d5c9;
+    --rd-hue-teal-wash: rgba(240, 253, 249, 0.6);
+    --rd-hue-green: #067647;
+    --rd-hue-green-tint: #ecfdf3;
+    --rd-hue-slate: #363f72;
+    --rd-hue-slate-tint: #f8f9fc;
+
+    --rd-paper: #fbf8f1;
+    --rd-paper-line: #e6dfcc;
+    --rd-paper-ink: #2a2c2f;
+
+    --rd-inset: #efeee8;
+    --rd-scrim: #101828;
+    --rd-dots: #e4e7ec;
+    --rd-focus-ring: rgba(13, 114, 158, 0.18);
+    --rd-focus-ring-critical: rgba(180, 35, 24, 0.12);
+    --rd-shade: 16, 24, 40;
+    --rd-shadow-xs: 0 1px 2px rgba(16, 24, 40, 0.05);
+    --rd-shadow-panel: 0 1px 2px rgba(16, 24, 40, 0.04);
+    --rd-shadow-menu: 0 12px 24px -4px rgba(16, 24, 40, 0.12);
+    --rd-shadow-float: 0 16px 32px -6px rgba(16, 24, 40, 0.16), 0 4px 8px -2px rgba(16, 24, 40, 0.06);
+    --rd-shadow-drawer: -24px 0 48px -12px rgba(16, 24, 40, 0.18);
+    --rd-shadow-dialog: 0 24px 48px rgba(0, 0, 0, 0.25);
+}
+
+:root[data-theme="dark"] {
+    color-scheme: dark;
+
+    --rd-ground: #0b0f17;
+    --rd-panel: #121823;
+    --rd-raised: #1a2230;
+    --rd-line: #242d3b;
+    --rd-line-soft: #1b2330;
+    --rd-control: #3a4558;
+    --rd-control-hover: #5b6780;
+    --rd-track: #1c2432;
+    --rd-track-hover: #262f40;
+    --rd-row-alt: #161d29;
+
+    --rd-ink: #f2f4f7;
+    --rd-on-ink: #101828;
+    --rd-ink-hover: #e4e7ec;
+    --rd-on-ink-2: #475467;
+    --rd-on-ink-hover: rgba(16, 24, 40, 0.12);
+    --rd-on-ink-soft: rgba(16, 24, 40, 0.1);
+    --rd-body: #d0d5dd;
+    --rd-ink-2: #a9b1bf;
+    --rd-muted: #8b95a7;
+
+    --rd-brand: #47b0dd;
+    --rd-brand-ink: #7cc8ee;
+    --rd-brand-ink-hover: #a5dcf4;
+    --rd-brand-tint: #10283a;
+    --rd-brand-soft: #1f4b66;
+    --rd-brand-wash: #10202d;
+    --rd-brand-fill: #0d729e;
+    --rd-brand-today: #2d7ea3;
+    --rd-brand-rgb: 71, 176, 221;
+
+    --rd-good: #47cd89;
+    --rd-good-tint: #0e2a1f;
+    --rd-good-dot: #17b26a;
+    --rd-good-line: #1d5a3f;
+    --rd-warning: #f79009;
+    --rd-pending: #e5b04a;
+    --rd-serious: #fdb022;
+    --rd-serious-tint: #2c2110;
+    --rd-serious-line: #5a4416;
+    --rd-serious-ink: #fec84b;
+    --rd-critical: #f97066;
+    --rd-critical-tint: #2f1614;
+    --rd-critical-wash: #1e1214;
+    --rd-critical-line: #5a2420;
+    --rd-critical-line-hover: #7d3029;
+    --rd-critical-ink: #fda29b;
+    --rd-critical-dot: #f04438;
+    --rd-critical-icon: #f97066;
+    --rd-critical-fill: #b42318;
+    --rd-critical-fill-hover: #c9301f;
+
+    --rd-hue-blue: #84caff;
+    --rd-hue-blue-tint: #10283f;
+    --rd-hue-indigo: #a4bcfd;
+    --rd-hue-indigo-tint: #1b2244;
+    --rd-hue-violet: #bdb4fe;
+    --rd-hue-violet-tint: #251f4d;
+    --rd-hue-pink: #faa7e0;
+    --rd-hue-pink-tint: #3a1330;
+    --rd-hue-orange: #feb273;
+    --rd-hue-orange-tint: #3a1d0c;
+    --rd-hue-teal: #5fe9d0;
+    --rd-hue-teal-tint: #0b2f2b;
+    --rd-hue-teal-line: #1f6b60;
+    --rd-hue-teal-wash: rgba(11, 47, 43, 0.6);
+    --rd-hue-green: #73e2a3;
+    --rd-hue-green-tint: #0e2a1f;
+    --rd-hue-slate: #b3b8db;
+    --rd-hue-slate-tint: #1d2136;
+
+    --rd-paper: #1b1913;
+    --rd-paper-line: #38332a;
+    --rd-paper-ink: #e8e4d6;
+
+    --rd-inset: #0b0f17;
+    --rd-scrim: #000;
+    --rd-dots: #1f2837;
+    --rd-focus-ring: rgba(71, 176, 221, 0.3);
+    --rd-focus-ring-critical: rgba(249, 112, 102, 0.22);
+    --rd-shade: 0, 0, 0;
+    --rd-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --rd-shadow-panel: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --rd-shadow-menu: 0 12px 24px -4px rgba(0, 0, 0, 0.55);
+    --rd-shadow-float: 0 16px 32px -6px rgba(0, 0, 0, 0.6), 0 4px 8px -2px rgba(0, 0, 0, 0.4);
+    --rd-shadow-drawer: -24px 0 48px -12px rgba(0, 0, 0, 0.6);
+    --rd-shadow-dialog: 0 24px 48px rgba(0, 0, 0, 0.6);
+}

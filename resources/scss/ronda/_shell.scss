@@ -11,13 +11,13 @@
     padding: 10px 14px;
     border-radius: 8px;
     background: $rd-ink;
-    color: #fff;
+    color: $rd-on-ink;
     font: 600 14px/1 $rd-sans;
     text-decoration: none;
 
     &:focus {
         top: 10px;
-        color: #fff;
+        color: $rd-on-ink;
     }
 }
 
@@ -283,6 +283,16 @@ html #nprogress .bar {
         padding: 10px 10px 12px;
         border-bottom: 1px solid $rd-line-soft;
     }
+
+    // Light, dark or system (Components/surface/ThemeSwitch).
+    &__theme {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin: 4px 0;
+        padding: 12px 10px;
+        border-block: 1px solid $rd-line-soft;
+    }
 }
 
 // ------------------------------------------------------ Phone menu sheet
@@ -374,6 +384,12 @@ html #nprogress .bar {
         gap: 12px;
         padding: 16px;
         border-top: 1px solid $rd-line;
+    }
+
+    &__theme {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
     }
 
     &__account-actions {

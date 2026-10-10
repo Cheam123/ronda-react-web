@@ -80,6 +80,23 @@ export interface TeamMember {
     visits_7d: number;
     forms_7d: number;
     orders_7d: number;
+    /** Their two most urgent overdue or at-risk tasks, most urgent first. */
+    urgent: AttentionItem[];
+}
+
+/** RecommendationService::topForUser(): a rep's outlets with the most to gain. */
+export interface SuggestedOutlets {
+    outlets: {
+        lead_id: number;
+        name: string | null;
+        /** The first three suggested products, most backed first. */
+        products: string[];
+        product_count: number;
+        gap_count: number;
+        estimated_monthly_value: number;
+    }[];
+    /** How many of their outlets have suggestions at all. */
+    total: number;
 }
 
 export interface DailyDigest {

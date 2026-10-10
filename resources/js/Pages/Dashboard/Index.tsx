@@ -10,9 +10,11 @@ import DashboardTabs from './Partials/DashboardTabs';
 import FieldOutput from './Partials/FieldOutput';
 import MorningRoundUp from './Partials/MorningRoundUp';
 import NeedsAttention, { type AttentionFilter } from './Partials/NeedsAttention';
-import TeamActivity from './Partials/TeamActivity';
+import OpenWork from './Partials/OpenWork';
+import SuggestedOutlets from './Partials/SuggestedOutlets';
+import TeamBoard from './Partials/TeamBoard';
 import TrendChart from './Partials/TrendChart';
-import type { DailyDigest, DashboardSummary, RiskLevel } from './types';
+import type { DailyDigest, DashboardSummary, RiskLevel, SuggestedOutlets as Suggestions, TeamMember } from './types';
 
 const ATTENTION_ID = 'needs-attention';
 
@@ -22,6 +24,8 @@ interface DashboardProps {
     /** Admins can switch back to the organisation overview. */
     showViewTabs: boolean;
     summary: DashboardSummary;
+    /** A Field Rep's outlets with the most to gain from suggested orders; null on the team view. */
+    suggestions: Suggestions | null;
     digest: DailyDigest | null;
     digestStatus: string | null;
     risk: { hours: number; percent: number };
@@ -43,7 +47,27 @@ function headline(overdue: number, atRisk: number): string {
     return `${tasks(overdue)} overdue and ${atRisk} ${atRisk === 1 ? 'is' : 'are'} at risk.`;
 }
 
-export default function Dashboard({ isTeam, showViewTabs, summary, digest, digestStatus, risk }: DashboardProps) {
+/** "3 tasks are overdue and 5 are at risk, spread across 4 people." */
+function teamHeadline(overdue: number, atRisk: number, team: TeamMember[]): string {
+    const sentence = headline(overdue, atRisk);
+    const holders = team.filter((person) => person.overdue + person.at_risk > 0);
+
+    if (holders.length === 0) return sentence;
+    if (holders.length === 1) {
+        return `${sentence.slice(0, -1)}, ${overdue + atRisk === 1 ? 'held' : 'all held'} by ${holders[0].name}.`;
+    }
+    return `${sentence.slice(0, -1)}, spread across ${holders.length} people.`;
+}
+
+export default function Dashboard({
+    isTeam,
+    showViewTabs,
+    summary,
+    suggestions,
+    digest,
+    digestStatus,
+    risk,
+}: DashboardProps) {
     const { currency } = usePage<PageProps>().props.app;
     const { user, can } = useAuth();
     const [filter, setFilter] = useState<AttentionFilter>('all');
@@ -57,13 +81,29 @@ export default function Dashboard({ isTeam, showViewTabs, summary, digest, diges
         document.getElementById(ATTENTION_ID)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
 
+    const trendAndOutput = (
+        <>
+            <TrendChart
+                trend={summary.trend}
+                createdWeek={tasks.created_7d}
+                doneWeek={tasks.done_7d}
+                className="rd-span-7"
+            />
+            <FieldOutput summary={summary} currency={currency} className="rd-span-5" />
+        </>
+    );
+
     return (
         <AppLayout title="Home">
             <SurfacePage>
                 <PageHeader
                     eyebrow={`${isTeam ? 'Team dashboard' : 'My dashboard'} · ${summary.date_label}`}
                     title={`${greeting()}, ${firstName}`}
-                    lede={`${headline(tasks.overdue, tasks.at_risk)} Updated ${summary.time_label}. “7 days” means today and the six days before.`}
+                    lede={
+                        isTeam
+                            ? `${teamHeadline(tasks.overdue, tasks.at_risk, summary.team)} Updated ${summary.time_label}.`
+                            : `${headline(tasks.overdue, tasks.at_risk)} Updated ${summary.time_label}. “7 days” means today and the six days before.`
+                    }
                     actions={
                         can('add_task') && (
                             <Link href={route('tasks.create')} className="rd-btn rd-btn--primary">
@@ -76,86 +116,99 @@ export default function Dashboard({ isTeam, showViewTabs, summary, digest, diges
 
                 {showViewTabs && <DashboardTabs active="team" />}
 
-                <section className="rd-kpis" aria-label="Today">
-                    <button
-                        type="button"
-                        className={clsx(
-                            'rd-kpi rd-kpi--accent rd-kpi--critical',
-                            filter === 'overdue' && 'is-selected',
-                        )}
-                        aria-pressed={filter === 'overdue'}
-                        onClick={() => showLevel('overdue')}
-                    >
-                        <span className="rd-kpi__label">
-                            <i className="mdi mdi-alert-octagon" aria-hidden="true" />
-                            Overdue
-                        </span>
-                        <span className="rd-kpi__value">{tasks.overdue}</span>
-                        <span className="rd-kpi__note">Past their due time</span>
-                    </button>
-                    <button
-                        type="button"
-                        className={clsx('rd-kpi rd-kpi--accent rd-kpi--serious', filter === 'at_risk' && 'is-selected')}
-                        aria-pressed={filter === 'at_risk'}
-                        onClick={() => showLevel('at_risk')}
-                    >
-                        <span className="rd-kpi__label">
-                            <i className="mdi mdi-alert" aria-hidden="true" />
-                            At risk
-                        </span>
-                        <span className="rd-kpi__value">{tasks.at_risk}</span>
-                        <span className="rd-kpi__note">
-                            Due within {risk.hours} h, or {risk.percent}% of their time used
-                        </span>
-                    </button>
-                    <div className="rd-kpi rd-kpi--accent rd-kpi--brand">
-                        <span className="rd-kpi__label">
-                            <i className="mdi mdi-clock-outline" aria-hidden="true" />
-                            Due today
-                        </span>
-                        <span className="rd-kpi__value">{tasks.due_today}</span>
-                        <span className="rd-kpi__note">Open tasks due before midnight</span>
-                    </div>
-                    <div className="rd-kpi rd-kpi--accent">
-                        <span className="rd-kpi__label">
-                            <i className="mdi mdi-clipboard-text-outline" aria-hidden="true" />
-                            Open tasks
-                        </span>
-                        <span className="rd-kpi__value">{tasks.open}</span>
-                        {tasks.open > 0 && (
-                            <span className="rd-stack rd-stack--thin" aria-hidden="true">
-                                {tasks.new > 0 && <span style={{ flexGrow: tasks.new, background: '#BFD8E3' }} />}
-                                {tasks.in_progress > 0 && (
-                                    <span style={{ flexGrow: tasks.in_progress, background: '#0D729E' }} />
+                {isTeam ? (
+                    <>
+                        <MorningRoundUp digest={digest} status={digestStatus} />
+                        <OpenWork tasks={tasks} formsPending={summary.forms.pending} />
+                        <TeamBoard team={summary.team} now={summary.generated_at} currency={currency} />
+                        <div className="rd-grid">{trendAndOutput}</div>
+                    </>
+                ) : (
+                    <>
+                        <section className="rd-kpis" aria-label="Today">
+                            <button
+                                type="button"
+                                className={clsx(
+                                    'rd-kpi rd-kpi--accent rd-kpi--critical',
+                                    filter === 'overdue' && 'is-selected',
                                 )}
-                            </span>
-                        )}
-                        <span className="rd-kpi__note">
-                            {tasks.new} new &middot; {tasks.in_progress} in progress
-                        </span>
-                    </div>
-                </section>
+                                aria-pressed={filter === 'overdue'}
+                                onClick={() => showLevel('overdue')}
+                            >
+                                <span className="rd-kpi__label">
+                                    <i className="mdi mdi-alert-octagon" aria-hidden="true" />
+                                    Overdue
+                                </span>
+                                <span className="rd-kpi__value">{tasks.overdue}</span>
+                                <span className="rd-kpi__note">Past their due time</span>
+                            </button>
+                            <button
+                                type="button"
+                                className={clsx(
+                                    'rd-kpi rd-kpi--accent rd-kpi--serious',
+                                    filter === 'at_risk' && 'is-selected',
+                                )}
+                                aria-pressed={filter === 'at_risk'}
+                                onClick={() => showLevel('at_risk')}
+                            >
+                                <span className="rd-kpi__label">
+                                    <i className="mdi mdi-alert" aria-hidden="true" />
+                                    At risk
+                                </span>
+                                <span className="rd-kpi__value">{tasks.at_risk}</span>
+                                <span className="rd-kpi__note">
+                                    Due within {risk.hours} h, or {risk.percent}% of their time used
+                                </span>
+                            </button>
+                            <div className="rd-kpi rd-kpi--accent rd-kpi--brand">
+                                <span className="rd-kpi__label">
+                                    <i className="mdi mdi-clock-outline" aria-hidden="true" />
+                                    Due today
+                                </span>
+                                <span className="rd-kpi__value">{tasks.due_today}</span>
+                                <span className="rd-kpi__note">Open tasks due before midnight</span>
+                            </div>
+                            <div className="rd-kpi rd-kpi--accent">
+                                <span className="rd-kpi__label">
+                                    <i className="mdi mdi-clipboard-text-outline" aria-hidden="true" />
+                                    Open tasks
+                                </span>
+                                <span className="rd-kpi__value">{tasks.open}</span>
+                                {tasks.open > 0 && (
+                                    <span className="rd-stack rd-stack--thin" aria-hidden="true">
+                                        {tasks.new > 0 && (
+                                            <span style={{ flexGrow: tasks.new, background: 'var(--rd-brand-soft)' }} />
+                                        )}
+                                        {tasks.in_progress > 0 && (
+                                            <span
+                                                style={{ flexGrow: tasks.in_progress, background: 'var(--rd-brand)' }}
+                                            />
+                                        )}
+                                    </span>
+                                )}
+                                <span className="rd-kpi__note">
+                                    {tasks.new} new &middot; {tasks.in_progress} in progress
+                                </span>
+                            </div>
+                        </section>
 
-                <div className="rd-grid">
-                    {isTeam && <MorningRoundUp digest={digest} status={digestStatus} className="rd-span-5" />}
-                    <NeedsAttention
-                        id={ATTENTION_ID}
-                        items={summary.attention}
-                        counts={{ overdue: tasks.overdue, at_risk: tasks.at_risk }}
-                        now={summary.generated_at}
-                        filter={filter}
-                        onFilterChange={setFilter}
-                        className={isTeam ? 'rd-span-7' : undefined}
-                    />
-                    <TrendChart
-                        trend={summary.trend}
-                        createdWeek={tasks.created_7d}
-                        doneWeek={tasks.done_7d}
-                        className="rd-span-7"
-                    />
-                    <FieldOutput summary={summary} currency={currency} className="rd-span-5" />
-                    {isTeam && <TeamActivity team={summary.team} currency={currency} />}
-                </div>
+                        <div className="rd-grid">
+                            <NeedsAttention
+                                id={ATTENTION_ID}
+                                items={summary.attention}
+                                counts={{ overdue: tasks.overdue, at_risk: tasks.at_risk }}
+                                now={summary.generated_at}
+                                filter={filter}
+                                onFilterChange={setFilter}
+                                className={suggestions ? 'rd-span-7' : undefined}
+                            />
+                            {suggestions && (
+                                <SuggestedOutlets suggestions={suggestions} currency={currency} className="rd-span-5" />
+                            )}
+                            {trendAndOutput}
+                        </div>
+                    </>
+                )}
             </SurfacePage>
         </AppLayout>
     );

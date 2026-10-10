@@ -8,19 +8,19 @@
 // Chip hues for task status (lib/taskStatus.ts); good, serious and critical
 // come from .rd-chip itself.
 .rd-chip {
-    $hues: (
-        "blue": (#175cd3, #eff8ff, #2e90fa),
-        "indigo": (#3538cd, #eef4ff, #6172f3),
-        "teal": (#107569, #f0fdf9, #15b79e),
-        "violet": (#5925dc, #f4f3ff, #7a5af8),
+    $dots: (
+        "blue": #2e90fa,
+        "indigo": #6172f3,
+        "teal": #15b79e,
+        "violet": #7a5af8,
     );
 
-    @each $name, $set in $hues {
+    @each $name, $dot in $dots {
         &--#{$name} {
-            --rd-chip-dot: #{nth($set, 3)};
+            --rd-chip-dot: #{$dot};
 
-            background: nth($set, 2);
-            color: nth($set, 1);
+            background: var(--rd-hue-#{$name}-tint);
+            color: var(--rd-hue-#{$name});
         }
     }
 }
@@ -74,7 +74,7 @@
         border-color: $rd-critical;
 
         &:focus {
-            box-shadow: 0 0 0 3px rgba(180, 35, 24, 0.12);
+            box-shadow: $rd-focus-critical;
         }
     }
 }
@@ -150,7 +150,7 @@
 
     &:has(input:checked) {
         border-color: $rd-brand;
-        background: #f5fafc;
+        background: $rd-brand-wash;
         box-shadow: inset 0 0 0 1px $rd-brand;
 
         .rd-radio-card__label {
@@ -194,12 +194,12 @@
             height: 22px;
             border-radius: 50%;
             background: #fff;
-            box-shadow: 0 1px 2px rgba(16, 24, 40, 0.2);
+            box-shadow: 0 1px 2px rgba(var(--rd-shade), 0.2);
             transition: left 0.15s;
         }
 
         &:checked {
-            background: $rd-brand;
+            background: $rd-brand-fill;
 
             &::after {
                 left: 23px;
@@ -323,7 +323,8 @@
     overflow: hidden;
     border: 1px solid $rd-line;
     border-radius: 10px !important;
-    box-shadow: 0 12px 24px -4px rgba(16, 24, 40, 0.12) !important;
+    background-color: $rd-raised !important;
+    box-shadow: $rd-shadow-menu !important;
     font-family: $rd-sans;
     font-size: 14px;
 }
@@ -481,7 +482,7 @@
     padding: 16px 20px;
     border: 1px solid $rd-critical-line;
     border-radius: 12px;
-    background: #fffbfa;
+    background: $rd-critical-wash;
     color: $rd-critical;
     font-family: $rd-sans;
     font-size: 14px;
@@ -493,7 +494,7 @@
 
     &__title {
         margin: 0 0 4px;
-        color: #7a271a;
+        color: $rd-critical-ink;
         font-weight: 600;
     }
 
@@ -519,10 +520,8 @@
     padding: 8px;
     border: 1px solid $rd-line;
     border-radius: 14px;
-    background: $rd-panel;
-    box-shadow:
-        0 16px 32px -6px rgba(16, 24, 40, 0.16),
-        0 4px 8px -2px rgba(16, 24, 40, 0.06);
+    background: $rd-raised;
+    box-shadow: $rd-shadow-float;
 }
 
 // ------------------------------------------------------------ Form layout
@@ -535,7 +534,7 @@
     border: 1px solid $rd-line;
     border-radius: 16px;
     background: $rd-panel;
-    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+    box-shadow: $rd-shadow-panel;
     font-family: $rd-sans;
     color: $rd-ink;
 
@@ -724,13 +723,13 @@
     white-space: nowrap;
 
     &--navy {
-        background: #eef4ff;
-        color: #3538cd;
+        background: var(--rd-hue-indigo-tint);
+        color: var(--rd-hue-indigo);
     }
 
     &--blue {
-        background: #eff8ff;
-        color: #175cd3;
+        background: var(--rd-hue-blue-tint);
+        color: var(--rd-hue-blue);
     }
 
     &--green {
@@ -739,8 +738,8 @@
     }
 
     &--purple {
-        background: #f4f3ff;
-        color: #5925dc;
+        background: var(--rd-hue-violet-tint);
+        color: var(--rd-hue-violet);
     }
 
     &--orange {
@@ -807,14 +806,14 @@
         }
 
         &--image {
-            background: #eff8ff;
-            color: #175cd3;
+            background: var(--rd-hue-blue-tint);
+            color: var(--rd-hue-blue);
         }
 
         &--audio,
         &--video {
-            background: #f4f3ff;
-            color: #5925dc;
+            background: var(--rd-hue-violet-tint);
+            color: var(--rd-hue-violet);
         }
     }
 
@@ -904,7 +903,7 @@
 .rd-shell .card {
     border: 1px solid $rd-line;
     border-radius: 16px;
-    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+    box-shadow: $rd-shadow-panel;
 
     > .card-header {
         border-bottom-color: $rd-line;
@@ -923,7 +922,8 @@
 
     max-width: 100vw;
     border-left: 1px solid $rd-line;
-    box-shadow: -24px 0 48px -12px rgba(16, 24, 40, 0.18);
+    background: $rd-ground;
+    box-shadow: $rd-shadow-drawer;
     color: $rd-ink;
     font-family: $rd-sans;
     font-size: 14px;
@@ -942,7 +942,7 @@
 }
 
 .offcanvas-backdrop.rd-drawer-backdrop {
-    background: $rd-ink;
+    background: $rd-scrim;
 
     &.show {
         opacity: 0.32;

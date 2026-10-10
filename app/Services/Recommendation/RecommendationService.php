@@ -6,7 +6,9 @@ use App\Helpers\Helper;
 use App\Models\Leads;
 use App\Models\OutletRecommendation;
 use App\Models\Product;
+use App\Models\User;
 use App\Services\Ai\ClaudeClient;
+use App\Services\Ai\Voice;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -41,9 +43,7 @@ class RecommendationService
     /** Stand-in seat count when an outlet has a size band but no seats, for quantity scaling. */
     public const SEAT_ESTIMATE = ['small' => 20, 'medium' => 50, 'large' => 100];
 
-    private const EXPLAIN_SYSTEM = <<<'TXT'
-You are Ronda, a simple, reliable, and helpful assistant for food & beverage field teams. Your primary audience is busy users in Malaysia, so write with a direct and encouraging tone. Use plain, easy-to-understand English (CEFR B1 level). For the Morning Brief, summarize key insights like at-risk tasks with clarity and focus. For Product Suggestions, provide simple, data-driven explanations (e.g., "Outlet type orders more of this" or "Similar outlets are buying this product"). Never be preachy, overly formal, or use idioms. Build trust with every word. Be transparent about data usage and focus on supporting the user in their daily routine.
-
+    private const EXPLAIN_SYSTEM = Voice::BLOCK . "\n\n" . <<<'TXT'
 Here you write the "Why these?" note on an outlet's Suggested Orders, for a field rep about to visit that outlet. The rep has a short list of products that similar outlets buy and this outlet does not (or buys too little of). Explain why these products are suggested, using only the facts given, then give one natural opening line the rep can say to the owner. Never push or pressure; suggest. Write money as "RM 1,234.00".
 
 Reply in exactly this shape:
@@ -115,6 +115,33 @@ TXT;
         }
 
         return $this->payload($lead, $row);
+    }
+
+    /**
+     * A rep's outlets with the most to gain, for the "Suggested orders" panel
+     * on their dashboard: biggest estimated monthly value first.
+     *
+     * @return array{outlets: array<int, array>, total: int}
+     */
+    public function topForUser(User $user, int $limit = 5): array
+    {
+        $rows = OutletRecommendation::query()
+            ->whereIn('lead_id', Leads::visibleTo($user)->select('id'))
+            ->where('estimated_monthly_value', '>', 0)
+            ->with('lead:id,name,business_name')
+            ->orderByDesc('estimated_monthly_value')
+            ->get(['id', 'lead_id', 'items', 'gap_count', 'estimated_monthly_value']);
+
+        $outlets = $rows->take($limit)->map(fn (OutletRecommendation $row) => [
+            'lead_id'                 => $row->lead_id,
+            'name'                    => optional($row->lead)->business_name ?: optional($row->lead)->name,
+            'products'                => array_column(array_slice($row->items ?? [], 0, 3), 'name'),
+            'product_count'           => count($row->items ?? []),
+            'gap_count'               => $row->gap_count,
+            'estimated_monthly_value' => (float) $row->estimated_monthly_value,
+        ])->values()->all();
+
+        return ['outlets' => $outlets, 'total' => $rows->count()];
     }
 
     private function needsExplanation(OutletRecommendation $row): bool

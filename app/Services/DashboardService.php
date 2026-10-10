@@ -151,26 +151,37 @@ class DashboardService
     /** Overdue first, then at risk; soonest due first within each. */
     private function attentionList(Collection $open, int $limit = 10): array
     {
+        return $this->byUrgency($open)
+            ->take($limit)
+            ->map(fn ($row) => $this->attentionItem($row))
+            ->values()
+            ->all();
+    }
+
+    /** The overdue and at-risk rows of $open, most urgent first. */
+    private function byUrgency(Collection $open): Collection
+    {
         return $open
             ->filter(fn ($row) => $row['risk']['level'] !== TaskRisk::ON_TRACK)
             ->sortBy(fn ($row) => [
                 $row['risk']['level'] === TaskRisk::OVERDUE ? 0 : 1,
                 optional($row['risk']['due_at'])->getTimestamp() ?? PHP_INT_MAX,
-            ])
-            ->take($limit)
-            ->map(fn ($row) => [
-                'id'         => $row['task']->id,
-                'reference'  => $row['task']->task_reference,
-                'title'      => $row['task']->title,
-                'lead'       => optional($row['task']->lead)->business_name ?: optional($row['task']->lead)->name,
-                'subscriber' => optional(optional($row['task']->users->firstWhere('role', 2))->user)->name,
-                'status'     => Tasks::getTaskStatus($row['task']->status),
-                'level'      => $row['risk']['level'],
-                'reason'     => $row['risk']['reason'],
-                'due_at'     => optional($row['risk']['due_at'])->toIso8601String(),
-            ])
-            ->values()
-            ->all();
+            ]);
+    }
+
+    private function attentionItem(array $row): array
+    {
+        return [
+            'id'         => $row['task']->id,
+            'reference'  => $row['task']->task_reference,
+            'title'      => $row['task']->title,
+            'lead'       => optional($row['task']->lead)->business_name ?: optional($row['task']->lead)->name,
+            'subscriber' => optional(optional($row['task']->users->firstWhere('role', 2))->user)->name,
+            'status'     => Tasks::getTaskStatus($row['task']->status),
+            'level'      => $row['risk']['level'],
+            'reason'     => $row['risk']['reason'],
+            'due_at'     => optional($row['risk']['due_at'])->toIso8601String(),
+        ];
     }
 
     /** Tasks created vs. tasks marked done per day, last 14 days. */
@@ -199,7 +210,8 @@ class DashboardService
 
     /**
      * One row per active non-admin user: open work, overdue and at-risk
-     * tasks (as subscriber / sub-subscriber), and what they did this week.
+     * tasks (as subscriber / sub-subscriber) with the two most urgent, and
+     * what they did this week.
      */
     private function teamActivity(Collection $open, Carbon $weekStart): array
     {
@@ -215,6 +227,15 @@ class DashboardService
                 $openBy[$userId]['open']    = ($openBy[$userId]['open'] ?? 0) + 1;
                 $openBy[$userId]['overdue'] = ($openBy[$userId]['overdue'] ?? 0) + ($row['risk']['level'] === TaskRisk::OVERDUE ? 1 : 0);
                 $openBy[$userId]['at_risk'] = ($openBy[$userId]['at_risk'] ?? 0) + ($row['risk']['level'] === TaskRisk::AT_RISK ? 1 : 0);
+            }
+        }
+
+        $urgentBy = [];
+        foreach ($this->byUrgency($open) as $row) {
+            foreach ($row['task']->users->whereIn('role', [2, 6])->pluck('user_id')->unique() as $userId) {
+                if (count($urgentBy[$userId] ?? []) < 2) {
+                    $urgentBy[$userId][] = $this->attentionItem($row);
+                }
             }
         }
 
@@ -243,6 +264,7 @@ class DashboardService
             'visits_7d'    => (int) ($visitsBy[$person->id] ?? 0),
             'forms_7d'     => (int) ($formsBy[$person->id] ?? 0),
             'orders_7d'    => (float) ($ordersBy[$person->id] ?? 0),
+            'urgent'       => $urgentBy[$person->id] ?? [],
         ])->values()->all();
     }
 

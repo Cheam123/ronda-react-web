@@ -209,6 +209,461 @@
     white-space: pre-line;
 }
 
+// ------------------------------------- Rep assistant on the outlet page
+
+// The visit brief (Leads/Partials/VisitBrief), at the top of the aside.
+.lead-brief {
+    &__intro {
+        margin: 0;
+        color: $rd-body;
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+    &__writing {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        color: $rd-ink-2;
+        font-size: 14px;
+    }
+
+    &__bar {
+        display: block;
+        height: 12px;
+        border-radius: 6px;
+        background: $rd-line;
+        animation: lead-brief-pulse 1.4s ease-in-out infinite;
+    }
+
+    &__stale {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px 10px 14px;
+        border: 1px solid $rd-serious-line;
+        border-radius: 12px;
+        background: $rd-serious-tint;
+        color: $rd-serious-ink;
+        font-size: 13px;
+        line-height: 1.45;
+
+        i {
+            color: $rd-serious;
+            font-size: 18px;
+            line-height: 1;
+        }
+
+        span {
+            flex-grow: 1;
+        }
+
+        .rd-btn {
+            flex-shrink: 0;
+        }
+    }
+
+    &__sections {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    &__section {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .lead-brief__label {
+        margin: 0;
+        color: $rd-ink;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    &__text {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        color: $rd-body;
+        font-size: 14px;
+        line-height: 1.45;
+
+        p {
+            margin: 0;
+        }
+
+        ul {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin: 0;
+            padding-left: 18px;
+        }
+
+        li::marker {
+            color: $rd-muted;
+        }
+    }
+
+    &__error {
+        margin: 0;
+    }
+
+    &__foot {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding-top: 14px;
+        border-top: 1px solid $rd-line-soft;
+    }
+
+    &__source {
+        margin: 0;
+        color: $rd-muted;
+        font-size: 12px;
+        line-height: 1.5;
+    }
+}
+
+@keyframes lead-brief-pulse {
+    50% {
+        opacity: 0.45;
+    }
+}
+
+// "How to pitch" under each suggested product (Leads/Partials/OutletActivity).
+.lead-pitch {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px 18px;
+    border: 1px solid $rd-line;
+    border-radius: 12px;
+    background: $rd-row-alt;
+    white-space: normal;
+
+    &__line {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 2px 10px;
+    }
+
+    &__toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        height: 28px;
+        margin-left: -6px;
+        padding: 0 6px;
+        border: 0;
+        border-radius: 6px;
+        background: transparent;
+        color: $rd-brand-ink;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+
+        &:hover {
+            background: $rd-brand-tint;
+        }
+
+        &:focus-visible {
+            outline: 2px solid $rd-brand;
+            outline-offset: 2px;
+        }
+
+        i {
+            font-size: 16px;
+            line-height: 1;
+        }
+    }
+
+    &__parts {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 14px 24px;
+        margin: 0;
+
+        dt {
+            margin-bottom: 4px;
+            color: $rd-ink-2;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        dd {
+            margin: 0;
+            color: $rd-body;
+            font-size: 14px;
+            line-height: 1.45;
+        }
+    }
+}
+
+// The product's row and its tips read as one.
+.lead-activity__table {
+    tr.is-open td {
+        border-bottom-color: transparent;
+    }
+
+    .lead-pitch__row td {
+        height: auto;
+        padding-top: 0;
+        padding-bottom: 16px;
+    }
+}
+
+// Ask Ronda (Leads/Partials/AskRonda): a chat in the right-hand drawer.
+.ask-ronda {
+    &__outlet {
+        color: $rd-ink-2;
+        font-size: 13px;
+    }
+
+    &__start {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+
+    &__intro {
+        color: $rd-body;
+        font-size: 15px;
+        line-height: 1.5;
+    }
+
+    .ask-ronda__label {
+        margin: 4px 0 0;
+        color: $rd-ink-2;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    &__starters {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    &__starter {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 44px;
+        padding: 10px 14px;
+        border: 1px solid $rd-control;
+        border-radius: 10px;
+        background: $rd-panel;
+        color: $rd-body;
+        font: 500 14px/1.45 $rd-sans;
+        text-align: left;
+        box-shadow: $rd-shadow-xs;
+        cursor: pointer;
+
+        i {
+            color: $rd-brand;
+            font-size: 16px;
+        }
+
+        &:hover {
+            border-color: $rd-control-hover;
+            color: $rd-ink;
+        }
+
+        &:focus-visible {
+            outline: 2px solid $rd-brand;
+            outline-offset: 2px;
+        }
+    }
+
+    &__thread {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    &__message {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+
+        &--user {
+            align-items: flex-end;
+        }
+    }
+
+    &__who {
+        color: $rd-ink-2;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    &__bubble {
+        max-width: 88%;
+        padding: 12px 16px;
+        border: 1px solid $rd-line;
+        border-radius: 14px 14px 14px 4px;
+        background: $rd-panel;
+        color: $rd-ink;
+        font-size: 14px;
+        line-height: 1.5;
+        white-space: pre-line;
+        overflow-wrap: anywhere;
+    }
+
+    &__message--user &__bubble {
+        max-width: 80%;
+        border-color: transparent;
+        border-radius: 14px 14px 4px 14px;
+        background: $rd-brand-tint;
+    }
+
+    &__copy {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        height: 32px;
+        margin-left: -8px;
+        padding: 0 8px;
+        border: 0;
+        border-radius: 8px;
+        background: transparent;
+        color: $rd-ink-2;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+
+        &:hover {
+            background: $rd-track;
+        }
+    }
+
+    &__thinking {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: $rd-ink-2;
+    }
+
+    &__dots {
+        display: inline-flex;
+        gap: 4px;
+
+        span {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: $rd-brand;
+            animation: ask-ronda-dot 1.2s ease-in-out infinite;
+
+            &:nth-child(2) {
+                animation-delay: 0.15s;
+            }
+
+            &:nth-child(3) {
+                animation-delay: 0.3s;
+            }
+        }
+    }
+
+    &__foot {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+
+    &__compose {
+        display: flex;
+        align-items: flex-end;
+        gap: 10px;
+
+        .rd-input {
+            flex-grow: 1;
+            min-width: 0;
+            min-height: 64px;
+            resize: none;
+        }
+    }
+
+    &__hints {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        color: $rd-muted;
+        font-size: 12px;
+        line-height: 1.5;
+    }
+
+    &__error {
+        margin: 0;
+    }
+
+    &__full {
+        margin: 0;
+        color: $rd-ink-2;
+        font-size: 13px;
+    }
+}
+
+@keyframes ask-ronda-dot {
+    0%,
+    80%,
+    100% {
+        opacity: 0.3;
+    }
+
+    40% {
+        opacity: 1;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .lead-brief__bar,
+    .ask-ronda__dots span {
+        animation: none;
+    }
+}
+
+// Draft a follow-up (Leads/Partials/FollowUpDialog).
+.follow-up {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    margin-top: 20px;
+
+    .form-field {
+        margin-bottom: 0;
+    }
+
+    &__note {
+        display: flex;
+        gap: 10px;
+
+        .rd-input {
+            flex-grow: 1;
+            min-width: 0;
+        }
+
+        .rd-btn {
+            flex-shrink: 0;
+        }
+
+        @media (max-width: 575.98px) {
+            flex-direction: column;
+        }
+    }
+}
+
 // The notes beside the lead form.
 .lead-note {
     margin: 0;

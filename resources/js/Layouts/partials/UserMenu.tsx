@@ -1,6 +1,7 @@
 import { Link, router } from '@inertiajs/react';
 import Dropdown from 'react-bootstrap/Dropdown';
 import Initials from '@/Components/surface/Initials';
+import ThemeSwitch from '@/Components/surface/ThemeSwitch';
 import { useAuth } from '@/hooks/useAuth';
 
 const signOut = () => router.post(route('logout'));
@@ -36,6 +37,10 @@ export default function UserMenu() {
                     <i className="mdi mdi-lock-outline" aria-hidden="true" />
                     Change password
                 </Link>
+                <div className="rd-account__theme">
+                    <span className="rd-label">Theme</span>
+                    <ThemeSwitch />
+                </div>
                 <Dropdown.Item as="button" type="button" onClick={signOut}>
                     <i className="mdi mdi-logout" aria-hidden="true" />
                     Sign out
@@ -61,6 +66,10 @@ export function UserSheet() {
                     <span className="rd-person__name">{user.name}</span>
                     <span className="rd-person__sub">{user.typeLabel}</span>
                 </span>
+            </div>
+            <div className="rd-sheet__theme">
+                <span className="rd-label">Theme</span>
+                <ThemeSwitch />
             </div>
             <div className="rd-sheet__account-actions">
                 <Link href={route('users.profile')} className="rd-btn rd-btn--lg">

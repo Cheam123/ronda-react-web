@@ -129,9 +129,10 @@ export interface Recommendation {
 }
 
 export interface RecommendationItem {
+    product_id: number;
     name: string;
     sku: string;
-    status: 'gap' | 'topup';
+    status: 'gap' | 'top_up';
     buyers: number;
     neighbors_used: number;
     support: number;
@@ -140,3 +141,37 @@ export interface RecommendationItem {
     unit: string;
     est_monthly_value: number;
 }
+
+/** OutletAssistantService::briefResource() */
+export interface VisitBrief {
+    /** Plain text in "Label:" sections with "- " bullets. */
+    content: string;
+    source: 'bedrock' | 'template';
+    /** Why a template wrote it: Bedrock was off, or the call failed. */
+    fallback: 'not_configured' | 'unavailable' | null;
+    /** The outlet changed (or a day passed) since it was written. */
+    stale: boolean;
+    generated_at: string;
+    generated_by: string | null;
+}
+
+/** "How to pitch" for one suggested product; the template has no objection. */
+export interface PitchTip {
+    pitch: string;
+    objection: string | null;
+    reply: string | null;
+}
+
+/** OutletAssistantService::pitches() */
+export interface PitchTips {
+    pitches: Record<string, PitchTip>;
+    source: 'bedrock' | 'template' | null;
+}
+
+/** One message in Ask Ronda; the browser keeps the chat. */
+export interface ChatMessage {
+    role: 'user' | 'assistant';
+    content: string;
+}
+
+export type FollowUpTopic = 'last_visit' | 'last_order' | 'suggested';

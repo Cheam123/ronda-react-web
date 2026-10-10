@@ -2,7 +2,8 @@ import { BarElement, CategoryScale, Chart as ChartJS, LinearScale, Tooltip } fro
 import clsx from 'clsx';
 import { useMemo } from 'react';
 import { Bar } from 'react-chartjs-2';
-import { BAR_STYLE, barOptions, CHART } from '@/lib/chartTheme';
+import { BAR_STYLE, barOptions, chartColors } from '@/lib/chartTheme';
+import { useTheme } from '@/lib/theme';
 import type { TrendDay } from '../types';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip);
@@ -20,13 +21,14 @@ interface TrendChartProps {
 
 /** Tasks created vs. done per day, with a table for screen readers. */
 export default function TrendChart({ trend, createdWeek, doneWeek, className }: TrendChartProps) {
-    const options = useMemo(() => barOptions({ titles: trend.map((day) => day.label) }), [trend]);
+    const colors = chartColors(useTheme().theme);
+    const options = useMemo(() => barOptions({ colors, titles: trend.map((day) => day.label) }), [colors, trend]);
 
     const data = {
         labels: trend.map((day) => shortDate(day.date)),
         datasets: [
-            { label: 'Created', data: trend.map((day) => day.created), backgroundColor: CHART.ochre, ...BAR_STYLE },
-            { label: 'Done', data: trend.map((day) => day.done), backgroundColor: CHART.brand, ...BAR_STYLE },
+            { label: 'Created', data: trend.map((day) => day.created), backgroundColor: colors.ochre, ...BAR_STYLE },
+            { label: 'Done', data: trend.map((day) => day.done), backgroundColor: colors.brand, ...BAR_STYLE },
         ],
     };
 
@@ -43,11 +45,11 @@ export default function TrendChart({ trend, createdWeek, doneWeek, className }: 
                 </div>
                 <div className="rd-legend">
                     <span>
-                        <span className="rd-swatch" style={{ background: CHART.ochre }} />
+                        <span className="rd-swatch" style={{ background: colors.ochre }} />
                         Created
                     </span>
                     <span>
-                        <span className="rd-swatch" style={{ background: CHART.brand }} />
+                        <span className="rd-swatch" style={{ background: colors.brand }} />
                         Done
                     </span>
                 </div>

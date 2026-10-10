@@ -35,10 +35,12 @@ return [
     ],
 
     /*
-     | Claude on Amazon Bedrock (daily digest + recommendation explanations).
-     | Leave the credentials empty to run without AI: both features then
-     | fall back to a plain template. `api_key` is a Bedrock API key; use it
-     | or the access key pair.
+     | Claude on Amazon Bedrock (daily digest, recommendation explanations
+     | and the rep assistant on the outlet page). Leave the credentials empty
+     | to run without AI: the features then fall back to a plain template,
+     | and Ask Ronda says it is not set up. `api_key` is a Bedrock API key;
+     | use it or the access key pair. `assistant_effort` is how hard Claude
+     | thinks for the rep assistant's quick answers (low | medium | high).
      */
     'bedrock' => [
         'enabled'    => (bool) env('BEDROCK_ENABLED', true),
@@ -49,5 +51,7 @@ return [
         'secret'     => env('AWS_SECRET_ACCESS_KEY'),
         'session'    => env('AWS_SESSION_TOKEN'),
         'max_tokens' => (int) env('BEDROCK_MAX_TOKENS', 16000),
+
+        'assistant_effort' => env('BEDROCK_ASSIST_EFFORT', 'low'),
     ],
 ];

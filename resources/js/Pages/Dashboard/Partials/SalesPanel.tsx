@@ -3,8 +3,9 @@ import clsx from 'clsx';
 import { useMemo } from 'react';
 import { Bar } from 'react-chartjs-2';
 import Meter from '@/Components/surface/Meter';
-import { BAR_STYLE, barOptions, CHART } from '@/lib/chartTheme';
+import { BAR_STYLE, barOptions, chartColors } from '@/lib/chartTheme';
 import { compactNumber, formatMoney, formatNumber } from '@/lib/format';
+import { useTheme } from '@/lib/theme';
 import type { AdminSummary } from '../types';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip);
@@ -18,6 +19,7 @@ interface SalesPanelProps {
 /** Confirmed order value per day this month, and its split by product category. */
 export default function SalesPanel({ sales, currency, className }: SalesPanelProps) {
     const { daily, categories } = sales;
+    const colors = chartColors(useTheme().theme);
     const lastIndex = daily.length - 1;
     const biggestCategory = Math.max(0, ...categories.map((category) => category.value));
     const categoryTotal = categories.reduce((sum, category) => sum + category.value, 0);
@@ -25,12 +27,13 @@ export default function SalesPanel({ sales, currency, className }: SalesPanelPro
     const options = useMemo(
         () =>
             barOptions({
+                colors,
                 format: (value) => `${currency} ${formatMoney(value)}`,
                 formatTick: (value) => compactNumber(value),
                 titles: daily.map((day, index) => (index === lastIndex ? `${day.label} (so far)` : day.label)),
                 keepLabels: true,
             }),
-        [currency, daily, lastIndex],
+        [colors, currency, daily, lastIndex],
     );
 
     const data = {
@@ -40,7 +43,7 @@ export default function SalesPanel({ sales, currency, className }: SalesPanelPro
             {
                 label: 'Sales',
                 data: daily.map((day) => day.value),
-                backgroundColor: daily.map((_, index) => (index === lastIndex ? CHART.brandToday : CHART.brand)),
+                backgroundColor: daily.map((_, index) => (index === lastIndex ? colors.brandToday : colors.brand)),
                 ...BAR_STYLE,
                 maxBarThickness: 22,
             },

@@ -6,9 +6,9 @@ import type { DashboardSummary } from '../types';
 import ChangeChip from '@/Components/surface/ChangeChip';
 
 const FORM_STATUSES = [
-    { key: 'approved', label: 'approved', color: '#067647' },
-    { key: 'pending', label: 'pending', color: '#D9A23A' },
-    { key: 'rejected', label: 'rejected', color: '#B42318' },
+    { key: 'approved', label: 'approved', color: 'var(--rd-good)' },
+    { key: 'pending', label: 'pending', color: 'var(--rd-pending)' },
+    { key: 'rejected', label: 'rejected', color: 'var(--rd-critical)' },
 ] as const;
 
 interface FieldOutputProps {

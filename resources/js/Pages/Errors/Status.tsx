@@ -1,4 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
+import Logo from '@/Components/surface/Logo';
 
 const MESSAGES: Record<number, { title: string; description: string }> = {
     401: { title: 'Unauthorized', description: 'Please sign in to continue.' },
@@ -18,7 +19,7 @@ export default function Status({ status }: { status: number }) {
             <Head title={title} />
             <div className="guest-layout d-flex align-items-center justify-content-center">
                 <div className="text-center px-3">
-                    <img src="/assets/brand/ronda-logo.svg" alt="Ronda" height={40} className="mb-4" />
+                    <Logo alt="Ronda" height={40} className="mb-4" />
                     <h1 className="display-4 fw-semibold text-primary mb-1">{status}</h1>
                     <h4 className="text-uppercase mb-2">{title}</h4>
                     <p className="text-muted mb-4">{description}</p>

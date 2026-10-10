@@ -27,6 +27,7 @@ use App\Models\DocumentUpload;
 use App\Repositories\S3ClientRepo;
 use App\Jobs\RefreshOutletRecommendations;
 use App\Services\Recommendation\RecommendationService;
+use App\Services\Ai\OutletAssistantService;
 use App\Http\Resources\DocumentResource;
 use App\Http\Resources\Leads\LeadListResource;
 use App\Http\Resources\Leads\LeadResource;
@@ -179,15 +180,15 @@ class LeadController extends Controller
                                 ->visibleTo($user)
                                 ->findOrFail($id);
 
-        // Managers get a read-only copy of the rep's "Recommended" tab.
+        // Suggested orders for everyone who can open the outlet (a rep: their own).
         $recommendation = null;
-        if ($user->seesAllRecords()) {
-            try {
-                $recommendation = app(RecommendationService::class)->forLead($customerDetail);
-            } catch (Throwable $e) {
-                Log::warning('Lead view: recommendations unavailable', ['lead_id' => $id, 'error' => $e->getMessage()]);
-            }
+        try {
+            $recommendation = app(RecommendationService::class)->forLead($customerDetail);
+        } catch (Throwable $e) {
+            Log::warning('Lead view: recommendations unavailable', ['lead_id' => $id, 'error' => $e->getMessage()]);
         }
+
+        $assistant = app(OutletAssistantService::class);
 
         if ($customerDetail->state_id) {
             $states = States::where('id',$customerDetail->state_id)->get();
@@ -212,6 +213,8 @@ class LeadController extends Controller
             'visits'         => VisitResource::collection($customerDetail->visits)->resolve(),
             'orders'         => OrderResource::collection($customerDetail->orders)->resolve(),
             'recommendation' => $recommendation,
+            'brief'          => $assistant->briefPayload($customerDetail),
+            'assistant'      => ['available' => $assistant->isAvailable()],
         ]);
     }
 

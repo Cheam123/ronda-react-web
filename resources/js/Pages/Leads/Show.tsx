@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import clsx from 'clsx';
 import { useState, type ReactNode } from 'react';
 import DocumentList from '@/Components/documents/DocumentList';
@@ -12,9 +12,21 @@ import { formatPhone, phoneHref } from '@/lib/phone';
 import { areaHue, tagClass } from '@/lib/tags';
 import type { SelectOption } from '@/types';
 import type { DocumentFile } from '@/types/documents';
-import type { Lead, LeadFormOptions, Order, Recommendation, TaskSummary, Visit } from '@/types/leads';
+import type {
+    FollowUpTopic,
+    Lead,
+    LeadFormOptions,
+    Order,
+    Recommendation,
+    TaskSummary,
+    Visit,
+    VisitBrief as Brief,
+} from '@/types/leads';
+import AskRonda from './Partials/AskRonda';
+import FollowUpDialog from './Partials/FollowUpDialog';
 import { OrderHistory, SuggestedOrders, VisitHistory } from './Partials/OutletActivity';
 import TaskHistories from './Partials/TaskHistories';
+import VisitBrief from './Partials/VisitBrief';
 
 interface ShowLeadProps extends LeadFormOptions {
     lead: Lead;
@@ -23,9 +35,17 @@ interface ShowLeadProps extends LeadFormOptions {
     visits: Visit[];
     orders: Order[];
     recommendation: Recommendation | null;
+    brief: Brief | null;
+    /** Whether Claude on Bedrock is set up for the rep assistant. */
+    assistant: { available: boolean };
 }
 
 type Tab = 'tasks' | 'visits' | 'orders' | 'suggested';
+
+const TABS: Tab[] = ['tasks', 'visits', 'orders', 'suggested'];
+
+/** "28 Sep" from "28 Sep 2026" or "28 Sep 2026, 10:42 AM". */
+const dayMonth = (label: string) => label.split(', ')[0].split(' ').slice(0, 2).join(' ');
 
 const LONG_DATE = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
@@ -42,11 +62,31 @@ export default function ShowLead({
     visits,
     orders,
     recommendation,
+    brief,
+    assistant,
     ...options
 }: ShowLeadProps) {
     const { can } = useAuth();
-    const [tab, setTab] = useState<Tab>('tasks');
+    const { url } = usePage();
+    // ?tab=suggested opens a tab directly (the dashboard's Suggested orders links here).
+    const [tab, setTab] = useState<Tab>(() => {
+        const wanted = new URLSearchParams(url.split('?')[1] ?? '').get('tab') as Tab | null;
+        return wanted && TABS.includes(wanted) && (wanted !== 'suggested' || recommendation) ? wanted : 'tasks';
+    });
+    const [asking, setAsking] = useState(false);
+    const [followingUp, setFollowingUp] = useState(false);
     const title = lead.business_name || lead.name || 'Unnamed outlet';
+
+    const lastOrder = orders.find((order) => !order.cancelled);
+    const followUpTopics: { value: FollowUpTopic; label: string }[] = [
+        ...(visits[0]
+            ? [{ value: 'last_visit' as const, label: `Last visit · ${dayMonth(visits[0].visited_at)}` }]
+            : []),
+        ...(lastOrder
+            ? [{ value: 'last_order' as const, label: `Last order · ${dayMonth(lastOrder.order_date)}` }]
+            : []),
+        ...(recommendation?.items?.length ? [{ value: 'suggested' as const, label: 'Suggested products' }] : []),
+    ];
     const area = options.ifeAreas.find((option) => option.value === lead.ife_area_id);
     const phone = phoneHref(lead.mobile);
 
@@ -103,6 +143,10 @@ export default function ShowLead({
                     }
                     actions={
                         <>
+                            <button type="button" className="rd-btn rd-btn--lg" onClick={() => setAsking(true)}>
+                                <i className="mdi mdi-message-text-outline" aria-hidden="true" />
+                                Ask Ronda
+                            </button>
                             {can('add_task') && lead.taskable && (
                                 <Link href={route('tasks.create', { id: lead.id })} className="rd-btn rd-btn--lg">
                                     <i className="mdi mdi-playlist-plus" aria-hidden="true" />
@@ -143,10 +187,18 @@ export default function ShowLead({
                         {tab === 'tasks' && <TaskHistories tasks={tasks} />}
                         {tab === 'visits' && <VisitHistory visits={visits} />}
                         {tab === 'orders' && <OrderHistory orders={orders} />}
-                        {tab === 'suggested' && recommendation && <SuggestedOrders recommendation={recommendation} />}
+                        {tab === 'suggested' && recommendation && (
+                            <SuggestedOrders recommendation={recommendation} leadId={lead.id} />
+                        )}
                     </section>
 
                     <aside className="lead-page__aside">
+                        <VisitBrief
+                            leadId={lead.id}
+                            brief={brief}
+                            available={assistant.available}
+                            onFollowUp={() => setFollowingUp(true)}
+                        />
                         <Panel title="Details">
                             <dl className="rd-facts">
                                 <Fact label="Company">{lead.name}</Fact>
@@ -218,6 +270,19 @@ export default function ShowLead({
                         </Panel>
                     </aside>
                 </div>
+
+                <AskRonda
+                    show={asking}
+                    onHide={() => setAsking(false)}
+                    lead={{ id: lead.id, name: title, customerId: lead.customer_id }}
+                    available={assistant.available}
+                />
+                <FollowUpDialog
+                    show={followingUp}
+                    onHide={() => setFollowingUp(false)}
+                    lead={{ id: lead.id, name: title, mobile: lead.mobile }}
+                    topics={followUpTopics}
+                />
             </SurfacePage>
         </AppLayout>
     );

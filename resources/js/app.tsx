@@ -8,8 +8,11 @@ import { createInertiaApp } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';
 import { ToastProvider } from '@/Components/feedback/ToastProvider';
+import { startTheme } from '@/lib/theme';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Ronda';
+
+startTheme();
 
 createInertiaApp({
     title: (title) => (title ? `${title} | ${appName}` : appName),

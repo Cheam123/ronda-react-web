@@ -37,7 +37,7 @@ function Sparkline({ values }: { values: number[] }) {
             <polyline
                 points={points}
                 fill="none"
-                stroke="#0D729E"
+                style={{ stroke: 'var(--rd-brand)' }}
                 strokeWidth="2"
                 strokeLinejoin="round"
                 strokeLinecap="round"
@@ -121,10 +121,12 @@ export default function AdminDashboard({ summary, teamRisks }: AdminDashboardPro
                                 {outlets.total > 0 && (
                                     <span className="rd-stack" aria-hidden="true">
                                         {outlets.customers > 0 && (
-                                            <span style={{ flexGrow: outlets.customers, background: '#0D729E' }} />
+                                            <span
+                                                style={{ flexGrow: outlets.customers, background: 'var(--rd-brand)' }}
+                                            />
                                         )}
                                         {prospects > 0 && (
-                                            <span style={{ flexGrow: prospects, background: '#BFD8E3' }} />
+                                            <span style={{ flexGrow: prospects, background: 'var(--rd-brand-soft)' }} />
                                         )}
                                     </span>
                                 )}

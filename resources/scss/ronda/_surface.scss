@@ -6,38 +6,7 @@
 // The React side is Components/surface.
 //
 
-$rd-ground: #f5f6f8;
-$rd-panel: #fff;
-$rd-line: #eaecf0;
-$rd-line-soft: #f2f4f7;
-$rd-control: #d0d5dd;
-$rd-control-hover: #98a2b3;
-$rd-track: #f2f4f7;
-$rd-row-alt: #f9fafb;
-$rd-ink: #101828;
-$rd-body: #344054;
-$rd-ink-2: #475467;
-$rd-muted: #667085;
-$rd-brand: #0d729e;
-$rd-brand-ink: #0a5a7d;
-$rd-brand-tint: #e5f0f5;
-$rd-brand-soft: #bfd8e3;
-$rd-good: #067647;
-$rd-good-tint: #ecfdf3;
-$rd-good-dot: #17b26a;
-$rd-warning: #f79009;
-$rd-serious: #b54708;
-$rd-serious-tint: #fffaeb;
-$rd-critical: #b42318;
-$rd-critical-tint: #fef3f2;
-$rd-critical-line: #fecdca;
-
-$rd-sans: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-$rd-serif: "Instrument Serif", Georgia, "Times New Roman", serif;
-$rd-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
-
-$rd-focus: 0 0 0 3px rgba(13, 114, 158, 0.18);
-$rd-shadow-xs: 0 1px 2px rgba(16, 24, 40, 0.05);
+// Tokens (colours, shadows, type stacks) live in _tokens.scss.
 
 // The grey ground behind a surface page (SurfacePage sets data-surface).
 body[data-layout="horizontal"][data-surface="grey"] {
@@ -76,7 +45,7 @@ body[data-layout="horizontal"][data-surface="grey"] {
     color: $rd-brand-ink;
 
     &:hover {
-        color: darken($rd-brand-ink, 8%);
+        color: $rd-brand-ink-hover;
     }
 }
 
@@ -230,23 +199,23 @@ body[data-layout="horizontal"][data-surface="grey"] {
     &--primary {
         border-color: $rd-ink;
         background: $rd-ink;
-        color: #fff;
+        color: $rd-on-ink;
 
         &:hover {
-            border-color: #1d2939;
-            background: #1d2939;
-            color: #fff;
+            border-color: $rd-ink-hover;
+            background: $rd-ink-hover;
+            color: $rd-on-ink;
         }
     }
 
     &--danger {
-        border-color: $rd-critical;
-        background: $rd-critical;
+        border-color: $rd-critical-fill;
+        background: $rd-critical-fill;
         color: #fff;
 
         &:hover {
-            border-color: darken($rd-critical, 7%);
-            background: darken($rd-critical, 7%);
+            border-color: $rd-critical-fill-hover;
+            background: $rd-critical-fill-hover;
             color: #fff;
         }
     }
@@ -257,7 +226,7 @@ body[data-layout="horizontal"][data-surface="grey"] {
         color: $rd-critical;
 
         &:hover {
-            border-color: #fda29b;
+            border-color: $rd-critical-line-hover;
             background: $rd-critical-tint;
             color: $rd-critical;
         }
@@ -313,7 +282,7 @@ body[data-layout="horizontal"][data-surface="grey"] {
     }
 
     &--icon-danger {
-        color: #d92d20;
+        color: $rd-critical-icon;
 
         &:hover {
             background: $rd-critical-tint;
@@ -451,6 +420,22 @@ body[data-layout="horizontal"][data-surface="grey"] {
             font-weight: 600;
         }
     }
+
+    // Across the width of its container, each choice an equal share.
+    &--fill {
+        display: flex;
+        width: 100%;
+
+        .rd-seg__btn {
+            flex: 1 1 0;
+            justify-content: center;
+            padding: 0 8px;
+
+            i {
+                font-size: 16px;
+            }
+        }
+    }
 }
 
 // -------------------------------------------------------------------- Panels
@@ -464,7 +449,7 @@ body[data-layout="horizontal"][data-surface="grey"] {
     border: 1px solid $rd-line;
     border-radius: 16px;
     background: $rd-panel;
-    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+    box-shadow: $rd-shadow-panel;
 
     &__head {
         display: flex;
@@ -786,7 +771,7 @@ body[data-layout="horizontal"][data-surface="grey"] {
 
     &--dark {
         background: $rd-ink;
-        color: #fff;
+        color: $rd-on-ink;
     }
 }
 
@@ -832,7 +817,7 @@ body[data-layout="horizontal"][data-surface="grey"] {
     }
 
     &--critical {
-        --rd-chip-dot: #f04438;
+        --rd-chip-dot: #{$rd-critical-dot};
 
         background: $rd-critical-tint;
         color: $rd-critical;
@@ -844,13 +829,13 @@ body[data-layout="horizontal"][data-surface="grey"] {
     }
 
     &--plum {
-        background: #f4f3ff;
-        color: #5925dc;
+        background: var(--rd-hue-violet-tint);
+        color: var(--rd-hue-violet);
     }
 
     &--dark {
         background: $rd-ink;
-        color: #fff;
+        color: $rd-on-ink;
     }
 
     &--outline {
@@ -875,21 +860,10 @@ body[data-layout="horizontal"][data-surface="grey"] {
     line-height: 1.5;
     white-space: nowrap;
 
-    $hues: (
-        "blue": (#175cd3, #eff8ff),
-        "indigo": (#3538cd, #eef4ff),
-        "violet": (#5925dc, #f4f3ff),
-        "pink": (#c11574, #fdf2fa),
-        "orange": (#c4320a, #fff6ed),
-        "teal": (#107569, #f0fdf9),
-        "green": (#067647, #ecfdf3),
-        "slate": (#363f72, #f8f9fc),
-    );
-
-    @each $name, $pair in $hues {
+    @each $name in $rd-hues {
         &--#{$name} {
-            background: nth($pair, 2);
-            color: nth($pair, 1);
+            background: var(--rd-hue-#{$name}-tint);
+            color: var(--rd-hue-#{$name});
         }
     }
 }
@@ -1031,7 +1005,7 @@ body[data-layout="horizontal"][data-surface="grey"] {
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    background: $rd-brand;
+    background: $rd-brand-fill;
     color: #fff;
     font-size: 12px;
     font-weight: 600;
@@ -1444,8 +1418,8 @@ body[data-layout="horizontal"][data-surface="grey"] {
         }
 
         &.is-current {
-            border-color: $rd-brand;
-            background: $rd-brand;
+            border-color: $rd-brand-fill;
+            background: $rd-brand-fill;
             color: #fff;
         }
     }
@@ -1478,10 +1452,8 @@ body[data-layout="horizontal"][data-surface="grey"] {
     padding: 8px;
     border: 1px solid $rd-line;
     border-radius: 14px;
-    background: $rd-panel;
-    box-shadow:
-        0 16px 32px -6px rgba(16, 24, 40, 0.16),
-        0 4px 8px -2px rgba(16, 24, 40, 0.06);
+    background: $rd-raised;
+    box-shadow: $rd-shadow-float;
     font-family: $rd-sans;
     transform: translateX(-50%);
     animation: rd-bulkbar-in 0.15s ease-out;
@@ -1527,7 +1499,8 @@ body[data-layout="horizontal"][data-surface="grey"] {
     padding: 6px;
     border: 1px solid $rd-line;
     border-radius: 10px;
-    box-shadow: 0 12px 24px -4px rgba(16, 24, 40, 0.12);
+    background: $rd-raised;
+    box-shadow: $rd-shadow-menu;
     font-family: $rd-sans;
     // The theme's slide-in keeps a transform that overrides Popper's.
     animation: none;
@@ -1591,7 +1564,8 @@ body[data-layout="horizontal"][data-surface="grey"] {
     padding: 16px;
     border: 1px solid $rd-line;
     border-radius: 12px;
-    box-shadow: 0 12px 24px -4px rgba(16, 24, 40, 0.12);
+    background: $rd-raised;
+    box-shadow: $rd-shadow-menu;
     font-family: $rd-sans;
     color: $rd-ink;
 
@@ -1651,10 +1625,10 @@ body[data-layout="horizontal"][data-surface="grey"] {
     align-items: flex-start;
     gap: 10px;
     padding: 12px 16px;
-    border: 1px solid #fedf89;
+    border: 1px solid $rd-serious-line;
     border-radius: 10px;
     background: $rd-serious-tint;
-    color: #93370d;
+    color: $rd-serious-ink;
     font-size: 14px;
 
     i {
@@ -1911,12 +1885,12 @@ body[data-layout="horizontal"][data-surface="grey"] {
         height: 22px;
         border-radius: 50%;
         background: #fff;
-        box-shadow: 0 1px 2px rgba(16, 24, 40, 0.2);
+        box-shadow: 0 1px 2px rgba(var(--rd-shade), 0.2);
         transition: left 0.15s;
     }
 
     &[aria-checked="true"] {
-        background: $rd-brand;
+        background: $rd-brand-fill;
 
         &::after {
             left: 23px;
@@ -1939,7 +1913,8 @@ body[data-layout="horizontal"][data-surface="grey"] {
         overflow: hidden;
         border: 0;
         border-radius: 16px;
-        box-shadow: 0 24px 48px rgba(0, 0, 0, 0.25);
+        background: $rd-raised;
+        box-shadow: $rd-shadow-dialog;
         font-family: $rd-sans;
         color: $rd-ink;
     }

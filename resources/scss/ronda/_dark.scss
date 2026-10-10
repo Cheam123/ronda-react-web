@@ -1,0 +1,318 @@
+//
+// Dark theme: the parts the tokens cannot reach. The surface pages are
+// themed by the custom properties in _tokens.scss alone; this file covers
+// what still draws itself in fixed colours: the Minible / Bootstrap
+// primitives on the pages not yet redrawn (sign-in, Telegram, error pages),
+// SweetAlert, react-select's own markup and the rich-text editor.
+// Everything is under :root[data-theme="dark"], so light is untouched.
+//
+
+// The logo has a white version for dark; both are in the markup
+// (Components/surface/Logo) and the theme shows one.
+img.rd-logo--dark {
+    display: none;
+}
+
+:root[data-theme="dark"] {
+    img.rd-logo--light {
+        display: none;
+    }
+
+    img.rd-logo--dark {
+        display: inline-block;
+    }
+
+    // SweetAlert2 reads this attribute for its own dark palette (set by lib/theme.ts).
+    --swal2-dark-theme-black: #{$rd-raised};
+    --swal2-dark-theme-white: #{$rd-ink};
+
+    // ------------------------------------------------------------ Page, text
+
+    body {
+        background-color: $rd-ground;
+        color: $rd-body;
+    }
+
+    // Pages in the shell that are not redrawn sit on the ground, cards on top.
+    body[data-layout="horizontal"] {
+        background-color: $rd-ground;
+
+        .main-content {
+            background-color: $rd-ground;
+        }
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    .h1,
+    .h2,
+    .h3,
+    .h4,
+    .h5,
+    .h6 {
+        color: $rd-ink;
+    }
+
+    hr {
+        border-color: $rd-line;
+    }
+
+    .text-muted {
+        color: $rd-muted !important;
+    }
+
+    .text-primary {
+        color: $rd-brand !important;
+    }
+
+    .text-danger {
+        color: $rd-critical !important;
+    }
+
+    // Plain links on the sign-in and error pages.
+    .guest-layout a:not(.btn) {
+        color: $rd-brand-ink;
+    }
+
+    // ------------------------------------------------------ Bootstrap pieces
+
+    .card {
+        border-color: $rd-line;
+        background-color: $rd-panel;
+        color: $rd-body;
+
+        > .card-header {
+            border-bottom-color: $rd-line;
+            background-color: $rd-panel;
+            color: $rd-ink;
+        }
+    }
+
+    .form-label {
+        color: $rd-ink;
+    }
+
+    .form-control,
+    .form-select,
+    .input-group-text {
+        border-color: $rd-control;
+        background-color: $rd-panel;
+        color: $rd-ink;
+
+        &::placeholder {
+            color: $rd-muted;
+            opacity: 1;
+        }
+
+        &:focus {
+            border-color: $rd-brand;
+            background-color: $rd-panel;
+            box-shadow: $rd-focus;
+            color: $rd-ink;
+        }
+
+        &:disabled,
+        &[readonly] {
+            background-color: $rd-row-alt;
+            color: $rd-ink-2;
+        }
+    }
+
+    .invalid-feedback {
+        color: $rd-critical;
+    }
+
+    .btn-light {
+        border-color: $rd-control;
+        background-color: $rd-track;
+        color: $rd-body;
+
+        &:hover {
+            border-color: $rd-control-hover;
+            background-color: $rd-track-hover;
+            color: $rd-ink;
+        }
+    }
+
+    .btn-link {
+        color: $rd-brand-ink;
+
+        &:hover {
+            color: $rd-brand-ink-hover;
+        }
+    }
+
+    .btn-close {
+        filter: invert(1) grayscale(1) brightness(1.6);
+    }
+
+    .table {
+        --bs-table-color: #{$rd-body};
+        --bs-table-bg: transparent;
+        --bs-table-border-color: #{$rd-line};
+        --bs-table-striped-bg: #{$rd-row-alt};
+        --bs-table-hover-bg: #{$rd-row-alt};
+        --bs-table-hover-color: #{$rd-ink};
+
+        color: $rd-body;
+        border-color: $rd-line;
+    }
+
+    .table-dark {
+        --bs-table-color: #{$rd-ink};
+        --bs-table-bg: #{$rd-track};
+        --bs-table-border-color: #{$rd-line};
+    }
+
+    .modal-content {
+        border-color: $rd-line;
+        background-color: $rd-raised;
+        color: $rd-body;
+    }
+
+    .modal-header,
+    .modal-footer {
+        border-color: $rd-line;
+    }
+
+    .modal-title {
+        color: $rd-ink;
+    }
+
+    .dropdown-menu {
+        border-color: $rd-line;
+        background-color: $rd-raised;
+        color: $rd-body;
+    }
+
+    .dropdown-item {
+        color: $rd-body;
+
+        &:hover,
+        &:focus {
+            background-color: $rd-track;
+            color: $rd-ink;
+        }
+    }
+
+    .dropdown-divider {
+        border-color: $rd-line;
+    }
+
+    .pagination .page-link {
+        border-color: $rd-line;
+        background-color: $rd-panel;
+        color: $rd-brand-ink;
+
+        &:hover {
+            background-color: $rd-row-alt;
+        }
+    }
+
+    .pagination .page-item.active .page-link {
+        border-color: $rd-brand-fill;
+        background-color: $rd-brand-fill;
+        color: #fff;
+    }
+
+    .pagination .page-item.disabled .page-link {
+        background-color: $rd-panel;
+        color: $rd-muted;
+    }
+
+    // ---------------------------------------------------------- Components
+
+    // The flow's start node is a block on the canvas, not an action, so it
+    // stays a raised card rather than taking the near-white ink fill.
+    .flow-submitted {
+        border: 1px solid $rd-control;
+        background: $rd-raised;
+        color: $rd-ink;
+
+        &__who {
+            color: $rd-ink-2;
+        }
+    }
+
+    .flow-icon--dark {
+        background: $rd-track;
+        color: $rd-ink;
+    }
+
+    .app-toast {
+        border-color: $rd-line;
+    }
+
+    .info-list__label {
+        color: $rd-brand-ink;
+    }
+
+    // The rich-text editor (Components/editor/RichTextEditor).
+    .rich-text {
+        border-color: $rd-control;
+
+        &.is-invalid {
+            border-color: $rd-critical;
+        }
+
+        &__toolbar {
+            border-bottom-color: $rd-control;
+            background: $rd-row-alt;
+        }
+
+        &__button {
+            color: $rd-ink-2;
+
+            &:hover:not(:disabled) {
+                background: $rd-track-hover;
+                color: $rd-ink;
+            }
+
+            &.is-active {
+                background: $rd-brand-tint;
+                color: $rd-brand-ink;
+            }
+        }
+
+        &__content {
+            color: $rd-ink;
+        }
+
+        &--readonly {
+            background: $rd-row-alt;
+        }
+    }
+
+    // ------------------------------------------------------- react-select
+
+    // Its own emotion styles set light-theme colours; ours come after, hence !important.
+    .rs__input-container,
+    .rs__input {
+        color: $rd-ink !important;
+    }
+
+    .rs__multi-value__label {
+        color: $rd-ink !important;
+    }
+
+    .rs__multi-value__remove:hover {
+        background: $rd-critical-tint !important;
+        color: $rd-critical !important;
+    }
+
+    .rs__menu-notice {
+        color: $rd-muted !important;
+    }
+
+    .rs__indicator:hover {
+        color: $rd-ink !important;
+    }
+
+    .rs__option--is-focused {
+        color: $rd-ink !important;
+    }
+}

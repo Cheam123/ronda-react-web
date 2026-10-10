@@ -28,10 +28,10 @@
     align-items: flex-start;
     gap: 12px;
     padding: 14px 16px;
-    background: #fff;
+    background: $rd-raised;
     border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(17, 24, 39, 0.12), 0 2px 6px rgba(17, 24, 39, 0.08);
-    border: 1px solid rgba(17, 24, 39, 0.06);
+    box-shadow: 0 10px 30px rgba(var(--rd-shade), 0.12), 0 2px 6px rgba(var(--rd-shade), 0.08);
+    border: 1px solid rgba(var(--rd-shade), 0.06);
     overflow: hidden;
     font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     transform: translateX(120%);
@@ -70,14 +70,14 @@
     &__title {
         font-size: 13.5px;
         font-weight: 700;
-        color: #111827;
+        color: $rd-ink;
         margin-bottom: 2px;
         line-height: 1.3;
     }
 
     &__msg {
         font-size: 13px;
-        color: #4b5563;
+        color: $rd-ink-2;
         line-height: 1.45;
         word-break: break-word;
     }
@@ -87,7 +87,7 @@
         background: none;
         border: none;
         cursor: pointer;
-        color: #9ca3af;
+        color: $rd-muted;
         font-size: 18px;
         line-height: 1;
         padding: 2px 4px;
@@ -96,8 +96,8 @@
         transition: color 0.15s ease, background 0.15s ease;
 
         &:hover {
-            color: #374151;
-            background: rgba(17, 24, 39, 0.05);
+            color: $rd-body;
+            background: $rd-track;
         }
     }
 

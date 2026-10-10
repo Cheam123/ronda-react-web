@@ -1,11 +1,32 @@
 import type { ChartOptions } from 'chart.js';
+import type { Theme } from './theme';
 
 /**
  * Chart.js settings shared by the surface pages' bar charts, matching
- * resources/scss/ronda/_surface.scss. The series pair (blue / ochre) was
- * checked for colour-blind separation and 3:1 contrast on white.
+ * resources/scss/ronda/_surface.scss. Chart.js draws on a canvas, so it
+ * cannot read the CSS custom properties; each theme has its own set. The
+ * series pair (blue / ochre) was checked for colour-blind separation and 3:1
+ * contrast on the panel, in both themes.
  */
-export const CHART = {
+export interface ChartColors {
+    brand: string;
+    /** The bar still being filled (today, this month): lighter on white, dimmer on dark. */
+    brandToday: string;
+    brandPast: string;
+    ochre: string;
+    ink: string;
+    ink2: string;
+    muted: string;
+    grid: string;
+    axis: string;
+    tooltipBg: string;
+    tooltipBorder: string;
+    font: string;
+}
+
+const FONT = "'Instrument Sans', system-ui, sans-serif";
+
+const LIGHT: ChartColors = {
     brand: '#0D729E',
     brandToday: '#9CC3D5',
     brandPast: '#7FB0C6',
@@ -15,8 +36,27 @@ export const CHART = {
     muted: '#6B6A64',
     grid: '#EEEDE6',
     axis: '#D6D4CB',
-    font: "'Instrument Sans', system-ui, sans-serif",
+    tooltipBg: '#FFFFFF',
+    tooltipBorder: 'rgba(21, 23, 26, 0.15)',
+    font: FONT,
 };
+
+const DARK: ChartColors = {
+    brand: '#47B0DD',
+    brandToday: '#2D7EA3',
+    brandPast: '#2D7EA3',
+    ochre: '#E0A25C',
+    ink: '#F2F4F7',
+    ink2: '#A9B1BF',
+    muted: '#8B95A7',
+    grid: '#1F2837',
+    axis: '#2F394A',
+    tooltipBg: '#1A2230',
+    tooltipBorder: 'rgba(255, 255, 255, 0.14)',
+    font: FONT,
+};
+
+export const chartColors = (theme: Theme): ChartColors => (theme === 'dark' ? DARK : LIGHT);
 
 /** Bars with rounded tops sitting on the baseline. */
 export const BAR_STYLE = {
@@ -26,6 +66,7 @@ export const BAR_STYLE = {
 };
 
 interface BarOptions {
+    colors: ChartColors;
     /** A value in the tooltip: "RM 1,850.00". */
     format?: (value: number) => string;
     /** A value on the y axis: "2K". */
@@ -38,11 +79,12 @@ interface BarOptions {
 
 /** A bar chart with a recessive grid, no legend (the panel names the series) and a white tooltip. */
 export function barOptions({
+    colors: CHART,
     format = String,
     formatTick,
     titles,
     keepLabels = false,
-}: BarOptions = {}): ChartOptions<'bar'> {
+}: BarOptions): ChartOptions<'bar'> {
     return {
         responsive: true,
         maintainAspectRatio: false,
@@ -50,10 +92,10 @@ export function barOptions({
         plugins: {
             legend: { display: false },
             tooltip: {
-                backgroundColor: '#FFFFFF',
+                backgroundColor: CHART.tooltipBg,
                 titleColor: CHART.ink,
                 bodyColor: CHART.ink2,
-                borderColor: 'rgba(21, 23, 26, 0.15)',
+                borderColor: CHART.tooltipBorder,
                 borderWidth: 1,
                 padding: 10,
                 boxWidth: 10,

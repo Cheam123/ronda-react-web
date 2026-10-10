@@ -1,6 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import type { ReactNode } from 'react';
 import FlashMessages from '@/Components/feedback/FlashMessages';
+import Logo from '@/Components/surface/Logo';
 
 interface GuestLayoutProps {
     title: string;
@@ -20,7 +21,7 @@ export default function GuestLayout({ title, wide = false, children }: GuestLayo
                 <div className="container">
                     <div className="text-center">
                         <Link href="/index" className="mb-5 d-inline-block auth-logo">
-                            <img src="/assets/brand/ronda-logo.svg" alt="Ronda" height={60} className="logo" />
+                            <Logo alt="Ronda" height={60} className="logo" />
                         </Link>
                     </div>
                     <div className="row align-items-center justify-content-center">

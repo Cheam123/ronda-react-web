@@ -1,6 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { useEffect, useState, type ReactNode } from 'react';
 import FlashMessages from '@/Components/feedback/FlashMessages';
+import Logo from '@/Components/surface/Logo';
 import { useBodyAttributes } from '@/hooks/useBodyAttributes';
 import Breadcrumbs, { type BreadcrumbTrail } from './partials/Breadcrumbs';
 import { NavBar, NavSheet } from './partials/NavMenu';
@@ -37,7 +38,7 @@ export default function AppLayout({ title, breadcrumb, children }: AppLayoutProp
                 <header className="rd-topbar">
                     <div className="rd-topbar__inner">
                         <Link href="/index" className="rd-topbar__brand">
-                            <img src="/assets/brand/ronda-logo.svg" alt="Ronda, home" height={26} />
+                            <Logo alt="Ronda, home" height={26} />
                         </Link>
 
                         <NavBar />
