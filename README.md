@@ -1,13 +1,14 @@
 # Ronda web
 
-Laravel 9 back end with a React front end. Controllers return
+Laravel 13 back end with a React front end. Controllers return
 [Inertia](https://inertiajs.com) responses (`Inertia::render('Tasks/Index', [...])`)
 instead of Blade views; the page components live in `resources/js/Pages`.
 
 ## Stack
 
-- Laravel 9, `inertiajs/inertia-laravel`, Ziggy (`route()` in TypeScript)
-- React 18 + TypeScript (strict), built with Vite
+- PHP 8.3+, Laravel 13, `inertiajs/inertia-laravel` 2, Ziggy (`route()` in TypeScript)
+- [Laravel AI SDK](https://laravel.com/docs/13.x/ai-sdk) (`laravel/ai`), configured in `config/ai.php`
+- React 18 + TypeScript (strict), Inertia 2, built with Vite
 - Bootstrap 5 with the Minible theme SCSS (`resources/scss`)
 
 ## Getting started
@@ -20,6 +21,20 @@ php artisan migrate   # needs a configured .env (none is committed)
 npm run dev          # Vite dev server with hot reload
 php artisan serve
 ```
+
+## AI
+
+Two ways to call a model:
+
+- `App\Services\Ai\ClaudeClient` — Claude on Amazon Bedrock through the
+  Anthropic PHP SDK. Used by the daily digest, recommendation explanations and
+  the outlet assistant; settings are in `config/ife.php` (`bedrock.*`).
+- The Laravel AI SDK — agents, tools, structured output, embeddings and more
+  across providers. Set the provider's key in `.env` (`ANTHROPIC_API_KEY`,
+  `OPENAI_API_KEY`, …; the Bedrock provider reads the same `AWS_*` variables as
+  above) and choose the default provider in `config/ai.php`. Create an agent
+  with `php artisan make:agent Name`; conversations are stored in the
+  `agent_conversations` tables (`php artisan migrate`).
 
 ## Scripts
 
