@@ -14,6 +14,9 @@ use App\Models\Leads;
 use App\Models\States;
 use App\Models\Cities;
 use App\Models\IFEReport;
+use App\Models\OutletRecommendation;
+use App\Models\Tasks;
+use App\Services\TaskRisk;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -97,12 +100,72 @@ class LeadController extends Controller
             $query->where('created_at', '<=', $to);
         }
       
+        // One search box: name, shop, mobile or customer ID.
+        if ($request->filled('search')) {
+            $keyword = $request->input('search');
+            $query->where(fn ($q) => $q->where('name', 'like', "%{$keyword}%")
+                ->orWhere('business_name', 'like', "%{$keyword}%")
+                ->orWhere('mobile', 'like', "%{$keyword}%")
+                ->orWhere('customer_id', 'like', "%{$keyword}%"));
+        }
+
+        // The outlet's area (the manager's area filter).
+        $query->when($request->input('area'), fn ($q, $area) => $q->where('ife_area_id', $area));
+
+        // Counts for the chips (All, Customers, Prospects, Suggestions), before
+        // the kind or suggestions filter narrows the list.
+        $suggestedIds = OutletRecommendation::where('estimated_monthly_value', '>', 0)->pluck('lead_id');
+        $counts = [
+            'all'       => (clone $query)->count(),
+            'customer'  => (clone $query)->whereNotNull('customer_id')->count(),
+            'prospect'  => (clone $query)->whereNull('customer_id')->count(),
+            'suggested' => (clone $query)->whereIn('id', $suggestedIds)->count(),
+        ];
+
+        // Customer (has a customer ID) or prospect, and outlets with suggestions.
+        $query->when($request->input('kind') === 'customer', fn ($q) => $q->whereNotNull('customer_id'));
+        $query->when($request->input('kind') === 'prospect', fn ($q) => $q->whereNull('customer_id'));
+        $query->when($request->boolean('suggested'), fn ($q) => $q->whereIn('id', $suggestedIds));
+
         // 4. EXECUTE THE QUERY AND PAGINATE
-        $perPage    = $request->input('per_page', 10);
-        $leads      = $query->orderBy('created_at', 'desc')->paginate($perPage);
+        $perPage = (int) $request->input('per_page', 10);
+        $page    = max(1, (int) $request->input('page', 1));
+
+        if ($request->input('sort') === 'open_work') {
+            // Open work first: overdue, then at risk, then due today, then any
+            // open task; the rest by name. Needs every match, so sort in memory.
+            $all  = $query->get();
+            $work = $this->openWork($request->user(), $all->pluck('id'));
+            $all  = $all->sortBy(function ($lead) use ($work) {
+                $w    = $work[$lead->id] ?? null;
+                $rank = !$w ? 4 : ($w['overdue'] ? 0 : ($w['at_risk'] ? 1 : ($w['due_today'] ? 2 : ($w['open_tasks'] ? 3 : 4))));
+
+                return [$rank, $w['next_due_at'] ?? '9999', mb_strtolower($lead->business_name ?: $lead->name)];
+            })->values();
+            $total = $all->count();
+            $items = $all->slice(($page - 1) * $perPage, $perPage)->values();
+            $pagination = [
+                'total'        => $total,
+                'per_page'     => $perPage,
+                'current_page' => $page,
+                'last_page'    => max(1, (int) ceil($total / max(1, $perPage))),
+            ];
+        } else {
+            $leads = $query->orderBy('created_at', 'desc')->paginate($perPage);
+            $items = collect($leads->items());
+            $work  = $this->openWork($request->user(), $items->pluck('id'));
+            $pagination = [
+                'total'         => $leads->total(),
+                'per_page'      => $leads->perPage(),
+                'current_page'  => $leads->currentPage(),
+                'last_page'     => $leads->lastPage(),
+            ];
+        }
+
+        $extras = $this->listExtras($items->pluck('id'));
 
         $data = [];
-        $data['leads']          = $leads->map(function ($lead) {
+        $data['leads']          = $items->map(function ($lead) use ($work, $extras) {
             return [
                 'id'                    => $lead->id,
                 'name'                  => $lead->name,
@@ -125,14 +188,16 @@ class LeadController extends Controller
                 'postcode'              => $lead->postcode,
                 'remarks'               => $lead->remark,
                 'created_at'            => $lead->created_at->toDateString(),
-            ] + $this->outletProfile($lead);
+                // Customer once it has a customer ID; a prospect before that.
+                'kind'                  => $lead->customer_id ? 'customer' : 'prospect',
+                'customer_id'           => $lead->customer_id,
+                'last_visit_at'         => $extras['visits'][$lead->id] ?? null,
+                'suggested_count'       => $extras['suggested'][$lead->id]['count'] ?? 0,
+                'suggested_value'       => $extras['suggested'][$lead->id]['value'] ?? 0,
+            ] + ($work[$lead->id] ?? self::NO_WORK) + $this->outletProfile($lead);
         });
-        $data['pagination']    = [
-            'total'         => $leads->total(),
-            'per_page'      => $leads->perPage(),
-            'current_page'  => $leads->currentPage(),
-            'last_page'     => $leads->lastPage(),  
-        ];
+        $data['pagination']    = $pagination;
+        $data['counts']        = $counts;
         // 5. RETURN THE PAGINATED RESPONSE
         return $this->response_ok($data, 'Leads retrieved successfully.');
     }
@@ -173,6 +238,9 @@ class LeadController extends Controller
                 'remarks'               => $lead->remark,
                 'attachments'           => Helper::map_document_uploads($lead->documentUploads),
                 'created_at'            => $lead->created_at->toDateString(),
+                // Customer once it has a customer ID; a prospect before that.
+                'customer_id'           => $lead->customer_id,
+                'kind'                  => $lead->customer_id ? 'customer' : 'prospect',
             ];
 
             return $this->response_success($data, 'Lead retrieved successfully.');
@@ -434,6 +502,8 @@ class LeadController extends Controller
                 'next_followup_date'  => $visit->next_followup_date,
                 'next_followup_plan'  => $visit->next_followup_plan,
                 'task_id'             => $visit->task_id,
+                // The location stamp as written by the app, or the place typed.
+                'location'            => $visit->location,
             ])->values(),
         ], 'Lead visits retrieved successfully.');
     }
@@ -517,6 +587,66 @@ class LeadController extends Controller
         }
 
         return Leads::visibleTo($request->user())->find($leadId);
+    }
+
+    private const NO_WORK = ['open_tasks' => 0, 'overdue' => 0, 'at_risk' => 0, 'due_today' => 0, 'next_due_at' => null];
+
+    /**
+     * Open work per outlet: the tasks the caller can see that are New or In
+     * Progress, with the same risk check the dashboard uses.
+     *
+     * @return array<int, array{open_tasks: int, overdue: int, at_risk: int, due_today: int, next_due_at: ?string}>
+     */
+    private function openWork(User $user, $leadIds): array
+    {
+        if (collect($leadIds)->isEmpty()) {
+            return [];
+        }
+
+        $risk  = TaskRisk::fromConfig();
+        $now   = now();
+        $today = $now->toDateString();
+
+        return Tasks::visibleTo($user)
+            ->whereIn('lead_id', $leadIds)
+            ->whereIn('status', TaskRisk::OPEN_STATUSES)
+            ->get(['id', 'lead_id', 'status', 'start_date', 'start_time', 'due_date', 'due_time', 'creation_date'])
+            ->groupBy('lead_id')
+            ->map(function ($tasks) use ($risk, $now, $today) {
+                $levels = $tasks->map(fn (Tasks $t) => $risk->assessTask($t, $now));
+                $next   = $levels->pluck('due_at')->filter()->sort()->first();
+
+                return [
+                    'open_tasks'  => $tasks->count(),
+                    'overdue'     => $levels->where('level', TaskRisk::OVERDUE)->count(),
+                    'at_risk'     => $levels->where('level', TaskRisk::AT_RISK)->count(),
+                    'due_today'   => $tasks->filter(fn (Tasks $t) => $t->due_date && Carbon::parse($t->due_date)->toDateString() === $today)->count(),
+                    'next_due_at' => optional($next)->toDateTimeString(),
+                ];
+            })
+            ->all();
+    }
+
+    /** Last visit and suggested products per outlet, for the list rows. */
+    private function listExtras($leadIds): array
+    {
+        $visits = IFEReport::whereIn('lead_id', $leadIds)
+            ->selectRaw('lead_id, MAX(created_at) as last_visit_at')
+            ->groupBy('lead_id')
+            ->pluck('last_visit_at', 'lead_id')
+            ->map(fn ($at) => $at ? Carbon::parse($at)->toDateTimeString() : null)
+            ->all();
+
+        $suggested = OutletRecommendation::whereIn('lead_id', $leadIds)
+            ->where('estimated_monthly_value', '>', 0)
+            ->get(['lead_id', 'items', 'estimated_monthly_value'])
+            ->mapWithKeys(fn ($row) => [$row->lead_id => [
+                'count' => count($row->items ?? []),
+                'value' => (float) $row->estimated_monthly_value,
+            ]])
+            ->all();
+
+        return ['visits' => $visits, 'suggested' => $suggested];
     }
 
     /** Outlet profile fields shared by the list and detail responses. */

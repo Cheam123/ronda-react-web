@@ -165,6 +165,8 @@ export interface FormSettings {
 export interface Person {
     id: number;
     name: string;
+    /** False for a deactivated person: named in past answers, not offered in a picker. */
+    active?: boolean;
 }
 
 export interface GpsAnswer {

@@ -4,34 +4,39 @@ import FlashMessages from '@/Components/feedback/FlashMessages';
 import Logo from '@/Components/surface/Logo';
 
 interface GuestLayoutProps {
+    /** The browser tab title. */
     title: string;
-    /** Width of the centred card column. */
-    wide?: boolean;
+    /** The card's heading. */
+    heading: string;
+    /** A line under the heading. */
+    lede?: ReactNode;
     children: ReactNode;
 }
 
-/** Signed-out pages (login, password reset): a logo over a centred card. */
-export default function GuestLayout({ title, wide = false, children }: GuestLayoutProps) {
+/** Signed-out pages (sign in, password reset): the logo over one card on the grey ground. */
+export default function GuestLayout({ title, heading, lede, children }: GuestLayoutProps) {
     return (
         <>
             <Head title={title} />
             <FlashMessages />
 
-            <div className="guest-layout account-pages pt-5">
-                <div className="container">
-                    <div className="text-center">
-                        <Link href="/index" className="mb-5 d-inline-block auth-logo">
-                            <Logo alt="Ronda" height={60} className="logo" />
-                        </Link>
-                    </div>
-                    <div className="row align-items-center justify-content-center">
-                        <div className={wide ? 'col-md-10 col-lg-8' : 'col-md-8 col-lg-6 col-xl-5'}>
-                            {children}
-                            <p className="mt-5 text-center text-muted">© {new Date().getFullYear()} Ronda</p>
+            <main className="rd-guest">
+                <div className="rd-guest__column">
+                    <Link href="/index" className="rd-guest__logo">
+                        <Logo alt="Ronda" height={40} />
+                    </Link>
+                    <section className="rd-guest__card" aria-labelledby="rd-guest-title">
+                        <div className="rd-guest__head">
+                            <h1 id="rd-guest-title" className="rd-guest__title">
+                                {heading}
+                            </h1>
+                            {lede && <p className="rd-guest__lede">{lede}</p>}
                         </div>
-                    </div>
+                        {children}
+                    </section>
+                    <p className="rd-guest__foot">© {new Date().getFullYear()} Ronda</p>
                 </div>
-            </div>
+            </main>
         </>
     );
 }

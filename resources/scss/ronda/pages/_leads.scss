@@ -47,6 +47,46 @@
     @media (max-width: 1199.98px) {
         grid-template-columns: minmax(0, 1fr);
     }
+
+    // Room under the last panel for the bar at the foot of a phone screen.
+    @media (max-width: 767.98px) {
+        &--with-bar {
+            padding-bottom: 76px;
+        }
+    }
+}
+
+// Phones: Add task and Record order in reach of the thumb, at the foot of the
+// screen, instead of in the header's wrapped block of buttons.
+.lead-actionbar {
+    display: none;
+
+    @media (max-width: 767.98px) {
+        position: fixed;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        z-index: 1020;
+        display: grid;
+        grid-auto-columns: minmax(0, 1fr);
+        grid-auto-flow: column;
+        gap: 8px;
+        padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+        border-top: 1px solid $rd-line;
+        background: $rd-panel;
+        box-shadow: 0 -8px 24px -12px rgba(var(--rd-shade), 0.18);
+    }
+}
+
+@media (max-width: 767.98px) {
+    .lead-head__visit-action {
+        display: none;
+    }
+
+    // Keep "back to top" clear of the bar.
+    body:has(.lead-actionbar) .scroll-to-top {
+        bottom: 88px;
+    }
 }
 
 .lead-activity {
@@ -122,6 +162,16 @@
         strong {
             color: $rd-ink;
         }
+    }
+
+    // "Start an order with 3 products", above the suggestions it is made from.
+    &__order {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px 14px;
+        padding: 14px 24px;
+        border-bottom: 1px solid $rd-line;
     }
 
     &__why {
@@ -703,6 +753,84 @@
         border-bottom: 0;
         font-size: 15px;
     }
+
+    td .rd-field__error {
+        margin-top: 6px;
+    }
+
+    // A line started from the outlet's suggested orders.
+    &__suggested {
+        display: inline-flex;
+        margin-top: 6px;
+        padding: 2px 8px;
+        border-radius: 6px;
+        background: $rd-brand-tint;
+        color: $rd-brand-ink;
+        font-size: 12px;
+        font-weight: 500;
+    }
+}
+
+// Phones (rd-table--stack): the product across with Remove beside it, then
+// quantity, price and total side by side, each headed; the total on one line.
+// Written against the stack rules' own selector, which it has to outrank.
+@media (max-width: 767.98px) {
+    .rd-table.rd-table--stack.order-lines {
+        tbody tr {
+            grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+        }
+
+        tbody tr .order-lines__product {
+            grid-column: 1 / 4;
+            grid-row: 1;
+        }
+
+        tbody tr .order-lines__remove {
+            grid-column: 4;
+            grid-row: 1;
+            margin: 0;
+        }
+
+        tbody tr .order-lines__quantity {
+            grid-column: 1;
+        }
+
+        tbody tr .order-lines__price {
+            grid-column: 2;
+        }
+
+        tbody tr .order-lines__total {
+            grid-column: 3 / 5;
+        }
+
+        tbody tr .order-lines__quantity,
+        tbody tr .order-lines__price,
+        tbody tr .order-lines__total {
+            display: block;
+            grid-row: 2;
+
+            &::before {
+                display: block;
+                margin-bottom: 4px;
+            }
+        }
+
+        // Fill the cell: the card rule starts every cell's content at the left edge.
+        .order-lines__qty {
+            justify-self: stretch;
+            min-width: 0;
+        }
+
+        tfoot tr {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 16px;
+        }
+
+        tfoot td:empty {
+            display: none;
+        }
+    }
 }
 
 .order-summary {
@@ -797,6 +925,11 @@
 }
 
 .area-row {
+    &__error {
+        margin-top: 6px;
+        padding-left: 22px;
+    }
+
     &__fields {
         display: flex;
         align-items: center;

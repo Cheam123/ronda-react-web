@@ -3,6 +3,7 @@ import clsx from 'clsx';
 import { useState, type FormEvent, type ReactNode } from 'react';
 import PageHeader from '@/Components/surface/PageHeader';
 import SurfacePage from '@/Components/surface/SurfacePage';
+import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
 import AppLayout from '@/Layouts/AppLayout';
 import { formatMoney, formatNumber, pluralize, truncate } from '@/lib/format';
 import type { PageProps } from '@/types';
@@ -73,7 +74,9 @@ export default function ProductForm({ product, categories, units }: ProductFormP
         description: product.description ?? '',
         is_active: product.is_active,
     });
-    const { data, post, processing, errors, transform } = form;
+    const { data, post, processing, errors, transform, isDirty } = form;
+
+    useUnsavedChanges(isDirty, product.name ?? undefined);
 
     // Editing a field clears its error from the last save.
     const setData = <K extends keyof typeof data>(field: K, value: (typeof data)[K]) => {
@@ -107,6 +110,7 @@ export default function ProductForm({ product, categories, units }: ProductFormP
             <SurfacePage>
                 <PageHeader
                     crumbs={[
+                        { label: 'Home', href: '/index' },
                         { label: 'Admin' },
                         { label: 'Products', href: route('product.index') },
                         ...(isNew ? [] : [{ label: product.name ?? '', href: route('product.view', product.id!) }]),
@@ -375,9 +379,7 @@ export default function ProductForm({ product, categories, units }: ProductFormP
                                             >
                                                 {data.name || 'Product name'}
                                             </span>
-                                            <span className="rd-mono rd-muted" style={{ fontSize: 11 }}>
-                                                {data.sku || 'SKU'}
-                                            </span>
+                                            <span className="rd-mono rd-muted">{data.sku || 'SKU'}</span>
                                         </div>
                                         <span className="prod-preview__price">
                                             {currency} {formatMoney(data.unit_price || 0)}

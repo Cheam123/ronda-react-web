@@ -121,7 +121,7 @@ export default function RetireDialog({ product, recommendedCount, onClose }: Ret
                         <div className="d-flex align-items-center justify-content-between gap-3">
                             <span className="d-flex flex-column" style={{ minWidth: 0 }}>
                                 <span className="fw-semibold">{shown.name}</span>
-                                <span className="rd-mono rd-muted" style={{ fontSize: 11 }}>
+                                <span className="rd-mono rd-muted">
                                     {shown.sku}
                                     {shown.category && ` · ${shown.category}`} &middot; {currency}{' '}
                                     {formatMoney(shown.unit_price)} / {shown.unit}

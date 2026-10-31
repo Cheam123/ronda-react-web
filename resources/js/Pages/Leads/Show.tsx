@@ -5,8 +5,10 @@ import DocumentList from '@/Components/documents/DocumentList';
 import GpsStampField from '@/Components/form/GpsStampField';
 import Initials from '@/Components/surface/Initials';
 import PageHeader from '@/Components/surface/PageHeader';
+import TabList from '@/Components/surface/TabList';
 import SurfacePage from '@/Components/surface/SurfacePage';
 import { useAuth } from '@/hooks/useAuth';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 import AppLayout from '@/Layouts/AppLayout';
 import { formatPhone, phoneHref } from '@/lib/phone';
 import { areaHue, tagClass } from '@/lib/tags';
@@ -102,13 +104,113 @@ export default function ShowLead({
     const place = [lead.postcode, labelOf(options.cities, lead.city_id)].filter(Boolean).join(' ');
     const state = labelOf(options.states, lead.state_id);
 
+    const canAddTask = can('add_task') && lead.taskable;
+    const canOrder = can('record_order');
+    const narrow = useMediaQuery('(max-width: 1199.98px)');
+    // On a phone the bar at the foot holds the page's main button, so Edit outlet steps down.
+    const barShown = useMediaQuery('(max-width: 767.98px)') && (canAddTask || canOrder);
+
+    const activity = (
+        <section className="rd-panel rd-panel--flush lead-activity" aria-label="Activity">
+            <TabList
+                id="outlet-activity"
+                label="Activity"
+                className="lead-activity__tabs"
+                tabs={tabs}
+                value={tab}
+                onChange={setTab}
+            />
+            <div role="tabpanel" id="outlet-activity-panel" aria-labelledby={`outlet-activity-tab-${tab}`}>
+                {tab === 'tasks' && <TaskHistories tasks={tasks} />}
+                {tab === 'visits' && <VisitHistory visits={visits} />}
+                {tab === 'orders' && <OrderHistory orders={orders} />}
+                {tab === 'suggested' && recommendation && (
+                    <SuggestedOrders recommendation={recommendation} leadId={lead.id} />
+                )}
+            </div>
+        </section>
+    );
+
+    const beforeVisit = (
+        <>
+            <VisitBrief
+                leadId={lead.id}
+                brief={brief}
+                available={assistant.available}
+                onFollowUp={() => setFollowingUp(true)}
+            />
+            <Panel title="Details">
+                <dl className="rd-facts">
+                    <Fact label="Company">{lead.name}</Fact>
+                    <Fact label="Mobile">
+                        {lead.mobile &&
+                            (phone ? (
+                                <a href={phone} className="rd-facts__phone">
+                                    <i className="mdi mdi-phone-outline" aria-hidden="true" />
+                                    {formatPhone(lead.mobile)}
+                                </a>
+                            ) : (
+                                formatPhone(lead.mobile)
+                            ))}
+                    </Fact>
+                    <Fact label="Email">{lead.email && <a href={`mailto:${lead.email}`}>{lead.email}</a>}</Fact>
+                    <Fact label="Category">{labelOf(options.businessCategories, lead.business_category)}</Fact>
+                    <Fact label="Source">{labelOf(options.sources, lead.source)}</Fact>
+                    <Fact label="Received">
+                        {lead.receiving_date && LONG_DATE.format(new Date(`${lead.receiving_date}T00:00:00`))}
+                    </Fact>
+                    <Fact label="Created by">{lead.created_by}</Fact>
+                </dl>
+            </Panel>
+            <Panel title="Where" side={area && <span className={tagClass(areaHue(area.value))}>{area.label}</span>}>
+                {lead.address || place || state ? (
+                    <p className="lead-where">
+                        {lead.address}
+                        {(place || state) && (
+                            <>
+                                {lead.address && <br />}
+                                {[place, state].filter(Boolean).join(', ')}
+                            </>
+                        )}
+                    </p>
+                ) : (
+                    <p className="rd-muted mb-0">No address yet.</p>
+                )}
+                <GpsStampField value={lead.gps} onChange={() => undefined} readOnly />
+            </Panel>
+        </>
+    );
+
+    const background = (
+        <>
+            <Panel title="Outlet profile">
+                <div className="lead-profile">
+                    <ProfileCell label="Size" value={labelOf(options.sizeBands, lead.size_band)} />
+                    <ProfileCell label="Seats" value={lead.seats === null ? null : String(lead.seats)} />
+                    <ProfileCell label="Segment" value={labelOf(options.segments, lead.segment)} />
+                </div>
+                <p className="lead-profile__note">Suggested orders compare outlets on these and the location.</p>
+            </Panel>
+
+            {lead.remark && (
+                <Panel title="Remark">
+                    <p className="lead-remark">{lead.remark}</p>
+                </Panel>
+            )}
+
+            <Panel title="Documents" count={documents.length}>
+                <DocumentList documents={documents} />
+            </Panel>
+        </>
+    );
+
     return (
         <AppLayout title={title}>
             <SurfacePage>
                 <PageHeader
                     crumbs={[
                         { label: 'Home', href: '/index' },
-                        { label: 'Lead/Customer', href: route('lead.index') },
+                        { label: 'Outlets', href: route('lead.index') },
                         { label: title },
                     ]}
                     leading={<Initials name={title} colorKey={lead.id} size="xl" />}
@@ -147,20 +249,30 @@ export default function ShowLead({
                                 <i className="mdi mdi-message-text-outline" aria-hidden="true" />
                                 Ask Ronda
                             </button>
-                            {can('add_task') && lead.taskable && (
-                                <Link href={route('tasks.create', { id: lead.id })} className="rd-btn rd-btn--lg">
+                            {/* On phones these two move to the bar at the foot of the screen. */}
+                            {canAddTask && (
+                                <Link
+                                    href={route('tasks.create', { id: lead.id })}
+                                    className="rd-btn rd-btn--lg lead-head__visit-action"
+                                >
                                     <i className="mdi mdi-playlist-plus" aria-hidden="true" />
                                     Add task
                                 </Link>
                             )}
-                            {can('record_order') && (
-                                <Link href={route('lead.orders.create', lead.id)} className="rd-btn rd-btn--lg">
+                            {canOrder && (
+                                <Link
+                                    href={route('lead.orders.create', lead.id)}
+                                    className="rd-btn rd-btn--lg lead-head__visit-action"
+                                >
                                     <i className="mdi mdi-cart-plus" aria-hidden="true" />
                                     Record order
                                 </Link>
                             )}
                             {can('edit_lead') && (
-                                <Link href={route('lead.edit', lead.id)} className="rd-btn rd-btn--primary rd-btn--lg">
+                                <Link
+                                    href={route('lead.edit', lead.id)}
+                                    className={clsx('rd-btn rd-btn--lg', !barShown && 'rd-btn--primary')}
+                                >
                                     <i className="mdi mdi-pencil-outline" aria-hidden="true" />
                                     Edit outlet
                                 </Link>
@@ -169,107 +281,44 @@ export default function ShowLead({
                     }
                 />
 
-                <div className="lead-page">
-                    <section className="rd-panel rd-panel--flush lead-activity" aria-label="Activity">
-                        <nav className="rd-tabs lead-activity__tabs" aria-label="Activity">
-                            {tabs.map((item) => (
-                                <button
-                                    key={item.key}
-                                    type="button"
-                                    className={clsx('rd-tabs__tab', tab === item.key && 'is-active')}
-                                    aria-pressed={tab === item.key}
-                                    onClick={() => setTab(item.key)}
-                                >
-                                    {item.label} <span className="rd-count">{item.count}</span>
-                                </button>
-                            ))}
-                        </nav>
-                        {tab === 'tasks' && <TaskHistories tasks={tasks} />}
-                        {tab === 'visits' && <VisitHistory visits={visits} />}
-                        {tab === 'orders' && <OrderHistory orders={orders} />}
-                        {tab === 'suggested' && recommendation && (
-                            <SuggestedOrders recommendation={recommendation} leadId={lead.id} />
-                        )}
-                    </section>
-
-                    <aside className="lead-page__aside">
-                        <VisitBrief
-                            leadId={lead.id}
-                            brief={brief}
-                            available={assistant.available}
-                            onFollowUp={() => setFollowingUp(true)}
-                        />
-                        <Panel title="Details">
-                            <dl className="rd-facts">
-                                <Fact label="Company">{lead.name}</Fact>
-                                <Fact label="Mobile">
-                                    {lead.mobile &&
-                                        (phone ? (
-                                            <a href={phone} className="rd-facts__phone">
-                                                <i className="mdi mdi-phone-outline" aria-hidden="true" />
-                                                {formatPhone(lead.mobile)}
-                                            </a>
-                                        ) : (
-                                            formatPhone(lead.mobile)
-                                        ))}
-                                </Fact>
-                                <Fact label="Email">
-                                    {lead.email && <a href={`mailto:${lead.email}`}>{lead.email}</a>}
-                                </Fact>
-                                <Fact label="Category">
-                                    {labelOf(options.businessCategories, lead.business_category)}
-                                </Fact>
-                                <Fact label="Source">{labelOf(options.sources, lead.source)}</Fact>
-                                <Fact label="Received">
-                                    {lead.receiving_date &&
-                                        LONG_DATE.format(new Date(`${lead.receiving_date}T00:00:00`))}
-                                </Fact>
-                                <Fact label="Created by">{lead.created_by}</Fact>
-                            </dl>
-                        </Panel>
-
-                        <Panel
-                            title="Where"
-                            side={area && <span className={tagClass(areaHue(area.value))}>{area.label}</span>}
-                        >
-                            {lead.address || place || state ? (
-                                <p className="lead-where">
-                                    {lead.address}
-                                    {(place || state) && (
-                                        <>
-                                            {lead.address && <br />}
-                                            {[place, state].filter(Boolean).join(', ')}
-                                        </>
-                                    )}
-                                </p>
-                            ) : (
-                                <p className="rd-muted mb-0">No address yet.</p>
-                            )}
-                            <GpsStampField value={lead.gps} onChange={() => undefined} readOnly />
-                        </Panel>
-
-                        <Panel title="Outlet profile">
-                            <div className="lead-profile">
-                                <ProfileCell label="Size" value={labelOf(options.sizeBands, lead.size_band)} />
-                                <ProfileCell label="Seats" value={lead.seats === null ? null : String(lead.seats)} />
-                                <ProfileCell label="Segment" value={labelOf(options.segments, lead.segment)} />
-                            </div>
-                            <p className="lead-profile__note">
-                                Suggested orders compare outlets on these and the location.
-                            </p>
-                        </Panel>
-
-                        {lead.remark && (
-                            <Panel title="Remark">
-                                <p className="lead-remark">{lead.remark}</p>
-                            </Panel>
-                        )}
-
-                        <Panel title="Documents" count={documents.length}>
-                            <DocumentList documents={documents} />
-                        </Panel>
-                    </aside>
+                {/* Narrow screens: what a rep needs at the door (the brief, the contact) comes before the history. */}
+                <div className={clsx('lead-page', (canAddTask || canOrder) && 'lead-page--with-bar')}>
+                    {narrow ? (
+                        <>
+                            <div className="lead-page__aside">{beforeVisit}</div>
+                            {activity}
+                            <div className="lead-page__aside">{background}</div>
+                        </>
+                    ) : (
+                        <>
+                            {activity}
+                            <aside className="lead-page__aside">
+                                {beforeVisit}
+                                {background}
+                            </aside>
+                        </>
+                    )}
                 </div>
+
+                {(canAddTask || canOrder) && (
+                    <div className="lead-actionbar" role="group" aria-label={`Act on ${title}`}>
+                        {canAddTask && (
+                            <Link href={route('tasks.create', { id: lead.id })} className="rd-btn rd-btn--lg">
+                                <i className="mdi mdi-playlist-plus" aria-hidden="true" />
+                                Add task
+                            </Link>
+                        )}
+                        {canOrder && (
+                            <Link
+                                href={route('lead.orders.create', lead.id)}
+                                className="rd-btn rd-btn--primary rd-btn--lg"
+                            >
+                                <i className="mdi mdi-cart-plus" aria-hidden="true" />
+                                Record order
+                            </Link>
+                        )}
+                    </div>
+                )}
 
                 <AskRonda
                     show={asking}

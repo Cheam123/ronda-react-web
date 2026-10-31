@@ -30,3 +30,8 @@ public/assets/js/*
 /public/mix-manifest.json
 /CLAUDE.md
 /public/build
+/brag-output
+/CLAUDE_FRONTEND.md
+/tests
+/.claude
+/.agents

@@ -31,7 +31,6 @@
         "react-dom": "^18.3.1",
         "react-dropzone": "^14.3.5",
         "react-select": "^5.9.0",
-        "sweetalert2": "^11.15.10",
         "ziggy-js": "^2.5.0"
     },
     "devDependencies": {

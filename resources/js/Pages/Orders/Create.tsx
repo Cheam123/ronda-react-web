@@ -1,5 +1,5 @@
 import { useForm, usePage } from '@inertiajs/react';
-import { useMemo, type FormEvent } from 'react';
+import { useMemo, useState, type FormEvent } from 'react';
 import Field from '@/Components/form/Field';
 import type { OptionGroup } from '@/Components/form/Select';
 import TextArea from '@/Components/form/TextArea';
@@ -8,6 +8,7 @@ import { FormFoot, FormRow, FormSection } from '@/Components/surface/FormSection
 import PageHeader from '@/Components/surface/PageHeader';
 import SurfacePage from '@/Components/surface/SurfacePage';
 import ErrorSummary from '@/Components/ui/ErrorSummary';
+import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
 import AppLayout from '@/Layouts/AppLayout';
 import { formatMoney, pluralize } from '@/lib/format';
 import type { PageProps } from '@/types';
@@ -17,21 +18,43 @@ import OrderLineRow, { type OrderLine } from './Partials/OrderLineRow';
 const BLANK_LINE: OrderLine = { product_id: '', quantity: '' };
 const REMARK_MAX = 1000;
 
+/** The server drops blank rows before it numbers its errors ("lines.0.quantity"). */
+const isBlank = (line: OrderLine) => line.product_id === '' && line.quantity === '';
+
 interface CreateOrderProps {
     lead: { id: number; name: string | null; business_name: string | null; customer_id: string | null };
     products: Product[];
     today: string;
 }
 
+/**
+ * Starting lines from the outlet's Suggested orders tab: ?suggested=12:6,40:2.5
+ * (product id and quantity). Products no longer in the catalogue are skipped.
+ */
+function suggestedLines(url: string, products: Product[]): OrderLine[] {
+    const param = new URLSearchParams(url.split('?')[1] ?? '').get('suggested') ?? '';
+    const active = new Set(products.map((product) => String(product.id)));
+
+    return param
+        .split(',')
+        .map((pair) => pair.split(':'))
+        .filter(([id, quantity]) => active.has(id) && Number(quantity) > 0)
+        .map(([id, quantity]) => ({ product_id: id, quantity: String(Number(quantity)), suggested: true }));
+}
+
 /** Record what an outlet ordered (lead.orders.store). */
 export default function CreateOrder({ lead, products, today }: CreateOrderProps) {
-    const { currency } = usePage<PageProps>().props.app;
-    const { data, setData, post, processing, errors } = useForm({
+    const { url, props } = usePage<PageProps>();
+    const { currency } = props.app;
+    const [started] = useState(() => suggestedLines(url, products));
+    const { data, setData, post, transform, processing, errors, isDirty } = useForm({
         order_date: today,
         remark: '',
-        lines: [BLANK_LINE],
+        lines: started.length > 0 ? started : [BLANK_LINE],
     });
     const outlet = lead.business_name || lead.name || 'Unnamed outlet';
+
+    useUnsavedChanges(isDirty || started.length > 0, outlet);
 
     const productsById = useMemo(() => new Map(products.map((product) => [String(product.id), product])), [products]);
 
@@ -51,6 +74,26 @@ export default function CreateOrder({ lead, products, today }: CreateOrderProps)
         0,
     );
 
+    // Server error keys count only the lines that were posted; map them back to the rows on screen.
+    const lineErrors = useMemo(() => {
+        const errorBag = errors as Record<string, string | undefined>;
+        const posted = data.lines.map((line, index) => (isBlank(line) ? -1 : index)).filter((index) => index >= 0);
+        const byRow: Record<number, { product?: string; quantity?: string }> = {};
+        posted.forEach((row, sent) => {
+            const product = errorBag[`lines.${sent}.product_id`];
+            const quantity = errorBag[`lines.${sent}.quantity`];
+            if (product || quantity) byRow[row] = { product, quantity };
+        });
+        return { byRow, posted };
+    }, [errors, data.lines]);
+
+    const fieldId = (key: string) => {
+        const match = key.match(/^lines\.(\d+)\.(product_id|quantity)$/);
+        if (!match) return key.replace(/\./g, '-');
+        const row = lineErrors.posted[Number(match[1])] ?? Number(match[1]);
+        return `lines-${row}-${match[2]}`;
+    };
+
     const updateLine = (index: number, line: OrderLine) =>
         setData(
             'lines',
@@ -63,6 +106,11 @@ export default function CreateOrder({ lead, products, today }: CreateOrderProps)
 
     const submit = (event: FormEvent) => {
         event.preventDefault();
+        // "suggested" only marks the row on screen.
+        transform((current) => ({
+            ...current,
+            lines: current.lines.map(({ product_id, quantity }) => ({ product_id, quantity })),
+        }));
         post(route('lead.orders.store', lead.id));
     };
 
@@ -72,7 +120,7 @@ export default function CreateOrder({ lead, products, today }: CreateOrderProps)
                 <PageHeader
                     crumbs={[
                         { label: 'Home', href: '/index' },
-                        { label: 'Lead/Customer', href: route('lead.index') },
+                        { label: 'Outlets', href: route('lead.index') },
                         { label: outlet, href: route('lead.view', lead.id) },
                         { label: 'Record an order' },
                     ]}
@@ -80,7 +128,7 @@ export default function CreateOrder({ lead, products, today }: CreateOrderProps)
                     lede={`What ${outlet} ordered${lead.customer_id ? ` (${lead.customer_id})` : ''}. Prices come from the catalogue when you save.`}
                 />
 
-                <ErrorSummary />
+                <ErrorSummary fieldId={fieldId} />
 
                 {products.length === 0 ? (
                     <p className="rd-notice">
@@ -108,11 +156,15 @@ export default function CreateOrder({ lead, products, today }: CreateOrderProps)
 
                             <FormSection
                                 title="Products"
-                                intro="One line per product. Quantities in the product’s unit."
+                                intro={
+                                    started.length > 0
+                                        ? `Started from ${pluralize(started.length, 'suggested product')}. Change or remove any line.`
+                                        : 'One line per product. Quantities in the product’s unit.'
+                                }
                                 wide
                             >
                                 <div className="rd-scroll">
-                                    <table className="rd-table order-lines">
+                                    <table className="rd-table rd-table--stack order-lines">
                                         <thead>
                                             <tr>
                                                 <th scope="col">Product</th>
@@ -132,10 +184,12 @@ export default function CreateOrder({ lead, products, today }: CreateOrderProps)
                                             {data.lines.map((line, index) => (
                                                 <OrderLineRow
                                                     key={index}
-                                                    number={index + 1}
+                                                    index={index}
                                                     line={line}
                                                     product={productsById.get(line.product_id)}
                                                     productGroups={productGroups}
+                                                    errors={lineErrors.byRow[index] ?? {}}
+                                                    currency={currency}
                                                     onChange={(changed) => updateLine(index, changed)}
                                                     onRemove={() => removeLine(index)}
                                                 />

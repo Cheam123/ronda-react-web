@@ -1,12 +1,14 @@
 import { Link, useForm } from '@inertiajs/react';
 import type { FormEvent } from 'react';
-import AuthField from '@/Components/form/AuthField';
-import Button from '@/Components/ui/Button';
-import ErrorSummary from '@/Components/ui/ErrorSummary';
+import Field from '@/Components/form/Field';
+import PasswordInput from '@/Components/form/PasswordInput';
+import TextInput from '@/Components/form/TextInput';
 import GuestLayout from '@/Layouts/GuestLayout';
 
 export default function Login() {
     const { data, setData, post, processing, errors } = useForm({ email: '', password: '' });
+    // A wrong email or password comes back as one message for the whole form, not either field.
+    const failed = (errors as Record<string, string | undefined>).message;
 
     const submit = (event: FormEvent) => {
         event.preventDefault();
@@ -14,50 +16,48 @@ export default function Login() {
     };
 
     return (
-        <GuestLayout title="Login">
-            <div className="card">
-                <div className="card-body p-4">
-                    <div className="text-center mt-2">
-                        <h5 className="text-primary">Ready for your round?</h5>
-                        <p className="text-muted">Sign in.</p>
+        <GuestLayout title="Sign in" heading="Sign in to Ronda" lede="Ready for your round?">
+            <form className="rd-guest__form" onSubmit={submit} noValidate>
+                {failed && (
+                    <div className="rd-notice rd-notice--critical" role="alert">
+                        <i className="mdi mdi-alert-circle-outline" aria-hidden="true" />
+                        <span>{failed}</span>
                     </div>
-                    <div className="p-2 mt-4">
-                        <ErrorSummary />
-                        <form onSubmit={submit}>
-                            <AuthField
-                                id="email"
-                                label="Email"
-                                type="text"
-                                required
-                                autoComplete="username"
-                                placeholder="Enter Email"
-                                value={data.email}
-                                onChange={(event) => setData('email', event.target.value)}
-                                error={errors.email}
-                            />
-                            <AuthField
-                                id="password"
-                                label="Password"
-                                type="password"
-                                required
-                                autoComplete="current-password"
-                                placeholder="Enter password"
-                                value={data.password}
-                                onChange={(event) => setData('password', event.target.value)}
-                                error={errors.password}
-                            />
-                            <div className="mt-3 d-flex align-items-center justify-content-between">
-                                <Link href={route('password.request')} className="text-muted">
-                                    Forgot password?
-                                </Link>
-                                <Button type="submit" className="w-sm" shadow={false} loading={processing}>
-                                    Log In
-                                </Button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
+                )}
+                <Field label="Email" htmlFor="email" error={errors.email}>
+                    <TextInput
+                        id="email"
+                        type="email"
+                        inputMode="email"
+                        large
+                        required
+                        autoComplete="username"
+                        autoFocus
+                        value={data.email}
+                        onChange={(event) => setData('email', event.target.value)}
+                    />
+                </Field>
+                <Field label="Password" htmlFor="password" error={errors.password}>
+                    <PasswordInput
+                        id="password"
+                        required
+                        autoComplete="current-password"
+                        value={data.password}
+                        onChange={(event) => setData('password', event.target.value)}
+                    />
+                </Field>
+                <button
+                    type="submit"
+                    className="rd-btn rd-btn--primary rd-btn--lg rd-guest__submit"
+                    disabled={processing}
+                >
+                    {processing && <span className="spinner-border spinner-border-sm" aria-hidden="true" />}
+                    Sign in
+                </button>
+                <p className="rd-guest__alt">
+                    <Link href={route('password.request')}>Forgot your password?</Link>
+                </p>
+            </form>
         </GuestLayout>
     );
 }

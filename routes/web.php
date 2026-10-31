@@ -38,6 +38,9 @@ Route::group(['prefix' => 'v1'], function () {
 
     Route::get('/state/{state}/cities', 'API\V1\StatesController@getCities')->name('directories.state');
 
+    # Quick find in the top bar (SearchController checks who may see what).
+    Route::get('/search', 'API\V1\SearchController')->middleware('throttle:60,1')->name('search');
+
     # User Group
     Route::prefix('users')->group(__DIR__ . '/api/users.php');
 

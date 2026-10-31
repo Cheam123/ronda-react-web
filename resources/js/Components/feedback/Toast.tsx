@@ -5,13 +5,13 @@ export type ToastType = 'success' | 'error' | 'warning' | 'info';
 
 const ICONS: Record<ToastType, string> = {
     success: 'mdi mdi-check-bold',
-    error: 'mdi mdi-close-thick',
+    error: 'mdi mdi-alert-circle-outline',
     warning: 'mdi mdi-alert-outline',
     info: 'mdi mdi-information-outline',
 };
 
-/** How long a toast lingers after the pointer leaves it. */
-const RESUME_DELAY = 1200;
+/** How long a toast lingers after the pointer or focus leaves it. */
+const RESUME_DELAY = 1500;
 /** Matches the .app-toast exit transition. */
 const EXIT_DURATION = 350;
 
@@ -20,6 +20,7 @@ interface ToastProps {
     type: ToastType;
     title: string;
     message: string;
+    /** 0 keeps it until it is dismissed (errors). */
     duration: number;
     onDismiss: (id: number) => void;
 }
@@ -54,6 +55,16 @@ export default function Toast({ id, type, title, message, duration, onDismiss }:
         };
     }, [duration, schedule]);
 
+    // Hovering it or tabbing into it holds it, so it can be read and closed.
+    const hold = () => {
+        setPaused(true);
+        window.clearTimeout(timer.current);
+    };
+    const release = () => {
+        setPaused(false);
+        schedule(RESUME_DELAY);
+    };
+
     return (
         <div
             className={clsx('app-toast', `app-toast--${type}`, {
@@ -61,24 +72,20 @@ export default function Toast({ id, type, title, message, duration, onDismiss }:
                 hide: phase === 'leaving',
             })}
             role={type === 'error' ? 'alert' : 'status'}
-            onMouseEnter={() => {
-                setPaused(true);
-                window.clearTimeout(timer.current);
-            }}
-            onMouseLeave={() => {
-                setPaused(false);
-                schedule(RESUME_DELAY);
-            }}
+            onMouseEnter={hold}
+            onMouseLeave={release}
+            onFocus={hold}
+            onBlur={release}
         >
             <span className="app-toast__icon">
-                <i className={ICONS[type]} />
+                <i className={ICONS[type]} aria-hidden="true" />
             </span>
             <div className="app-toast__body">
                 {title && <div className="app-toast__title">{title}</div>}
                 <div className="app-toast__msg">{message}</div>
             </div>
             <button type="button" className="app-toast__close" aria-label="Dismiss" onClick={dismiss}>
-                &times;
+                <i className="mdi mdi-close" aria-hidden="true" />
             </button>
             {duration > 0 && (
                 <div

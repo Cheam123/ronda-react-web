@@ -55,8 +55,6 @@ function snapshot(): ThemeState {
 function paint({ theme }: ThemeState) {
     const root = document.documentElement;
     root.dataset.theme = theme;
-    // SweetAlert2 keys its own dark palette off this attribute.
-    root.dataset.swal2Theme = theme;
     root.style.colorScheme = theme;
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', CHROME_COLOR[theme]);
 }

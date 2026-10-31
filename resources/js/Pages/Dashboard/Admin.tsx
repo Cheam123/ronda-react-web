@@ -1,5 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
-import Initials from '@/Components/surface/Initials';
+import Dropdown from 'react-bootstrap/Dropdown';
+import ChangeChip from '@/Components/surface/ChangeChip';
 import PageHeader from '@/Components/surface/PageHeader';
 import SurfacePage from '@/Components/surface/SurfacePage';
 import { useAuth } from '@/hooks/useAuth';
@@ -7,8 +8,7 @@ import AppLayout from '@/Layouts/AppLayout';
 import { formatNumber, pluralize } from '@/lib/format';
 import type { PageProps } from '@/types';
 import AdminTodo from './Partials/AdminTodo';
-import { ActivityFeed, AreaCoverage, Automations, PeoplePanel, TopProducts } from './Partials/AdminPanels';
-import ChangeChip from '@/Components/surface/ChangeChip';
+import { ActivityFeed, AreaCoverage } from './Partials/AdminPanels';
 import DashboardTabs from './Partials/DashboardTabs';
 import KpiTile from './Partials/KpiTile';
 import SalesPanel from './Partials/SalesPanel';
@@ -33,7 +33,7 @@ function Sparkline({ values }: { values: number[] }) {
         .join(' ');
 
     return (
-        <svg width="96" height="36" viewBox="0 0 96 36" aria-hidden="true" style={{ flexShrink: 0 }}>
+        <svg className="dash-spark" width="96" height="36" viewBox="0 0 96 36" aria-hidden="true">
             <polyline
                 points={points}
                 fill="none"
@@ -46,19 +46,48 @@ function Sparkline({ values }: { values: number[] }) {
     );
 }
 
-/** The admin's home: the whole organisation, not the team's task list. */
+/** The header's one "Add" menu: the rare jobs an admin starts from here, each behind its permission. */
+function AddMenu() {
+    const { can } = useAuth();
+    const items = [
+        can('manage_user') && { href: route('users.create'), icon: 'mdi-account-plus-outline', label: 'User' },
+        can('manage_product') && { href: route('product.create'), icon: 'mdi-package-variant', label: 'Product' },
+        can('form_creation') && { href: route('form.create'), icon: 'mdi-file-plus-outline', label: 'Form' },
+    ].filter((item) => item !== false);
+
+    if (items.length === 0) return null;
+
+    return (
+        <Dropdown align="end">
+            <Dropdown.Toggle as="button" type="button" bsPrefix="rd-btn">
+                <i className="mdi mdi-plus" aria-hidden="true" />
+                Add
+                <i className="mdi mdi-chevron-down" aria-hidden="true" />
+            </Dropdown.Toggle>
+            <Dropdown.Menu className="rd-menu">
+                {items.map((item) => (
+                    <Link key={item.label} href={item.href} className="dropdown-item">
+                        <i className={`mdi ${item.icon}`} aria-hidden="true" />
+                        {item.label}
+                    </Link>
+                ))}
+            </Dropdown.Menu>
+        </Dropdown>
+    );
+}
+
+/** The admin's home: what needs them first, then the whole organisation's figures. */
 export default function AdminDashboard({ summary, teamRisks }: AdminDashboardProps) {
     const { currency } = usePage<PageProps>().props.app;
     const { can } = useAuth();
-    const { sales, outlets, people, approvals } = summary;
+    const { sales, outlets, users, approvals } = summary;
 
     const prospects = outlets.total - outlets.customers;
     const roleCounts = [
-        pluralize(people.filter((person) => person.type === 0).length, 'admin'),
-        pluralize(people.filter((person) => person.type === 1).length, 'manager'),
-        pluralize(people.filter((person) => person.type === 2).length, 'field rep'),
+        pluralize(users.admins, 'admin'),
+        pluralize(users.managers, 'manager'),
+        pluralize(users.reps, 'field rep'),
     ].join(' · ');
-    const telegramLinked = people.filter((person) => person.telegram).length;
 
     return (
         <AppLayout title="Home">
@@ -66,143 +95,110 @@ export default function AdminDashboard({ summary, teamRisks }: AdminDashboardPro
                 <PageHeader
                     eyebrow={`Admin · ${summary.date_label}`}
                     title="Organisation overview"
-                    lede={`Sales, people, the catalogue and the jobs that keep Ronda running. Updated ${summary.generated_label}.`}
-                    actions={
-                        <>
-                            {can('form_creation') && (
-                                <Link href={route('form.create')} className="rd-btn">
-                                    <i className="mdi mdi-file-plus-outline" aria-hidden="true" />
-                                    New form
-                                </Link>
-                            )}
-                            {can('manage_product') && (
-                                <Link href={route('product.create')} className="rd-btn">
-                                    <i className="mdi mdi-package-variant" aria-hidden="true" />
-                                    Add product
-                                </Link>
-                            )}
-                            {can('manage_user') && (
-                                <Link href={route('users.create')} className="rd-btn rd-btn--primary">
-                                    <i className="mdi mdi-plus" aria-hidden="true" />
-                                    Add user
-                                </Link>
-                            )}
-                        </>
-                    }
+                    lede={`What needs you first, then sales and activity across the organisation. Updated ${summary.generated_label}.`}
+                    actions={<AddMenu />}
                 />
 
                 <DashboardTabs active="organisation" overdue={teamRisks.overdue} />
 
-                <section className="rd-kpis" aria-label="Key figures">
-                    <KpiTile
-                        icon="mdi-receipt"
-                        label="Orders this month"
-                        value={`${currency} ${formatNumber(sales.month_value)}`}
-                        note={`${pluralize(sales.month_count, 'order')} from ${pluralize(sales.month_outlets, 'outlet')}`}
-                        aside={<Sparkline values={sales.daily.map((day) => day.value)} />}
-                        foot={
-                            sales.change_pct === null ? (
-                                <span>Nothing to compare with last month</span>
-                            ) : (
-                                <span className="d-inline-flex align-items-center gap-2">
-                                    <ChangeChip percent={sales.change_pct} />
-                                    vs last month, same days
-                                </span>
-                            )
-                        }
-                    />
-                    <KpiTile
-                        icon="mdi-storefront-outline"
-                        label="Outlets"
-                        value={outlets.total}
-                        note={`${outlets.customers} customers · ${prospects} prospects`}
-                        foot={
-                            <span className="d-flex flex-column gap-2 w-100">
-                                {outlets.total > 0 && (
-                                    <span className="rd-stack" aria-hidden="true">
-                                        {outlets.customers > 0 && (
-                                            <span
-                                                style={{ flexGrow: outlets.customers, background: 'var(--rd-brand)' }}
-                                            />
-                                        )}
-                                        {prospects > 0 && (
-                                            <span style={{ flexGrow: prospects, background: 'var(--rd-brand-soft)' }} />
-                                        )}
+                <div className="rd-grid">
+                    <AdminTodo summary={summary} className="rd-span-5" />
+
+                    <section className="rd-kpis rd-kpis--pair dash-figures rd-span-7" aria-label="Key figures">
+                        <KpiTile
+                            icon="mdi-receipt"
+                            label="Orders this month"
+                            value={`${currency} ${formatNumber(sales.month_value)}`}
+                            note={`${pluralize(sales.month_count, 'order')} from ${pluralize(sales.month_outlets, 'outlet')}`}
+                            aside={<Sparkline values={sales.daily.map((day) => day.value)} />}
+                            foot={
+                                sales.change_pct === null ? (
+                                    <span>Nothing to compare with last month</span>
+                                ) : (
+                                    <span className="d-inline-flex flex-wrap align-items-center gap-2">
+                                        <ChangeChip percent={sales.change_pct} />
+                                        vs last month, same days
                                     </span>
-                                )}
-                                <span>
-                                    {outlets.new_month} new this month &middot; {outlets.without_area} without an IFE
-                                    area
+                                )
+                            }
+                        />
+                        <KpiTile
+                            icon="mdi-storefront-outline"
+                            label="Outlets"
+                            value={outlets.total}
+                            note={`${outlets.customers} customers · ${prospects} prospects`}
+                            foot={
+                                <span className="d-flex flex-column gap-2 w-100">
+                                    {outlets.total > 0 && (
+                                        <span className="rd-stack" aria-hidden="true">
+                                            {outlets.customers > 0 && (
+                                                <span
+                                                    style={{
+                                                        flexGrow: outlets.customers,
+                                                        background: 'var(--rd-brand)',
+                                                    }}
+                                                />
+                                            )}
+                                            {prospects > 0 && (
+                                                <span
+                                                    style={{ flexGrow: prospects, background: 'var(--rd-brand-soft)' }}
+                                                />
+                                            )}
+                                        </span>
+                                    )}
+                                    <span>{outlets.new_month} new this month</span>
                                 </span>
-                            </span>
-                        }
-                    />
-                    <KpiTile
-                        icon="mdi-account-group-outline"
-                        label="Active users"
-                        value={people.length}
-                        note={roleCounts}
-                        aside={
-                            <span className="d-flex">
-                                {people.slice(0, 5).map((person) => (
-                                    <Initials key={person.id} name={person.name} colorKey={person.id} stacked />
-                                ))}
-                            </span>
-                        }
-                        foot={
-                            <>
-                                <span>
-                                    Telegram linked for {telegramLinked} of {people.length}
-                                </span>
-                                {can('manage_user') && (
+                            }
+                        />
+                        <KpiTile
+                            icon="mdi-account-group-outline"
+                            label="Active users"
+                            value={users.active}
+                            note={roleCounts}
+                            foot={
+                                can('manage_user') ? (
                                     <Link href={route('users.index')} className="fw-semibold text-decoration-none">
                                         Manage users
                                     </Link>
-                                )}
-                            </>
-                        }
-                    />
-                    <KpiTile
-                        icon="mdi-file-check-outline"
-                        tone={approvals.pending > 0 ? 'serious' : 'brand'}
-                        label="Awaiting approval"
-                        value={approvals.pending}
-                        note={
-                            approvals.pending > 0
-                                ? `Form submissions · oldest ${approvals.oldest_label}`
-                                : 'No form submissions waiting'
-                        }
-                        foot={
-                            <>
-                                {approvals.slow > 0 ? (
-                                    <span className="rd-status rd-status--serious">
-                                        <i className="mdi mdi-clock-outline" aria-hidden="true" />
-                                        {approvals.slow} waiting over 48 hours
-                                    </span>
-                                ) : (
-                                    <span>None waiting over 48 hours</span>
-                                )}
-                                {can('form_admin') && (
-                                    <Link
-                                        href={route('form.records.all', { status: 'pending' })}
-                                        className="fw-semibold text-decoration-none"
-                                    >
-                                        Review all
-                                    </Link>
-                                )}
-                            </>
-                        }
-                    />
-                </section>
+                                ) : undefined
+                            }
+                        />
+                        <KpiTile
+                            icon="mdi-file-check-outline"
+                            tone={approvals.pending > 0 ? 'serious' : 'brand'}
+                            label="Awaiting approval"
+                            value={approvals.pending}
+                            note={
+                                approvals.pending > 0
+                                    ? `Form submissions · oldest ${approvals.oldest_label}`
+                                    : 'No form submissions waiting'
+                            }
+                            foot={
+                                <>
+                                    {approvals.slow > 0 ? (
+                                        <span className="rd-status rd-status--serious">
+                                            <i className="mdi mdi-clock-outline" aria-hidden="true" />
+                                            {approvals.slow} waiting over 48 hours
+                                        </span>
+                                    ) : (
+                                        <span>None waiting over 48 hours</span>
+                                    )}
+                                    {can('form_admin') && (
+                                        <Link
+                                            href={route('form.records.all', { status: 'pending' })}
+                                            className="fw-semibold text-decoration-none"
+                                        >
+                                            Review all
+                                        </Link>
+                                    )}
+                                </>
+                            }
+                        />
+                    </section>
 
-                <div className="rd-grid">
-                    <SalesPanel sales={sales} currency={currency} className="rd-span-8" />
-                    <AdminTodo summary={summary} className="rd-span-4" />
-                    <TopProducts sales={sales} currency={currency} />
-                    <PeoplePanel people={people} />
-                    <AreaCoverage areas={summary.areas} />
+                    <SalesPanel sales={sales} currency={currency} />
                     <ActivityFeed activity={summary.activity} currency={currency} />
-                    <Automations automations={summary.automations} currency={currency} />
+                    <AreaCoverage areas={summary.areas} />
                 </div>
             </SurfacePage>
         </AppLayout>

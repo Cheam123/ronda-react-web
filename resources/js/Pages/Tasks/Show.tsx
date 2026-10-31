@@ -1,51 +1,58 @@
 import { router } from '@inertiajs/react';
-import clsx from 'clsx';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import DocumentList from '@/Components/documents/DocumentList';
 import Field from '@/Components/form/Field';
 import TextInput from '@/Components/form/TextInput';
 import SurfacePage from '@/Components/surface/SurfacePage';
 import ActivityComposer from '@/Components/tasks/ActivityComposer';
 import ActivityTimeline from '@/Components/tasks/ActivityTimeline';
+import TaskActions from '@/Components/tasks/TaskActions';
 import TaskLeadDetails from '@/Components/tasks/TaskLeadDetails';
-import TaskStatusMenu from '@/Components/tasks/TaskStatusMenu';
+import TaskProgress from '@/Components/tasks/TaskProgress';
+import { taskPeopleNames } from '@/Components/tasks/taskPeople';
 import ImageLightbox from '@/Components/ui/ImageLightbox';
+import SafeHtml from '@/Components/ui/SafeHtml';
 import AppLayout from '@/Layouts/AppLayout';
+import { formatMoney } from '@/lib/format';
 import { markActivitiesRead } from '@/lib/taskActivity';
-import type { SelectOption } from '@/types';
 import type { TaskActionFlags, TaskActivity, TaskDetail, TaskFilters } from '@/types/tasks';
-import TaskFields from './Partials/TaskFields';
 import TaskHeader from './Partials/TaskHeader';
-import { taskFormData } from './Partials/taskFormData';
-
-type Tab = 'task' | 'activity';
 
 interface ShowTaskProps {
     task: TaskDetail;
     /** Newest first. */
     activities: TaskActivity[];
     actions: TaskActionFlags;
-    people: SelectOption<number>[];
-    /** "comment" opens on the Activity tab (the lead's "Open chat" link). */
+    /** "comment" (the outlet's "Open the chat" link) puts the cursor in the follow-up box. */
     mode: string;
     filters: TaskFilters;
 }
 
-/** A task, read-only, with its status actions and follow-up log. */
-export default function ShowTask({ task, activities, actions, people, mode, filters }: ShowTaskProps) {
-    const [tab, setTab] = useState<Tab>(mode === 'comment' ? 'activity' : 'task');
+const DAY = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+const TIME = new Intl.DateTimeFormat('en-GB', { hour: 'numeric', minute: '2-digit', hour12: true });
+
+/** "27 Oct 2026, 5:00 pm" from a date and an optional time; null when there is no date. */
+function when(date: string | null, time: string | null): string | null {
+    if (!date) return null;
+    const day = new Date(`${date.slice(0, 10)}T${time ? time.slice(0, 8) : '00:00:00'}`);
+    if (Number.isNaN(day.getTime())) return date;
+    return time
+        ? `${DAY.format(day)}, ${TIME.format(day).replace(/\s?([AP]M)$/i, (_, half: string) => ` ${half.toLowerCase()}`)}`
+        : DAY.format(day);
+}
+
+/**
+ * A task: where it is and who moves it on, its follow-ups (the thing done
+ * most here) beside its details, read as facts rather than a disabled form.
+ */
+export default function ShowTask({ task, activities, actions, mode, filters }: ShowTaskProps) {
     const [photo, setPhoto] = useState<string | null>(null);
+    const names = taskPeopleNames(task);
 
+    // The follow-ups are on view as soon as the page opens.
     useEffect(() => {
-        if (tab === 'activity') {
-            markActivitiesRead(task.id).catch(() => undefined);
-        }
-    }, [tab, task.id]);
-
-    const tabs: { key: Tab; label: string; count?: number }[] = [
-        { key: 'task', label: 'Task' },
-        { key: 'activity', label: 'Activity', count: activities.length },
-    ];
+        markActivitiesRead(task.id).catch(() => undefined);
+    }, [task.id]);
 
     return (
         <AppLayout title={task.reference}>
@@ -54,53 +61,75 @@ export default function ShowTask({ task, activities, actions, people, mode, filt
                     task={task}
                     listHref={route('tasks.index2', filters)}
                     trail={[{ label: task.reference }]}
-                    actions={<TaskStatusMenu taskId={task.id} actions={actions} filters={filters} />}
+                    actions={<TaskActions taskId={task.id} actions={actions} names={names} filters={filters} />}
                 />
 
-                <nav className="rd-tabs" aria-label="Task">
-                    {tabs.map((item) => (
-                        <button
-                            key={item.key}
-                            type="button"
-                            className={clsx('rd-tabs__tab', tab === item.key && 'is-active')}
-                            aria-pressed={tab === item.key}
-                            onClick={() => setTab(item.key)}
-                        >
-                            {item.label}
-                            {item.count !== undefined && <span className="rd-count">{item.count}</span>}
-                        </button>
-                    ))}
-                </nav>
+                <TaskProgress status={task.status} actions={actions} names={names} />
 
-                {tab === 'task' ? (
-                    <div className="rd-form-page">
-                        <div className="rd-form">
-                            <TaskFields
-                                mode="view"
-                                data={taskFormData(task)}
-                                people={people}
-                                names={{
-                                    subscriber: task.people.subscriber_name,
-                                    creator: task.people.creator,
-                                    checker: task.people.checker,
-                                }}
-                            />
-                        </div>
-                        <aside className="rd-form-page__aside">
-                            <TaskLeadDetails lead={task.lead} />
-                            <section className="rd-panel lead-card" aria-labelledby="task-docs-title">
-                                <h2 id="task-docs-title" className="rd-panel__title">
-                                    Documents <span className="rd-count">{task.documents.length}</span>
-                                </h2>
-                                <DocumentList documents={task.documents} empty="No documents on this task." />
-                            </section>
-                        </aside>
-                    </div>
-                ) : (
-                    <section className="rd-panel" aria-label="Activity">
-                        <ActivityPane task={task} activities={activities} onImageClick={setPhoto} />
+                <div className="lead-page">
+                    <section className="rd-panel task-follow-ups" aria-labelledby="task-follow-ups-title">
+                        <h2 id="task-follow-ups-title" className="rd-panel__title">
+                            Follow-ups <span className="rd-count">{activities.length}</span>
+                        </h2>
+                        <ActivityPane
+                            task={task}
+                            activities={activities}
+                            focusComposer={mode === 'comment'}
+                            onImageClick={setPhoto}
+                        />
                     </section>
-                )}
+
+                    <aside className="lead-page__aside">
+                        <section className="rd-panel lead-card" aria-labelledby="task-details-title">
+                            <h2 id="task-details-title" className="rd-panel__title">
+                                Details
+                            </h2>
+                            <dl className="rd-facts">
+                                <Fact label="Assigned to">{task.people.subscriber_name}</Fact>
+                                <Fact label="Helping">{task.people.sub_subscriber_names.join(', ')}</Fact>
+                                <Fact label="Owners">{task.people.owner_names.join(', ')}</Fact>
+                                <Fact label="Checker">{task.people.checker}</Fact>
+                                <Fact label="Can see it">{task.people.viewer_names.join(', ')}</Fact>
+                                <Fact label="Created by">{task.people.creator}</Fact>
+                            </dl>
+                            <dl className="rd-facts task-details__when">
+                                <Fact label="Starts">{when(task.start_date, task.start_time)}</Fact>
+                                <Fact label="Due">{when(task.due_date, task.due_time)}</Fact>
+                                <Fact label="Appointment">{when(task.appointment_date, task.appointment_time)}</Fact>
+                                <Fact label="Invoice no.">
+                                    {task.invoice_no && <span className="rd-mono">{task.invoice_no}</span>}
+                                </Fact>
+                                <Fact label="Sales">{Number(task.sales) > 0 && `RM ${formatMoney(task.sales)}`}</Fact>
+                                {task.alert === 2 && (
+                                    <Fact label="Alerts">
+                                        <span className="rd-status rd-status--critical">
+                                            <i className="mdi mdi-flag-outline" aria-hidden="true" />
+                                            Flagged: everyone on it is alerted
+                                        </span>
+                                    </Fact>
+                                )}
+                            </dl>
+                        </section>
+
+                        {task.remark && (
+                            <section className="rd-panel lead-card" aria-labelledby="task-remark-title">
+                                <h2 id="task-remark-title" className="rd-panel__title">
+                                    Remark
+                                </h2>
+                                <SafeHtml html={task.remark} className="task-details__remark" />
+                            </section>
+                        )}
+
+                        <TaskLeadDetails lead={task.lead} />
+
+                        <section className="rd-panel lead-card" aria-labelledby="task-docs-title">
+                            <h2 id="task-docs-title" className="rd-panel__title">
+                                Documents <span className="rd-count">{task.documents.length}</span>
+                            </h2>
+                            <DocumentList documents={task.documents} empty="No documents on this task." />
+                        </section>
+                    </aside>
+                </div>
             </SurfacePage>
 
             <ImageLightbox src={photo} onClose={() => setPhoto(null)} />
@@ -108,14 +137,24 @@ export default function ShowTask({ task, activities, actions, people, mode, filt
     );
 }
 
+function Fact({ label, children }: { label: string; children: ReactNode }) {
+    return (
+        <>
+            <dt>{label}</dt>
+            <dd>{children || <span className="rd-muted">—</span>}</dd>
+        </>
+    );
+}
+
 interface ActivityPaneProps {
     task: TaskDetail;
     activities: TaskActivity[];
+    focusComposer: boolean;
     onImageClick: (src: string) => void;
 }
 
 /** Log a follow-up (and, while In Progress, move the due date) and read the timeline. */
-function ActivityPane({ task, activities, onImageClick }: ActivityPaneProps) {
+function ActivityPane({ task, activities, focusComposer, onImageClick }: ActivityPaneProps) {
     const [dueDate, setDueDate] = useState('');
     const [dueTime, setDueTime] = useState('');
     const canMoveDue = task.status === 2;
@@ -127,6 +166,12 @@ function ActivityPane({ task, activities, onImageClick }: ActivityPaneProps) {
         setDueTime('');
         reload();
     };
+
+    useEffect(() => {
+        if (focusComposer) {
+            document.querySelector<HTMLTextAreaElement>('.composer textarea')?.focus();
+        }
+    }, [focusComposer]);
 
     return (
         <div className="activity-pane">
@@ -156,10 +201,14 @@ function ActivityPane({ task, activities, onImageClick }: ActivityPaneProps) {
                 )}
             </ActivityComposer>
 
-            <div className="timeline-label">Activity timeline ({activities.length})</div>
-            <div className="timeline-scroll">
-                <ActivityTimeline activities={activities} onChanged={reload} onImageClick={onImageClick} />
-            </div>
+            <div className="timeline-label">Timeline</div>
+            {activities.length === 0 ? (
+                <p className="rd-muted mb-0">No follow-ups yet. Log the first one above.</p>
+            ) : (
+                <div className="timeline-scroll">
+                    <ActivityTimeline activities={activities} onChanged={reload} onImageClick={onImageClick} />
+                </div>
+            )}
         </div>
     );
 }

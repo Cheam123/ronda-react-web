@@ -71,7 +71,7 @@ export default function TaskFields({
                 <FormSection title="People" intro="Who does it, who helps, who signs it off and who can watch.">
                     <FormRow>
                         <Field
-                            label="Subscriber"
+                            label="Assigned to"
                             htmlFor="subscriber"
                             required={subscriberEditable && !readOnly}
                             error={errors.subscriber}
@@ -90,7 +90,7 @@ export default function TaskFields({
                                 <TextInput id="subscriber" large value={names?.subscriber ?? ''} readOnly />
                             )}
                         </Field>
-                        <Field label="Sub-subscribers" htmlFor="sub_subscriber">
+                        <Field label="Helping" htmlFor="sub_subscriber">
                             <MultiSearchSelect
                                 id="sub_subscriber"
                                 options={people}
@@ -102,7 +102,17 @@ export default function TaskFields({
                         </Field>
                     </FormRow>
                     <FormRow>
-                        <Field label="Owners" htmlFor="owner" required={!readOnly} error={errors.owner}>
+                        <Field
+                            label="Owners"
+                            htmlFor="owner"
+                            required={!readOnly}
+                            error={errors.owner}
+                            hint={
+                                readOnly
+                                    ? undefined
+                                    : 'They complete it at the end, and can reject it or keep it in view.'
+                            }
+                        >
                             <MultiSearchSelect
                                 id="owner"
                                 options={people}
@@ -113,7 +123,7 @@ export default function TaskFields({
                                 onChange={(values) => update('owner', values)}
                             />
                         </Field>
-                        <Field label="Viewers" htmlFor="viewer">
+                        <Field label="Can see it" htmlFor="viewer">
                             <MultiSearchSelect
                                 id="viewer"
                                 options={people}
@@ -223,7 +233,7 @@ export default function TaskFields({
                 )}
             </FormSection>
 
-            <FormSection title="Remark" intro="What the subscriber needs to know.">
+            <FormSection title="Remark" intro="What the person doing it needs to know.">
                 <Field label="Remark" htmlFor="remark" error={errors.remark}>
                     {readOnly ? (
                         <SafeHtml html={data.remark} className="rich-text rich-text__content rich-text--readonly" />

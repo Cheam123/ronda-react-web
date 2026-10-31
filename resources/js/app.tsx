@@ -7,6 +7,7 @@ import { applyCsrfToken } from './bootstrap';
 import { createInertiaApp } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';
+import DialogHost from '@/Components/feedback/DialogHost';
 import { ToastProvider } from '@/Components/feedback/ToastProvider';
 import { startTheme } from '@/lib/theme';
 
@@ -22,12 +23,14 @@ createInertiaApp({
         createRoot(el).render(
             <ToastProvider>
                 <App {...props} />
+                <DialogHost />
             </ToastProvider>,
         );
     },
     // A bar across the top of the window while a page loads; no corner spinner.
+    // The colour goes into a stylesheet, so a token works and follows the theme.
     progress: {
-        color: '#f78b17',
+        color: 'var(--rd-brand)',
         showSpinner: false,
     },
 });

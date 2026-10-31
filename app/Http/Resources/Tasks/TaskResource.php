@@ -21,6 +21,12 @@ class TaskResource extends JsonResource
         $appointment = $this->appointment_date ? Carbon::parse($this->appointment_date) : null;
         $holder      = fn (int $role) => $this->users->firstWhere('role', $role);
         $idsFor      = fn (int $role) => $this->users->where('role', $role)->pluck('user_id')->values()->all();
+        // Names too, since the people list only offers active non-admins and an owner can be an admin.
+        $namesFor    = fn (int $role) => $this->users->where('role', $role)
+            ->map(fn ($taskUser) => optional($taskUser->user)->name)
+            ->filter()
+            ->values()
+            ->all();
 
         return [
             'id'               => $this->id,
@@ -45,6 +51,9 @@ class TaskResource extends JsonResource
                 'sub_subscribers' => $idsFor(6),
                 'owners'          => $idsFor(4),
                 'viewers'         => $idsFor(5),
+                'sub_subscriber_names' => $namesFor(6),
+                'owner_names'     => $namesFor(4),
+                'viewer_names'    => $namesFor(5),
                 'creator'         => optional(optional($holder(1))->user)->name,
                 'checker'         => optional(optional($holder(3))->user)->name,
             ],

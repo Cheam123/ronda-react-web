@@ -17,6 +17,7 @@ export default function EditUser({ user, teams, userTypes }: EditUserProps) {
             <SurfacePage>
                 <PageHeader
                     crumbs={[
+                        { label: 'Home', href: '/index' },
                         { label: 'Admin' },
                         { label: 'Users', href: route('users.index') },
                         { label: user.name, href: route('users.view', user.id) },

@@ -268,6 +268,11 @@ class FormsController extends Controller
           // follow-up — completed and closed ones included, which is the point.
           'can_follow_up'    => $root->canBeParent()
                                 && $this->schemaService->canSubmit(optional($root->form)->settings, $user),
+          // Same rule as the web: the opener or a form admin, while it is open.
+          'can_close'        => $root->isRecordOpen() && $this->recordService->canClose($root, $user),
+          // Who the open step waits on, as names, the same as My Records
+          // (empty once nobody owes anything), so the trail can name them.
+          'waiting_on'       => $this->recordService->summarize($root)['waiting_on'],
           'parent'           => $parent ? [
             'id'        => $parent->id,
             'reference' => $parent->recordReference(),
@@ -288,6 +293,70 @@ class FormsController extends Controller
     } catch (\Throwable $e) {
       Log::error('Mobile getRecord failed', ['error' => $e->getMessage(), 'record_id' => $id]);
       return $this->response_failed('Failed to retrieve record.', $e->getMessage());
+    }
+  }
+
+  /**
+   * Close a case, the same as the web's closeRecord: a reason is required,
+   * and a case still in progress is cancelled with it so no handler is left
+   * holding a live task against it.
+   */
+  public function closeRecord(Request $request, $id)
+  {
+    try {
+      $request->validate(
+        ['remark' => 'required|string|max:1000'],
+        ['remark.required' => 'A reason is required to close a record.']
+      );
+
+      $case = FormSubmission::with('approvals')->find($id);
+      if (!$case) {
+        return $this->response_failed('Record not found.');
+      }
+
+      $user = $request->user();
+      if (!$this->recordService->canClose($case, $user)) {
+        return $this->response_failed('Only the person who opened this case, or a form admin, can close it.');
+      }
+      if (!$case->isRecordOpen()) {
+        return $this->response_failed('This record is already closed.');
+      }
+
+      $wasPending = $case->status === 'pending';
+
+      DB::transaction(function () use ($case, $request, $user, $wasPending) {
+        if ($wasPending) {
+          $case->update([
+            'status'          => 'cancelled',
+            'rejected_remark' => 'Record closed: ' . $request->remark,
+            'rejected_by'     => $user->id,
+          ]);
+        }
+
+        $case->update([
+          'record_status'        => 'closed',
+          'record_closed_remark' => $request->remark,
+          'record_closed_by'     => $user->id,
+          'record_closed_at'     => now(),
+        ]);
+      });
+
+      // The task badge is cached per user, so each handler's has to go.
+      if ($wasPending) {
+        $this->approvalService->bustTaskCaches($case);
+      }
+
+      // `entry_status`, not `status`: response_ok() writes its own `status`.
+      return $this->response_ok([
+        'record_id'     => $case->id,
+        'entry_status'  => $case->fresh()->status,
+        'record_status' => 'closed',
+      ], $wasPending ? 'The case was in progress and has been cancelled.' : 'The case is closed.');
+    } catch (\Illuminate\Validation\ValidationException $e) {
+      return $this->response_failed('Validation failed.', $e->errors());
+    } catch (\Throwable $e) {
+      Log::error('Mobile closeRecord failed', ['error' => $e->getMessage(), 'record_id' => $id]);
+      return $this->response_failed('Failed to close record.', $e->getMessage());
     }
   }
 
@@ -339,6 +408,12 @@ class FormsController extends Controller
 
           $answer['values']    = $element['values'] ?? [];
           $answer['mandatory'] = (bool) ($element['mandatory'] ?? false);
+
+          // A Person answer is stored as a user id; send the name with it,
+          // so the app can show who even when it cannot list that person.
+          if (($element['type'] ?? '') === 'user') {
+            $answer['value_label'] = $this->schemaService->userLabel($answer['value'] ?? null);
+          }
 
           return $answer;
         })
@@ -422,7 +497,9 @@ class FormsController extends Controller
       $deferredIds = $form
           ? $this->processService->deferredFieldIds($form->process, $schema, $this->schemaService)
           : [];
-      $result = $this->schemaService->sanitizeAnswers($schema, $formData, $deferredIds);
+      // An edit may keep a Person answer whose person has left since.
+      $stored = $this->schemaService->answersById($submission->form_elements, $schema);
+      $result = $this->schemaService->sanitizeAnswers($schema, $formData, $deferredIds, $stored);
 
       if (!empty($result['errors'])) {
         // Nothing has been written yet, so a refusal leaves nothing behind.
@@ -867,12 +944,38 @@ class FormsController extends Controller
       ] : null,
       // Field sections within the form — unrelated to the category above.
       'groups'              => $schema['groups'],
-      'elements'            => $schema['elements'],
+      'elements'            => $this->withPeople($schema['elements']),
       'process'             => $this->processService->summary($form->process),
       'process_version'     => $form->process['process_version'] ?? 1,
       // Fields owned by later fill phases: hide these from the submitter.
       'deferred_element_ids' => $this->processService->deferredFieldIds($form->process, $schema, $this->schemaService),
     ];
+  }
+
+  /**
+   * Each Person field carries its people, [{id, name, active}], from the
+   * same rule the server checks a pick against (userOptionsFor). The app's
+   * own people list leaves admins and inactive users out, so it cannot be
+   * used to fill these. A deactivated person stays in with active false:
+   * the app still needs their name for past answers, but does not offer
+   * them in the picker.
+   */
+  private function withPeople(array $elements): array
+  {
+    $active = $this->schemaService->activeUserIds();
+
+    return array_map(function ($element) use ($active) {
+      if (($element['type'] ?? '') !== 'user') {
+        return $element;
+      }
+
+      $element['people'] = collect($this->schemaService->userOptionsFor($element))
+        ->map(fn ($name, $id) => ['id' => (int) $id, 'name' => $name, 'active' => isset($active[(int) $id])])
+        ->values()
+        ->all();
+
+      return $element;
+    }, $elements);
   }
 
   private function submissionPayload(FormSubmission $submission): array

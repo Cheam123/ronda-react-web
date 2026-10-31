@@ -4,6 +4,7 @@ namespace App\Listeners;
 
 use App\Events\UserCreated;
 use App\Jobs\fireEmailNotification;
+use App\Support\PasswordPolicy;
 
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
@@ -33,7 +34,8 @@ class GenerateRandomPassword
         //
         $user = $event->user;
 
-        $password = Str::random(8);
+        // Comfortably over the password rule's floor; they can change it once signed in.
+        $password = Str::random(PasswordPolicy::MIN + 2);
 
         $user->password = Hash::make($password);
 

@@ -3,6 +3,7 @@ import clsx from 'clsx';
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import FormRenderer from '@/Components/forms/FormRenderer';
 import { useFormFill } from '@/hooks/useFormFill';
+import { focusField, scrollBehaviour } from '@/lib/focus';
 import { pluralize } from '@/lib/format';
 import type { PageProps } from '@/types';
 import type { FormSchema, Person } from '@/types/forms';
@@ -30,7 +31,7 @@ export default function FillStageCard({ recordId, stage, schema, people, onImage
     // Bring the part that needs filling into view.
     useEffect(() => {
         const timer = window.setTimeout(() => {
-            cardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            cardRef.current?.scrollIntoView({ behavior: scrollBehaviour(), block: 'start' });
             setPulse(true);
         }, 250);
         return () => window.clearTimeout(timer);
@@ -40,7 +41,7 @@ export default function FillStageCard({ recordId, stage, schema, people, onImage
         event.preventDefault();
         const firstProblem = fill.validate();
         if (firstProblem) {
-            document.getElementById(`field-${firstProblem}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            focusField(`field-${firstProblem}`);
             return;
         }
 

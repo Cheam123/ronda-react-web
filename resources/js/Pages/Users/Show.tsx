@@ -3,23 +3,15 @@ import Initials from '@/Components/surface/Initials';
 import PageHeader from '@/Components/surface/PageHeader';
 import SurfacePage from '@/Components/surface/SurfacePage';
 import AppLayout from '@/Layouts/AppLayout';
-import { promptText } from '@/lib/dialogs';
 import { tagClass, teamHue } from '@/lib/tags';
 import UserDetails from './Partials/UserDetails';
+import { confirmPasswordReset } from './Partials/passwordReset';
 import type { User } from './types';
 
 export default function ShowUser({ user }: { user: User }) {
     const resetPassword = async () => {
-        const password = await promptText({
-            title: 'Reset Password !',
-            text: user.name,
-            confirmText: 'Send',
-            minLength: 6,
-            maxLength: 12,
-            required: 'Please enter new password to proceed!',
-        });
-        if (password) {
-            router.post(route('users.resetpassword'), { id: user.id, pwd: password }, { preserveScroll: true });
+        if (await confirmPasswordReset(user)) {
+            router.post(route('users.resetpassword'), { id: user.id }, { preserveScroll: true });
         }
     };
 
@@ -27,7 +19,12 @@ export default function ShowUser({ user }: { user: User }) {
         <AppLayout title={user.name}>
             <SurfacePage>
                 <PageHeader
-                    crumbs={[{ label: 'Admin' }, { label: 'Users', href: route('users.index') }, { label: user.name }]}
+                    crumbs={[
+                        { label: 'Home', href: '/index' },
+                        { label: 'Admin' },
+                        { label: 'Users', href: route('users.index') },
+                        { label: user.name },
+                    ]}
                     leading={<Initials name={user.name} colorKey={user.id} size="xl" />}
                     title={user.name}
                     meta={

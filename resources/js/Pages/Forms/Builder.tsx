@@ -1,6 +1,6 @@
 import { Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import BasicInfoStep, { type Access, type BasicInfo, type InfoProblem } from '@/Components/forms/builder/BasicInfoStep';
 import DesignStep from '@/Components/forms/builder/DesignStep';
 import ProcessStep from '@/Components/forms/builder/ProcessStep';
@@ -8,6 +8,7 @@ import { useFormDesign } from '@/Components/forms/builder/useFormDesign';
 import PageHeader from '@/Components/surface/PageHeader';
 import SurfacePage from '@/Components/surface/SurfacePage';
 import ErrorSummary from '@/Components/ui/ErrorSummary';
+import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
 import AppLayout from '@/Layouts/AppLayout';
 import { collectFields, collectSections, designFromSchema, serializeDesign, validateDesign } from '@/lib/forms/design';
 import { collectProblems, serializeProcess } from '@/lib/forms/process';
@@ -81,6 +82,11 @@ export default function Builder({
     const sections = collectSections(builder.design);
     const problems = collectProblems(nodes, fields);
     const designCheck = designChecked ? validateDesign(builder.design) : { invalid: [], message: null };
+
+    // Changed since the page opened: the details, who can submit, the fields or the process.
+    const snapshot = JSON.stringify([info, access, serializeDesign(builder.design), nodes]);
+    const opened = useRef(snapshot);
+    useUnsavedChanges(snapshot !== opened.current, form?.name);
 
     const submitters =
         access.submit_scope === 'selected'

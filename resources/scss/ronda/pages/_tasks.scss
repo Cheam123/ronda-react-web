@@ -119,6 +119,50 @@
         }
     }
 
+    // The Open tab's one-tap filters: Overdue, At risk, Assigned to me.
+    &__quick {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        margin-top: -4px;
+    }
+
+    &__quick-label {
+        color: $rd-ink-2;
+        font-size: 13px;
+    }
+
+    &__toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        height: 36px;
+        padding: 0 14px;
+        border: 1px solid $rd-control;
+        border-radius: 999px;
+        background: $rd-panel;
+        color: $rd-body;
+        font: 500 14px/1 $rd-sans;
+        cursor: pointer;
+
+        &:hover {
+            border-color: $rd-control-hover;
+            color: $rd-ink;
+        }
+
+        &[aria-pressed="true"] {
+            border-color: $rd-brand;
+            background: $rd-brand-tint;
+            color: $rd-brand-ink;
+        }
+
+        &:focus-visible {
+            outline: 2px solid $rd-brand;
+            outline-offset: 2px;
+        }
+    }
+
     // Phones: the search across, then the other controls two to a row.
     @media (max-width: 767.98px) {
         &__toolbar,
@@ -320,22 +364,6 @@
     gap: 8px;
     max-width: 100%;
     min-height: 40px;
-    margin: 0 -6px;
-    padding: 4px 6px;
-    border: 0;
-    border-radius: 8px;
-    background: none;
-    text-align: left;
-    cursor: pointer;
-
-    &:hover {
-        background: $rd-track;
-    }
-
-    &:focus-visible {
-        outline: 2px solid $rd-brand;
-        outline-offset: 2px;
-    }
 
     &__text {
         display: flex;
@@ -361,6 +389,27 @@
         font-size: 12px;
         line-height: 18px;
         white-space: nowrap;
+
+        // "3 open appointments" opens them.
+        &.is-link {
+            padding: 0;
+            border: 0;
+            background: none;
+            color: $rd-brand-ink;
+            font-weight: 500;
+            text-align: left;
+            cursor: pointer;
+
+            &:hover {
+                text-decoration: underline;
+            }
+
+            &:focus-visible {
+                border-radius: 4px;
+                outline: 2px solid $rd-brand;
+                outline-offset: 2px;
+            }
+        }
     }
 }
 
@@ -943,7 +992,129 @@
 
 // ----- Task pages (Show, Create, Edit) ---------------------------------------------
 
-// The task page's Activity tab.
+// Where the task is on its way, and who moves it on (Components/tasks/TaskProgress).
+.task-progress {
+    gap: 12px;
+    padding: 16px 20px;
+
+    &__steps {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 6px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+
+        // Kept in view, rejected or on hold: off the way, so no step is lit.
+        &.is-off-path {
+            opacity: 0.6;
+        }
+    }
+
+    &__step {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-width: 0;
+    }
+
+    &__bar {
+        height: 4px;
+        border-radius: 2px;
+        background: $rd-line;
+    }
+
+    .is-past &__bar,
+    .is-now &__bar {
+        background: $rd-brand;
+    }
+
+    &__label {
+        overflow: hidden;
+        color: $rd-ink-2;
+        font-size: 13px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .is-now &__label {
+        color: $rd-brand-ink;
+        font-weight: 600;
+    }
+
+    &__next {
+        margin: 0;
+        color: $rd-body;
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+    // Phones: five names don't fit, so only the current step is named under the
+    // bars (and without "now"); the others stay for screen readers.
+    @media (max-width: 575.98px) {
+        &__step:not(.is-now) &__label,
+        &__now {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            overflow: hidden;
+            clip: rect(0 0 0 0);
+        }
+
+        // The one name left may run under the next, empty, columns.
+        .is-now &__label {
+            overflow: visible;
+        }
+    }
+}
+
+// Invoice number and sales amount side by side in the Mark as done dialog.
+.task-status-dialog__row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+
+    @media (max-width: 575.98px) {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+// The task page: follow-ups beside the details.
+.task-follow-ups {
+    gap: 16px;
+    min-width: 0;
+}
+
+.task-details {
+    // When and how much, under who.
+    &__when {
+        padding-top: 14px;
+        border-top: 1px solid $rd-line-soft;
+    }
+
+    &__remark {
+        color: $rd-body;
+        font-size: 14px;
+        line-height: 1.55;
+        overflow-wrap: anywhere;
+
+        p {
+            margin: 0 0 8px;
+        }
+
+        p:last-child {
+            margin-bottom: 0;
+        }
+
+        ul,
+        ol {
+            margin: 0 0 8px;
+            padding-left: 1.4rem;
+        }
+    }
+}
+
+// The follow-up box and the timeline under it.
 .activity-pane {
     display: flex;
     flex-direction: column;

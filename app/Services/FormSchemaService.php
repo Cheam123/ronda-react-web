@@ -32,6 +32,9 @@ class FormSchemaService
     /** Request-memoised user list for `user` fields (id => name). */
     private static ?array $userOptions = null;
 
+    /** Request-memoised ids of active users (id => true). */
+    private static ?array $activeUserIds = null;
+
     /** Field types allowed as condition sources, mapped to their operators. */
     public const CONDITION_OPERATORS = [
         'text'         => ['equals', 'not_equals', 'is_empty', 'is_not_empty'],
@@ -98,6 +101,66 @@ class FormSchemaService
         return array_intersect_key($all, array_flip($ids));
     }
 
+    /**
+     * Who can be picked now: active users (status 1). A deactivated person
+     * stays in userOptions() because past answers still need their name, but
+     * a picker should not offer them.
+     *
+     * @return array<int,true>
+     */
+    public function activeUserIds(): array
+    {
+        if (self::$activeUserIds === null) {
+            self::$activeUserIds = User::where('status', 1)->pluck('id')
+                ->mapWithKeys(fn ($id) => [(int) $id => true])
+                ->all();
+        }
+
+        return self::$activeUserIds;
+    }
+
+    /**
+     * Everyone, for a page's Person fields: [{id, name, active}]. A
+     * deactivated person stays in so their past answers keep a name, and
+     * pickers offer only the active ones (plus an answer already given).
+     *
+     * @return array<int,array{id:int,name:string,active:bool}>
+     */
+    public function people(): array
+    {
+        $active = $this->activeUserIds();
+
+        return collect($this->userOptions())
+            ->map(fn ($name, $id) => ['id' => $id, 'name' => $name, 'active' => isset($active[$id])])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Why a Person answer cannot be saved, or null when it can. It must be
+     * someone the field offers (the process engine may resolve a handler from
+     * it, so a tampered id must never slip through), and someone active,
+     * unless it is the answer already stored: a person deactivated since may
+     * stay where they were picked.
+     */
+    public function personPickError(array $element, int $picked, $stored = null): ?string
+    {
+        $label = $element['label'] ?? 'this field';
+
+        if (!isset($this->userOptionsFor($element)[$picked])) {
+            return 'Select a valid person for ' . $label . '.';
+        }
+
+        $kept = !$this->conditions->isEmptyValue($stored)
+            && (int) (is_array($stored) ? reset($stored) : $stored) === $picked;
+
+        if (!$kept && !isset($this->activeUserIds()[$picked])) {
+            return $this->userOptions()[$picked] . ' is no longer active. Choose someone else for ' . $label . '.';
+        }
+
+        return null;
+    }
+
     /** Display label for a `user` field value (id -> name). */
     public function userLabel($value): string
     {
@@ -119,7 +182,8 @@ class FormSchemaService
     /** Test seam: drop the memoised user list. */
     public static function flushUserOptions(): void
     {
-        self::$userOptions = null;
+        self::$userOptions   = null;
+        self::$activeUserIds = null;
     }
 
     /**
@@ -427,9 +491,11 @@ class FormSchemaService
      *
      * @param array $clientData  array of {id?, type?, label?, value} entries
      * @param array $deferredIds element ids owned by later fill phases
+     * @param array $stored      an edit's answers so far, by element id: a
+     *                           Person answer may keep someone since deactivated
      * @return array{snapshot: array, errors: array<string,string>}
      */
-    public function sanitizeAnswers(array $schema, array $clientData, array $deferredIds = []): array
+    public function sanitizeAnswers(array $schema, array $clientData, array $deferredIds = [], array $stored = []): array
     {
         $clientAnswers = $this->answersById($clientData, $schema);
         $visibility    = $this->resolveVisibility($schema, $clientAnswers);
@@ -484,13 +550,13 @@ class FormSchemaService
                 }
             }
 
-            // Person pickers must carry a user id the field actually offers —
-            // the process engine may resolve a handler from this value, so a
-            // tampered id must never slip through.
+            // Person pickers must carry someone the field offers and who is
+            // active (see personPickError).
             if (($element['type'] ?? '') === 'user' && !$this->conditions->isEmptyValue($value)) {
-                $picked = (int) (is_array($value) ? reset($value) : $value);
-                if (!isset($this->userOptionsFor($element)[$picked])) {
-                    $errors[$id] = 'Select a valid person for ' . ($element['label'] ?? 'this field') . '.';
+                $picked  = (int) (is_array($value) ? reset($value) : $value);
+                $refusal = $this->personPickError($element, $picked, $stored[$id] ?? null);
+                if ($refusal) {
+                    $errors[$id] = $refusal;
                 } else {
                     $value = $picked;
                 }

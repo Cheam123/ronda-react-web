@@ -383,7 +383,7 @@ class FormController extends Controller
             'schema'       => $form->schema,
             'process'      => $process,
             'processNames' => (object) $this->userNamesInProcess($process),
-            'people'       => User::orderBy('name')->get(['id', 'name']),
+            'people'       => $this->schemaService->people(),
         ]);
     }
 
@@ -413,7 +413,7 @@ class FormController extends Controller
             // "After you submit": the steps the submission goes through, and who takes them.
             'process'       => $form->process,
             'processNames'  => (object) $this->userNamesInProcess($form->process),
-            'people'        => User::orderBy('name')->get(['id', 'name']),
+            'people'        => $this->schemaService->people(),
             'parentOptions' => CaseLinkResource::collection($parentOptions)->resolve(),
             'parentId'      => optional($parentCase)->id,
         ]);
@@ -734,7 +734,7 @@ class FormController extends Controller
             'deferredIds' => $this->processService->deferredFieldIds($form->process, $schema, $this->schemaService),
             'process'      => $form->process,
             'processNames' => (object) $this->userNamesInProcess($form->process),
-            'people'      => User::orderBy('name')->get(['id', 'name']),
+            'people'      => $this->schemaService->people(),
             // Editing answers never changes which case this follows up on — that
             // link is set once, when the case is opened.
             'parentCase'  => $submission->parent ? CaseLinkResource::make($submission->parent)->resolve() : null,
@@ -763,7 +763,9 @@ class FormController extends Controller
             json_decode($request->form_data, true) ?: [],
             $uploads->pendingAnswers($byElement)
         );
-        $result      = $this->schemaService->sanitizeAnswers($schema, $formData, $deferredIds);
+        // An edit may keep a Person answer whose person has left since.
+        $stored      = $this->schemaService->answersById($submission->form_elements, $schema);
+        $result      = $this->schemaService->sanitizeAnswers($schema, $formData, $deferredIds, $stored);
 
         if (!empty($result['errors'])) {
             // Nothing has been written yet, so a refusal leaves nothing behind.
@@ -1072,7 +1074,7 @@ class FormController extends Controller
                 'canCancel' => $isMine && $submission->status === 'pending',
                 'canClone'  => $isMine && (bool) optional($submission->form)->is_enabled,
             ],
-            'people'         => User::orderBy('name')->get(['id', 'name']),
+            'people'         => $this->schemaService->people(),
         ]);
     }
 

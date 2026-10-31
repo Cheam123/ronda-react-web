@@ -15,6 +15,7 @@ export default function CreateUser({ teams, userTypes }: CreateUserProps) {
             <SurfacePage>
                 <PageHeader
                     crumbs={[
+                        { label: 'Home', href: '/index' },
                         { label: 'Admin' },
                         { label: 'Users', href: route('users.index') },
                         { label: 'Add a user' },

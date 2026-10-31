@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\FormSubmission;
 use App\Models\User;
+use App\Services\AlertInbox;
 use App\Services\FirebaseService;
 use App\Services\FormRecordService;
 use Illuminate\Bus\Queueable;
@@ -183,6 +184,9 @@ class FormStageNotification implements ShouldQueue
 
     private function push(?User $user, string $title, string $body, array $data): void
     {
+        // Saved to the app's inbox for everyone, even with no device to push to.
+        AlertInbox::record($user, $title, $body, $data);
+
         if (!$user || !$user->fcm_token) {
             return;
         }

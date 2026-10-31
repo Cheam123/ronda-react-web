@@ -16,8 +16,8 @@ export default function ImageLightbox({ src, caption, onClose }: ImageLightboxPr
                 {src && <img src={src} alt={caption ?? 'Attachment'} className="image-lightbox__img" />}
                 {caption && <div className="image-lightbox__caption">{caption}</div>}
                 {src && (
-                    <a href={src} target="_blank" rel="noopener noreferrer" className="btn btn-sm btn-light mt-2">
-                        <i className="mdi mdi-open-in-new me-1" />
+                    <a href={src} target="_blank" rel="noopener noreferrer" className="rd-btn rd-btn--sm mt-2">
+                        <i className="mdi mdi-open-in-new" aria-hidden="true" />
                         Open original
                     </a>
                 )}

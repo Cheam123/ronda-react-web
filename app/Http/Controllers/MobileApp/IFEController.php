@@ -164,7 +164,8 @@ class IFEController extends Controller
             'support_required'      => 'required|string',
             'support_description'   => 'nullable|string',
             'personal_remarks'      => 'nullable|string',
-            'pic_name'              => 'required|string|max:255',
+            // The person met is optional: the mobile form does not ask for it.
+            'pic_name'              => 'nullable|string|max:255',
             'mobile_number'         => 'nullable|string|max:20',
             'other_mobile_numbers'  => 'nullable|string|max:255',
             'email'                 => 'nullable|email|max:255',
@@ -173,15 +174,24 @@ class IFEController extends Controller
             'location'              => 'required|string|max:255',
         ]);
 
+        // A visit logged from a task belongs to that task, which the caller
+        // must be able to see; it is linked to the task's outlet too.
+        $task = !empty($validated['task_id']) ? Tasks::visibleTo($user)->find($validated['task_id']) : null;
+        if (!empty($validated['task_id']) && !$task) {
+            return $this->response_failed('We could not find this task.');
+        }
+
         try {
-            DB::transaction(function () use ($validated, $request, $user) {
+            $report = DB::transaction(function () use ($validated, $request, $user, $task) {
                 // A visit to a known outlet is linked to it, so it shows up in
                 // that outlet's visit history.
-                $existingLead = $request->has('existing_lead_id') ? Leads::findOrFail($validated['existing_lead_id']) : null;
+                $existingLead = $request->has('existing_lead_id')
+                    ? Leads::findOrFail($validated['existing_lead_id'])
+                    : ($task ? Leads::find($task->lead_id) : null);
 
                 $IfeReport = new IFEReport();
                 $IfeReport->created_by            = $user->id;
-                $IfeReport->task_id               = null;
+                $IfeReport->task_id               = optional($task)->id;
                 $IfeReport->lead_id               = optional($existingLead)->id;
                 $IfeReport->company_name          = $existingLead ? ($existingLead->name ?? null) : $validated['company_name'];
                 $IfeReport->nature_of_business    = $existingLead ? ($existingLead->business_category ?? null) : $validated['nature_of_business'];
@@ -237,7 +247,7 @@ class IFEController extends Controller
                 return $IfeReport;
             });
 
-            return $this->response_ok([], 'IFE report created successfully');
+            return $this->response_ok(['id' => $report->id], 'IFE report created successfully');
 
         } catch (\Exception $e) {
             \Log::error('IFE Report Creation Failed', [
@@ -355,7 +365,88 @@ class IFEController extends Controller
         }
     }
 
-    public function deleteIFEReport(Request $request) 
+    /**
+     * One visit report in full, for the app's visit screen. Whoever filed it,
+     * anyone who can see its outlet, and managers (manage_ife_report) may read it.
+     */
+    public function getIFEReport(Request $request)
+    {
+        $user   = $request->user();
+        $report = IFEReport::with(['documentUploads', 'createdBy:id,name,mobile'])->find($request->input('id'));
+
+        $mayView = $report && (
+            $user->can('manage_ife_report')
+            || (int) $report->created_by === (int) $user->id
+            || ($report->lead_id && Leads::visibleTo($user)->whereKey($report->lead_id)->exists())
+        );
+
+        if (!$mayView) {
+            return $this->response_failed('We could not find this visit report.');
+        }
+
+        return $this->response_success($this->reportPayload($report), 'IFE report retrieved successfully');
+    }
+
+    /**
+     * Recent visit reports, newest first. A manager's Review tab lists the
+     * team's reports that are not a task yet (`open=1`); `mine=1` lists the
+     * caller's own, for anyone.
+     */
+    public function getRecentReports(Request $request)
+    {
+        $user = $request->user();
+        $mine = $request->boolean('mine');
+
+        if (!$mine && !$user->can('manage_ife_report')) {
+            return $this->response_failed('Only managers can see the team\'s visit reports.');
+        }
+
+        $days  = max(1, min((int) $request->input('days', 14), 90));
+        $limit = max(1, min((int) $request->input('per_page', 50), 100));
+
+        $reports = ($mine ? IFEReport::where('created_by', $user->id) : IFEReport::visibleTo($user))
+            ->with(['documentUploads', 'createdBy:id,name,mobile'])
+            ->where('created_at', '>=', Carbon::now()->subDays($days)->startOfDay())
+            ->when($request->boolean('open'), fn ($q) => $q->whereNull('task_id'))
+            // One person's visits (the manager's view of a rep).
+            ->when(!$mine && $request->filled('created_by'), fn ($q) => $q->where('created_by', $request->input('created_by')))
+            ->orderByDesc('created_at')
+            ->limit($limit)
+            ->get();
+
+        return $this->response_success(
+            $reports->map(fn (IFEReport $report) => $this->reportPayload($report))->values(),
+            'IFE reports retrieved successfully'
+        );
+    }
+
+    /** The fields the app shows for a visit report. */
+    private function reportPayload(IFEReport $report): array
+    {
+        return [
+            'id'                  => $report->id,
+            'lead_id'             => $report->lead_id,
+            'task_id'             => $report->task_id,
+            'outlet'              => $report->shop_name ?: $report->company_name,
+            'company_name'        => $report->company_name,
+            'customer_status'     => $report->status,
+            'created_at'          => optional($report->created_at)->toDateTimeString(),
+            'created_by'          => optional($report->createdBy)->name,
+            'created_by_id'       => $report->created_by,
+            'created_by_mobile'   => optional($report->createdBy)->mobile,
+            'problem_description' => $report->problem_description,
+            'support_required'    => $report->support_required,
+            'support_description' => $report->support_description,
+            'personal_remarks'    => $report->personal_remarks,
+            'pic_name'            => $report->pic_name,
+            'next_followup_date'  => $report->next_followup_date,
+            'next_followup_plan'  => $report->next_followup_plan,
+            'location'            => $report->location,
+            'attachments'         => Helper::media_documents_array($report->documentUploads),
+        ];
+    }
+
+    public function deleteIFEReport(Request $request)
     {
         try {
             if(!request('id')) {

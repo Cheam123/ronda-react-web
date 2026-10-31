@@ -2,8 +2,8 @@
 // Dark theme: the parts the tokens cannot reach. The surface pages are
 // themed by the custom properties in _tokens.scss alone; this file covers
 // what still draws itself in fixed colours: the Minible / Bootstrap
-// primitives on the pages not yet redrawn (sign-in, Telegram, error pages),
-// SweetAlert, react-select's own markup and the rich-text editor.
+// primitives still in use (btn-link, the image lightbox), react-select's
+// own markup and the rich-text editor.
 // Everything is under :root[data-theme="dark"], so light is untouched.
 //
 
@@ -21,10 +21,6 @@ img.rd-logo--dark {
     img.rd-logo--dark {
         display: inline-block;
     }
-
-    // SweetAlert2 reads this attribute for its own dark palette (set by lib/theme.ts).
-    --swal2-dark-theme-black: #{$rd-raised};
-    --swal2-dark-theme-white: #{$rd-ink};
 
     // ------------------------------------------------------------ Page, text
 
@@ -71,11 +67,6 @@ img.rd-logo--dark {
 
     .text-danger {
         color: $rd-critical !important;
-    }
-
-    // Plain links on the sign-in and error pages.
-    .guest-layout a:not(.btn) {
-        color: $rd-brand-ink;
     }
 
     // ------------------------------------------------------ Bootstrap pieces
@@ -241,10 +232,6 @@ img.rd-logo--dark {
     .flow-icon--dark {
         background: $rd-track;
         color: $rd-ink;
-    }
-
-    .app-toast {
-        border-color: $rd-line;
     }
 
     .info-list__label {

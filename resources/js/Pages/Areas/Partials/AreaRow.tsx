@@ -5,13 +5,15 @@ import { confirm } from '@/lib/dialogs';
 import { areaHue } from '@/lib/tags';
 import type { IfeArea } from '@/types/catalogue';
 
-/** One area, editable in place. Only an unused area can be deleted. */
+/** One area, editable in place, with its own errors. Only an unused area can be deleted. */
 export default function AreaRow({ area }: { area: IfeArea }) {
     const formId = `area-form-${area.id}`;
-    const { data, setData, post, processing, isDirty } = useForm({
+    const { data, setData, post, processing, isDirty, errors } = useForm({
         area: area.area,
         description: area.description ?? '',
     });
+    const nameError = `${formId}-area-error`;
+    const descriptionError = `${formId}-description-error`;
 
     const save = (event: FormEvent) => {
         event.preventDefault();
@@ -19,7 +21,14 @@ export default function AreaRow({ area }: { area: IfeArea }) {
     };
 
     const remove = async () => {
-        if (await confirm({ title: `Delete ${area.area}?`, danger: true })) {
+        if (
+            await confirm({
+                title: `Delete ${area.area}?`,
+                text: 'It has no outlets or visits filed under it, so nothing else changes.',
+                confirmText: 'Delete area',
+                danger: true,
+            })
+        ) {
             router.post(route('area.delete'), { id: area.id }, { preserveScroll: true });
         }
     };
@@ -36,6 +45,8 @@ export default function AreaRow({ area }: { area: IfeArea }) {
                         maxLength={30}
                         required
                         className="area-row__name"
+                        invalid={Boolean(errors.area)}
+                        aria-describedby={errors.area ? nameError : undefined}
                         value={data.area}
                         onChange={(event) => setData('area', event.target.value)}
                     />
@@ -43,10 +54,24 @@ export default function AreaRow({ area }: { area: IfeArea }) {
                         aria-label={`What ${area.area} covers`}
                         maxLength={500}
                         placeholder="What it covers"
+                        invalid={Boolean(errors.description)}
+                        aria-describedby={errors.description ? descriptionError : undefined}
                         value={data.description}
                         onChange={(event) => setData('description', event.target.value)}
                     />
                 </form>
+                {errors.area && (
+                    <span className="rd-field__error area-row__error" id={nameError}>
+                        <i className="mdi mdi-alert-circle-outline" aria-hidden="true" />
+                        {errors.area}
+                    </span>
+                )}
+                {errors.description && (
+                    <span className="rd-field__error area-row__error" id={descriptionError}>
+                        <i className="mdi mdi-alert-circle-outline" aria-hidden="true" />
+                        {errors.description}
+                    </span>
+                )}
             </td>
             <td className="num">{area.leads_count}</td>
             <td className="num">{area.reports_count}</td>

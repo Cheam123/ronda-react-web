@@ -2,11 +2,12 @@ import { Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 import { useEffect, useState, type ReactNode } from 'react';
 import Offcanvas from 'react-bootstrap/Offcanvas';
+import TabList from '@/Components/surface/TabList';
 import ActivityComposer from '@/Components/tasks/ActivityComposer';
 import ActivityTimeline from '@/Components/tasks/ActivityTimeline';
 import { useAuth } from '@/hooks/useAuth';
 import { formatPhone, phoneHref } from '@/lib/phone';
-import { taskStatusChip } from '@/lib/taskStatus';
+import { taskStatusChip, taskStatusLabel } from '@/lib/taskStatus';
 import type { TaskFilters, TaskListItem } from '@/types/tasks';
 
 type Tab = 'activity' | 'details';
@@ -63,7 +64,7 @@ export default function TaskPanel({ task, filters, onHide, onImageClick }: TaskP
                         <div className="rd-drawer__meta">
                             <span className={taskStatusChip(shown.status)}>
                                 <span className="rd-dot" />
-                                {shown.status_label}
+                                {taskStatusLabel(shown.status, shown.status_label)}
                             </span>
                             <span className="rd-mono">{shown.reference}</span>
                             {shown.flagged && (
@@ -94,23 +95,22 @@ export default function TaskPanel({ task, filters, onHide, onImageClick }: TaskP
                         >
                             <i className="mdi mdi-close" aria-hidden="true" />
                         </button>
-                        <nav className="rd-tabs rd-drawer__tabs" aria-label="Task panel">
-                            {tabs.map((item) => (
-                                <button
-                                    key={item.key}
-                                    type="button"
-                                    className={clsx('rd-tabs__tab', tab === item.key && 'is-active')}
-                                    aria-pressed={tab === item.key}
-                                    onClick={() => setTab(item.key)}
-                                >
-                                    {item.label}
-                                    {item.count !== undefined && <span className="rd-count">{item.count}</span>}
-                                </button>
-                            ))}
-                        </nav>
+                        <TabList
+                            id="task-panel"
+                            label="Task panel"
+                            className="rd-drawer__tabs"
+                            tabs={tabs}
+                            value={tab}
+                            onChange={setTab}
+                        />
                     </div>
 
-                    <div className="rd-drawer__body">
+                    <div
+                        className="rd-drawer__body"
+                        role="tabpanel"
+                        id="task-panel-panel"
+                        aria-labelledby={`task-panel-tab-${tab}`}
+                    >
                         {tab === 'activity' ? (
                             <>
                                 <Upcoming task={shown} />
@@ -261,11 +261,11 @@ function Details({ task }: { task: TaskListItem }) {
                     People
                 </h3>
                 <dl className="rd-facts task-panel__facts">
-                    <Fact label="Subscriber">
+                    <Fact label="Assigned to">
                         {task.subscriber?.name &&
                             `${task.subscriber.name}${task.subscriber.rate !== null ? ` (rated ${task.subscriber.rate})` : ''}`}
                     </Fact>
-                    <Fact label="Sub-subscribers">{task.sub_subscribers.join(', ')}</Fact>
+                    <Fact label="Helping">{task.sub_subscribers.join(', ')}</Fact>
                     <Fact label="Owners">{task.owners.join(', ')}</Fact>
                 </dl>
             </section>

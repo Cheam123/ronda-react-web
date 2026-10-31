@@ -120,7 +120,7 @@ export default function Records({ records, forms, users, statusCounts, isAdmin, 
                                     key={tab.label}
                                     type="button"
                                     className={clsx('rd-tabs__tab', active && 'is-active')}
-                                    aria-current={active ? 'true' : undefined}
+                                    aria-pressed={active}
                                     onClick={() => choose({ status: tab.value })}
                                 >
                                     {tab.label} <span className="rd-count">{formatNumber(count(tab.value))}</span>
@@ -198,7 +198,7 @@ export default function Records({ records, forms, users, statusCounts, isAdmin, 
                     </div>
 
                     <div className="rd-scroll">
-                        <table className="rd-table rd-table--band records-table">
+                        <table className="rd-table rd-table--band rd-table--stack records-table">
                             <thead>
                                 <tr>
                                     <th scope="col">Record</th>
@@ -214,7 +214,7 @@ export default function Records({ records, forms, users, statusCounts, isAdmin, 
                             <tbody>
                                 {records.data.map((row) => (
                                     <tr key={row.id}>
-                                        <td className="records-table__record">
+                                        <td className="rd-cell-main records-table__record">
                                             <Link
                                                 href={route('form.records.show', row.id)}
                                                 className="records-table__title"
@@ -238,10 +238,10 @@ export default function Records({ records, forms, users, statusCounts, isAdmin, 
                                                 )}
                                             </span>
                                         </td>
-                                        <td className="records-table__status">
+                                        <td className="records-table__status" data-label="Status">
                                             <StatusBadge status={row.closed ? 'closed' : row.status} />
                                         </td>
-                                        <td className="records-table__waiting">
+                                        <td className="records-table__waiting" data-label="Waiting on">
                                             {row.stage_name ? (
                                                 <>
                                                     <span className="records-table__stage">{row.stage_name}</span>
@@ -255,11 +255,13 @@ export default function Records({ records, forms, users, statusCounts, isAdmin, 
                                                 <span className="rd-muted">Nobody</span>
                                             )}
                                         </td>
-                                        <td className="records-table__when">
+                                        <td className="records-table__when" data-label="Submitted">
                                             <span>{row.created_at ?? '—'}</span>
                                             <span className="records-table__sub">{row.submitted_by}</span>
                                         </td>
-                                        <td className="records-table__when">{row.updated_at ?? '—'}</td>
+                                        <td className="records-table__when" data-label="Last activity">
+                                            {row.updated_at ?? '—'}
+                                        </td>
                                         <td className="rd-col-actions">
                                             <div className="rd-actions">
                                                 <Link

@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Tasks;
 use App\Models\User;
+use App\Services\AlertInbox;
 use App\Services\FirebaseService;
 use App\Services\TaskRisk;
 use Illuminate\Console\Command;
@@ -119,9 +120,12 @@ class CheckTaskRisk extends Command
 
         $managers = User::whereIn('type', [User::TYPE_ADMIN, User::TYPE_MANAGER])
             ->where('status', 1)
-            ->whereNotNull('fcm_token')
             ->get();
 
+        // Every manager's Focus alerts get it, with or without a device to push to.
+        AlertInbox::record($managers, $title, implode("\n", $lines), $data);
+
+        $managers = $managers->filter(fn (User $manager) => !empty($manager->fcm_token));
         if ($managers->isEmpty()) {
             return;
         }

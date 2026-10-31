@@ -1,5 +1,6 @@
 import clsx from 'clsx';
 import { forwardRef, type InputHTMLAttributes } from 'react';
+import { useField } from './Field';
 
 interface TextInputProps extends InputHTMLAttributes<HTMLInputElement> {
     invalid?: boolean;
@@ -7,16 +8,21 @@ interface TextInputProps extends InputHTMLAttributes<HTMLInputElement> {
     large?: boolean;
 }
 
+/** A text input; inside a Field it is described by the Field's hint or error. */
 const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function TextInput(
     { invalid = false, large = false, className, autoComplete = 'off', ...props },
     ref,
 ) {
+    const field = useField();
+    const bad = invalid || field.invalid;
+
     return (
         <input
             ref={ref}
             autoComplete={autoComplete}
-            aria-invalid={invalid || undefined}
-            className={clsx('rd-input', !large && 'rd-input--md', invalid && 'is-invalid', className)}
+            aria-invalid={bad || undefined}
+            aria-describedby={field.describedBy}
+            className={clsx('rd-input', !large && 'rd-input--md', bad && 'is-invalid', className)}
             {...props}
         />
     );

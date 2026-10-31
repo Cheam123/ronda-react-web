@@ -1,5 +1,6 @@
 import clsx from 'clsx';
-import type { ReactNode } from 'react';
+import { useId, type ReactNode } from 'react';
+import { describedBy } from '@/Components/form/Field';
 import type { SelectOption } from '@/types';
 
 interface ChoicesProps {
@@ -28,8 +29,13 @@ export function Choices({
     hint,
     disabled,
 }: ChoicesProps) {
+    const id = useId();
+
     return (
-        <fieldset className={clsx('rd-fieldset', error && 'has-error')}>
+        <fieldset
+            className={clsx('rd-fieldset', error && 'has-error')}
+            aria-describedby={describedBy(error ? `${id}-error` : hint ? `${id}-hint` : undefined)}
+        >
             <legend className="rd-field__label">
                 {legend}
                 {required && (
@@ -58,12 +64,16 @@ export function Choices({
                 })}
             </div>
             {error ? (
-                <span className="rd-field__error" role="alert">
+                <span className="rd-field__error" id={`${id}-error`} role="alert">
                     <i className="mdi mdi-alert-circle-outline" aria-hidden="true" />
                     {error}
                 </span>
             ) : (
-                hint && <span className="rd-field__hint">{hint}</span>
+                hint && (
+                    <span className="rd-field__hint" id={`${id}-hint`}>
+                        {hint}
+                    </span>
+                )
             )}
         </fieldset>
     );
@@ -88,8 +98,13 @@ interface RadioCardsProps {
 
 /** A choice where each answer needs a line of explanation (user type). */
 export function RadioCards({ legend, name, options, value, onChange, required = false, error }: RadioCardsProps) {
+    const id = useId();
+
     return (
-        <fieldset className={clsx('rd-fieldset', error && 'has-error')}>
+        <fieldset
+            className={clsx('rd-fieldset', error && 'has-error')}
+            aria-describedby={error ? `${id}-error` : undefined}
+        >
             <legend className="rd-field__label">
                 {legend}
                 {required && (
@@ -117,7 +132,7 @@ export function RadioCards({ legend, name, options, value, onChange, required = 
                 ))}
             </div>
             {error && (
-                <span className="rd-field__error" role="alert">
+                <span className="rd-field__error" id={`${id}-error`} role="alert">
                     <i className="mdi mdi-alert-circle-outline" aria-hidden="true" />
                     {error}
                 </span>

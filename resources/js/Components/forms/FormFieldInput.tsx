@@ -2,6 +2,7 @@ import clsx from 'clsx';
 import type { ReactNode } from 'react';
 import PendingFiles from '@/Components/documents/PendingFiles';
 import { useToast } from '@/Components/feedback/ToastProvider';
+import { FieldProvider } from '@/Components/form/Field';
 import FileDropzone from '@/Components/form/FileDropzone';
 import GpsStampField from '@/Components/form/GpsStampField';
 import SearchSelect from '@/Components/form/SearchSelect';
@@ -143,18 +144,24 @@ export default function FormFieldInput({
                     />
                 );
 
-            case 'user':
+            case 'user': {
+                // A deactivated person is not offered, unless they are the answer already.
+                const chosen = asText(value);
+                const offered = peopleFor(element, people).filter(
+                    (person) => person.active !== false || String(person.id) === chosen,
+                );
                 return (
                     <SearchSelect
                         id={id}
-                        options={peopleFor(element, people).map((person) => ({ value: person.id, label: person.name }))}
+                        options={offered.map((person) => ({ value: person.id, label: person.name }))}
                         placeholder={element.placeholder || 'Choose a person'}
                         disabled={disabled}
                         invalid={invalid}
-                        value={asText(value)}
+                        value={chosen}
                         onChange={(picked) => onChange(picked || null)}
                     />
                 );
+            }
 
             case 'multi-choice':
                 return checkboxes(optionList(element), 'mc');
@@ -242,18 +249,23 @@ export default function FormFieldInput({
         </>
     );
     const hint = element.type === 'multi-choice' || element.type === 'multi-select' ? pickHint(element) : null;
+    const describedBy = error ? `${id}-error` : hint ? `${id}-hint` : undefined;
     const message = error ? (
-        <span className="rd-field__error" role="alert">
+        <span className="rd-field__error" id={`${id}-error`} role="alert">
             <i className="mdi mdi-alert-circle-outline" aria-hidden="true" />
             {error}
         </span>
     ) : (
-        hint && <span className="rd-field__hint">{hint}</span>
+        hint && (
+            <span className="rd-field__hint" id={`${id}-hint`}>
+                {hint}
+            </span>
+        )
     );
 
     if (GROUPED.includes(element.type)) {
         return (
-            <fieldset id={id} className={clsx('rd-fieldset', error && 'has-error')}>
+            <fieldset id={id} className={clsx('rd-fieldset', error && 'has-error')} aria-describedby={describedBy}>
                 <legend className="rd-field__label">{label}</legend>
                 {control}
                 {message}
@@ -272,7 +284,10 @@ export default function FormFieldInput({
                     {label}
                 </label>
             )}
-            {control}
+            {/* The inputs inside read this, so a screen reader hears the error with the field. */}
+            <FieldProvider value={{ describedBy, invalid, errorId: error ? `${id}-error` : undefined }}>
+                {control}
+            </FieldProvider>
             {message}
         </div>
     );

@@ -8,6 +8,7 @@ use App\Http\Requests\TaskCreateRequest;
 use App\Http\Requests\TaskSaveRequest;
 use App\Jobs\FirebaseNotification;
 use App\Models\DocumentUpload;
+use App\Models\IFEReport;
 use App\Models\Leads;
 use App\Models\Notification;
 use App\Models\TaskComment;
@@ -16,6 +17,7 @@ use App\Models\Tasks;
 use App\Models\TaskUsers;
 use App\Models\User;
 use App\Repositories\S3ClientRepo;
+use App\Services\TaskRisk;
 use Illuminate\Http\File;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
@@ -56,6 +58,32 @@ class TaskController extends Controller
 
         $all   = Tasks::with('lead', 'users.user')->visibleTo($user);
         $tasks = Tasks::with('lead', 'users.user')->visibleTo($user);
+
+        // One search box: title, reference, or the outlet's name.
+        if ($request->filled('search')) {
+            $keyword = $request->get('search');
+            $match = function ($q) use ($keyword) {
+                $q->where('title', 'like', '%' . $keyword . '%')
+                  ->orWhere('task_reference', 'like', '%' . $keyword . '%')
+                  ->orWhereHas('lead', fn ($lead) => $lead->where('name', 'like', '%' . $keyword . '%')
+                                                          ->orWhere('business_name', 'like', '%' . $keyword . '%'));
+            };
+            $tasks = $tasks->where($match);
+            $all   = $all->where($match);
+        }
+
+        // One outlet's tasks (the outlet screen's Tasks row).
+        if ($request->filled('lead_id')) {
+            $tasks = $tasks->where('lead_id', $request->get('lead_id'));
+            $all   = $all->where('lead_id', $request->get('lead_id'));
+        }
+
+        // The outlet's area (More filters on the manager's Tasks).
+        if ($request->filled('area')) {
+            $area  = $request->get('area');
+            $tasks = $tasks->whereHas('lead', fn ($lead) => $lead->where('ife_area_id', $area));
+            $all   = $all->whereHas('lead', fn ($lead) => $lead->where('ife_area_id', $area));
+        }
 
         // Apply filters
         if (null != $request->get('leadName') || null != $request->get('businessName')) {
@@ -323,9 +351,21 @@ class TaskController extends Controller
             ];
         }
 
+        // A focus replaces the status filter: the risk ones pick from open
+        // tasks (narrowed after the risk check below), to_check is work marked
+        // done and waiting for its checker, parked is kept in view or on hold.
+        $focus = $request->input('focus');
+        $riskFocus = in_array($focus, ['overdue', 'at_risk', 'urgent', 'due_today'], true);
+
         // Apply Status Filter
         $status = $request->input('status');
-        if ($status === '0' || $status === 0) {
+        if ($riskFocus) {
+            $tasks = $tasks->whereIn('status', TaskRisk::OPEN_STATUSES);
+        } elseif ($focus === 'to_check') {
+            $tasks = $tasks->where('status', 3);
+        } elseif ($focus === 'parked') {
+            $tasks = $tasks->whereIn('status', [6, 8]);
+        } elseif ($status === '0' || $status === 0) {
             $activeStatuses = [1, 2]; // 1=New, 2=In Progress
             $tasks = $tasks->whereIn('status', $activeStatuses);
         } elseif ($status) {
@@ -439,6 +479,30 @@ class TaskController extends Controller
             }
         }
 
+        // Narrow and order the risk focuses with the same check the
+        // dashboard uses: overdue first, then at risk, each by due time.
+        $riskCheck = TaskRisk::fromConfig();
+        $now       = now();
+        if ($riskFocus) {
+            $today = $now->toDateString();
+            $tasks = $tasks->map(fn ($task) => ['task' => $task, 'risk' => $riskCheck->assessTask($task, $now)])
+                ->filter(function ($row) use ($focus, $today) {
+                    $level = $row['risk']['level'];
+                    return match ($focus) {
+                        'overdue'   => $level === TaskRisk::OVERDUE,
+                        'at_risk'   => $level === TaskRisk::AT_RISK,
+                        'urgent'    => $level !== TaskRisk::ON_TRACK,
+                        'due_today' => $row['task']->due_date && Carbon::parse($row['task']->due_date)->toDateString() === $today,
+                    };
+                })
+                ->sortBy(fn ($row) => [
+                    $row['risk']['level'] === TaskRisk::OVERDUE ? 0 : ($row['risk']['level'] === TaskRisk::AT_RISK ? 1 : 2),
+                    optional($row['risk']['due_at'])->getTimestamp() ?? PHP_INT_MAX,
+                ])
+                ->map(fn ($row) => $row['task'])
+                ->values();
+        }
+
         // Pagination
         $perPage    = $request->get('per_page', 10);
         $page       = $request->get('page', 1);
@@ -470,10 +534,11 @@ class TaskController extends Controller
         }
 
         $data = [];
-        $data['tasks']              = $tasks->map(function ($task) use ($user) {
+        $data['tasks']              = $tasks->map(function ($task) use ($user, $riskCheck, $now) {
             return [
                 'id'                    => $task->id,
                 'alert'                 => $task->alert,
+                ...$this->mobileTaskExtras($task, $riskCheck, $now),
                 'lead_name'             => $task->lead->name ?? null,
                 'lead_id'               => $task->lead_id,
                 'title'                 => $task->title,
@@ -515,13 +580,51 @@ class TaskController extends Controller
                 return $this->response_failed('Task ID is required.');
             }
 
-            $task = Tasks::with( 'users.user')->find($taskID);
+            // Only a task the caller may see (everyone, for Admin/Manager).
+            $task = Tasks::with('users.user', 'lead')->visibleTo($user)->find($taskID);
             if (!$task) {
                 return $this->response_failed('Task not found.');
             }
 
+            // What the doer wrote when they marked it done, for the checker.
+            $doneNote = TaskHistory::where('task_id', $task->id)
+                ->where('after_status', 3)
+                ->latest('id')
+                ->first();
+
+            // Why the checker sent it back (Done to In Progress), while it is in
+            // progress again: the doer needs the reason to finish it.
+            $sentBack = (int) $task->status === 2
+                ? TaskHistory::where('task_id', $task->id)
+                    ->where('before_status', 3)
+                    ->where('after_status', 2)
+                    ->latest('id')
+                    ->first()
+                : null;
+
             $data = [
                 'id'                    => $task->id,
+                ...$this->mobileTaskExtras($task, TaskRisk::fromConfig(), now()),
+                'reminder_at'           => $task->reminder_date_time,
+                'done_remark'           => optional($doneNote)->remark,
+                'done_by'               => optional(optional($doneNote)->updatedBy)->name,
+                // Photos added with Mark as done: the task's own files from then on.
+                'done_photos'           => $doneNote
+                    ? Helper::media_documents_array(DocumentUpload::where('task_id', $task->id)
+                        ->whereNull('task_comment_id')
+                        ->where('created_at', '>=', $doneNote->created_at->copy()->subMinute())
+                        ->get())
+                    : null,
+                'sent_back'             => $sentBack ? [
+                    'remark' => $sentBack->remark,
+                    'by'     => optional($sentBack->updatedBy)->name,
+                    'at'     => optional($sentBack->created_at)->toDateTimeString(),
+                ] : null,
+                'verify_date'           => $task->verify_date,
+                'invoice_no'            => $task->invoice_no,
+                'sales'                 => $task->sales,
+                'lead_mobile'           => optional($task->lead)->mobile,
+                'creator'               => optional(optional($task->users->firstWhere('role', 1))->user)->name,
                 'reference_no'          => $task->task_reference ?? null,
                 'lead'                  => $task->lead->name,
                 'lead_id'               => $task->lead_id,
@@ -637,6 +740,22 @@ class TaskController extends Controller
         // Only on a lead this user can already see (everyone, for Admin/Manager).
         if (Leads::visibleTo($user)->where('id', $request->input('lead_id'))->doesntExist()) {
             return $this->response_failed('We could not find this outlet.');
+        }
+
+        // "Make it a task" from a visit report: the same link as the web's
+        // convert, checked before anything is written.
+        $report = null;
+        if ($request->filled('ife_report_id')) {
+            if (!$user->can('manage_ife_report')) {
+                return $this->response_failed('Only your manager can make a visit report a task.');
+            }
+            $report = IFEReport::visibleTo($user)->find($request->input('ife_report_id'));
+            if (!$report) {
+                return $this->response_failed('We could not find this visit report.');
+            }
+            if ($report->task_id) {
+                return $this->response_failed('This visit report is already a task.');
+            }
         }
 
         try {
@@ -757,6 +876,10 @@ class TaskController extends Controller
             $history->remark            = null;
             $history->save();
 
+            if ($report) {
+                $this->linkVisitReport($report, $task);
+            }
+
             $runJob = (new FirebaseNotification($task->id, 'task', '1'));
             dispatch($runJob);
 
@@ -775,6 +898,28 @@ class TaskController extends Controller
 
             return $this->response_failed('An unexpected error occurred while creating the task.');
         }
+    }
+
+    /**
+     * Tie a visit report to the task made from it, as the web's convert does:
+     * the report points at the task (and its outlet), and the task's messages
+     * open with the report.
+     */
+    private function linkVisitReport(IFEReport $report, Tasks $task): void
+    {
+        $report->task_id = $task->id;
+        if (!$report->lead_id) {
+            $report->lead_id = $task->lead_id;
+        }
+        $report->save();
+
+        $comment                = new TaskComment();
+        $comment->task_id       = $task->id;
+        $comment->submit_by     = $report->created_by;
+        $comment->submit_date   = now();
+        $comment->message       = Helper::generateIfeReportHTML($report);
+        $comment->ife_report_id = $report->id;
+        $comment->save();
     }
 
     public function updateTask(TaskSaveRequest $request)
@@ -992,6 +1137,11 @@ class TaskController extends Controller
             $request->validate(['taskID' => 'required|integer']);
             $taskID = $request->input('taskID');
 
+            // Only the messages of a task the caller may see.
+            if (Tasks::visibleTo($request->user())->whereKey($taskID)->doesntExist()) {
+                return $this->response_failed('Task not found.');
+            }
+
             // 1. Build the base query from the TaskComment model.
             $commentsQuery = TaskComment::where('task_id', $taskID)
                 ->with(['submitBy', 'documentUploads'])
@@ -1068,6 +1218,11 @@ class TaskController extends Controller
     {
         try {
             $user = $request->user();
+
+            // Only on a task the caller may see.
+            if (Tasks::visibleTo($user)->whereKey($request->input('task_id'))->doesntExist()) {
+                return $this->response_failed('Task not found.');
+            }
             
             $newComment = DB::transaction(function () use ( $request, $user) {
                 // Create the comment first, so we have an ID to associate with uploads.
@@ -1448,7 +1603,7 @@ class TaskController extends Controller
                 $history->after_status      = $param_a->status;
                 $history->content_before    = serialize($data['before']);
                 $history->content_after     = serialize($data['after']);
-                $history->remark            = $validatedData['special_remark'];
+                $history->remark            = $validatedData['special_remark'] ?? null;
                 $history->save();
 
                 $runJob = (new FirebaseNotification($task->id, 'task', '6'));
@@ -1507,16 +1662,19 @@ class TaskController extends Controller
 
                 $task->status = 3;
 
-                if ($validatedData['invoice_no'] !== null && !empty($validatedData['invoice_no'])) {
+                if (!empty($validatedData['invoice_no'] ?? null)) {
                     $task->invoice_no = $validatedData['invoice_no'];
                 }
 
-                if ($validatedData['sales_amt'] !== null && is_numeric($validatedData['sales_amt'])) {
+                if (isset($validatedData['sales_amt']) && is_numeric(str_replace(',', '', $validatedData['sales_amt']))) {
                    $task->sales = str_replace(',','',$validatedData['sales_amt']);
                 }
                 
                 $task->done_date = now();
                 $task->save();
+
+                // Photos of the finished work, for the checker.
+                $this->upload($request, $task->id, 'files');
 
                 /**
                  * ROLE:
@@ -1537,7 +1695,7 @@ class TaskController extends Controller
                 $history->after_status      = $param_a->status;
                 $history->content_before    = serialize($data['before']);
                 $history->content_after     = serialize($data['after']);
-                $history->remark            = $validatedData['special_remark'];
+                $history->remark            = $validatedData['special_remark'] ?? null;
                 $history->save();
 
                 $runJob = (new FirebaseNotification($task->id, 'task', '3'));
@@ -1618,7 +1776,7 @@ class TaskController extends Controller
                 $history->after_status      = $param_a->status;
                 $history->content_before    = serialize($data['before']);
                 $history->content_after     = serialize($data['after']);
-                $history->remark            = $validatedData['special_remark'];
+                $history->remark            = $validatedData['special_remark'] ?? null;
                 $history->save();
 
                 $runJob = (new FirebaseNotification($task->id, 'task', '8'));
@@ -1698,7 +1856,7 @@ class TaskController extends Controller
                 $history->after_status      = $param_a->status;
                 $history->content_before    = serialize($data['before']);
                 $history->content_after     = serialize($data['after']);
-                $history->remark            = $validatedData['special_remark'];
+                $history->remark            = $validatedData['special_remark'] ?? null;
                 $history->save();
 
                 $runJob = (new FirebaseNotification($task->id, 'task', '4'));
@@ -1778,7 +1936,7 @@ class TaskController extends Controller
                 $history->after_status      = $param_a->status;
                 $history->content_before    = serialize($data['before']);
                 $history->content_after     = serialize($data['after']);
-                $history->remark            = $validatedData['special_remark'];
+                $history->remark            = $validatedData['special_remark'] ?? null;
                 $history->save();
 
                 $runJob = (new FirebaseNotification($task->id, 'task', '5'));
@@ -1859,7 +2017,7 @@ class TaskController extends Controller
                 $history->after_status      = $param_a->status;
                 $history->content_before    = serialize($data['before']);
                 $history->content_after     = serialize($data['after']);
-                $history->remark            = $validatedData['special_remark'];
+                $history->remark            = $validatedData['special_remark'] ?? null;
                 $history->save();
 
                 $runJob = (new FirebaseNotification($task->id, 'task', '6'));
@@ -1939,7 +2097,7 @@ class TaskController extends Controller
                 $history->after_status      = $param_a->status;
                 $history->content_before    = serialize($data['before']);
                 $history->content_after     = serialize($data['after']);
-                $history->remark            = $validatedData['special_remark'];
+                $history->remark            = $validatedData['special_remark'] ?? null;
                 $history->save();
 
                 $runJob = (new FirebaseNotification($task->id, 'task', '7'));
@@ -1969,6 +2127,68 @@ class TaskController extends Controller
                 }
                 sleep(1);
             }
+        }
+    }
+    /**
+     * Fields the mobile list and detail add to every task: the reference,
+     * the outlet's shop name, the risk check the dashboard uses, and who
+     * checks it. Open tasks only carry a risk; others read as on track.
+     */
+    private function mobileTaskExtras(Tasks $task, TaskRisk $riskCheck, Carbon $now): array
+    {
+        $assessment = in_array((int) $task->status, TaskRisk::OPEN_STATUSES, true)
+            ? $riskCheck->assessTask($task, $now)
+            : ['level' => TaskRisk::ON_TRACK, 'reason' => null, 'due_at' => TaskRisk::combine($task->due_date, $task->due_time, '23:59:59')];
+        $checker = $task->users->firstWhere('role', 3);
+
+        return [
+            'reference'    => $task->task_reference,
+            'outlet_name'  => optional($task->lead)->business_name ?: optional($task->lead)->name,
+            'status_label' => Tasks::getTaskStatus($task->status),
+            'risk'         => $assessment['level'],
+            'risk_reason'  => $assessment['reason'],
+            'due_at'       => optional($assessment['due_at'])->toDateTimeString(),
+            'checker'      => optional(optional($checker)->user)->name,
+            'checker_id'   => optional($checker)->user_id,
+            'done_date'    => $task->done_date,
+        ];
+    }
+
+    /**
+     * Store files sent under $key as the task's own documents (not tied to a
+     * message). Used when a task is added with a file, and for the photos a
+     * rep adds when they mark a task as done.
+     */
+    private function upload(Request $request, $taskId, string $key = 'file'): void
+    {
+        if (!$request->hasFile($key)) {
+            return;
+        }
+
+        $files = $request->file($key);
+        if (!is_array($files)) {
+            $files = [$files];
+        }
+
+        foreach ($files as $i => $file) {
+            if (!$file->isValid()) {
+                continue;
+            }
+
+            $sanitizedName = str_replace(' ', '_', pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME));
+            $filename      = "{$sanitizedName}_{$taskId}-" . ($i + 1) . '-' . time() . ".{$file->extension()}";
+
+            Storage::putFileAs("task/{$taskId}", new File($file), $filename);
+
+            $documentUpload                  = new DocumentUpload();
+            $documentUpload->lead_id         = null;
+            $documentUpload->task_id         = $taskId;
+            $documentUpload->task_comment_id = null;
+            $documentUpload->upload_by       = $request->user()->id;
+            $documentUpload->filename        = $filename;
+            $documentUpload->size            = $file->getSize();
+            $documentUpload->mime_type       = $file->getMimeType();
+            $documentUpload->save();
         }
     }
 }

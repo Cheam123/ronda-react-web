@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import Initials from '@/Components/surface/Initials';
 import PageHeader, { type Crumb } from '@/Components/surface/PageHeader';
 import { useAuth } from '@/hooks/useAuth';
-import { taskStatusChip } from '@/lib/taskStatus';
+import { taskStatusChip, taskStatusLabel } from '@/lib/taskStatus';
 import type { TaskDetail } from '@/types/tasks';
 
 interface TaskHeaderProps {
@@ -23,13 +23,13 @@ export default function TaskHeader({ task, listHref, trail, title, actions }: Ta
 
     return (
         <PageHeader
-            crumbs={[{ label: 'Home', href: '/index' }, { label: 'Task', href: listHref }, ...trail]}
+            crumbs={[{ label: 'Home', href: '/index' }, { label: 'Tasks', href: listHref }, ...trail]}
             title={title ?? task.title}
             meta={
                 <>
                     <span className={taskStatusChip(task.status)}>
                         <span className="rd-dot" />
-                        {task.status_label}
+                        {taskStatusLabel(task.status, task.status_label)}
                     </span>
                     <span className="rd-mono">{task.reference}</span>
                     <span className="task-head__part">

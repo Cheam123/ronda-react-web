@@ -17,9 +17,13 @@ class IfeReportResource extends JsonResource
         return [
             'id'                   => $this->id,
             'salesperson'          => optional($this->createdBy)->name,
-            'created_at'           => $this->created_at->format('M j, Y g:i A'),
-            'updated_at'           => $this->updated_at->format('M j, Y g:i A'),
+            // "12 Oct 2026, 4:21 am", as dates read across the app.
+            'created_at'           => $this->created_at->format('j M Y, g:i a'),
+            'updated_at'           => $this->updated_at->format('j M Y, g:i a'),
             'task_title'           => optional($this->task)->title,
+            // The report page links to its outlet (unless it was deleted) and its task, or offers to make one.
+            'lead_id'              => $this->lead && !$this->lead->trashed() ? $this->lead_id : null,
+            'task_id'              => $this->task_id,
             'company_name'         => $this->company_name,
             // Filed from an existing lead it holds the lead's category id; typed in the app, free text.
             'nature_of_business'   => is_numeric($this->nature_of_business)
@@ -37,7 +41,7 @@ class IfeReportResource extends JsonResource
             'mobile_number'        => $this->mobile_number,
             'other_mobile_numbers' => $this->other_mobile_numbers,
             'email'                => $this->email,
-            'next_followup_date'   => $this->next_followup_date ? date('M j, Y', strtotime($this->next_followup_date)) : null,
+            'next_followup_date'   => $this->next_followup_date ? date('j M Y', strtotime($this->next_followup_date)) : null,
             'next_followup_plan'   => $this->next_followup_plan,
             'photos'               => $this->documentUploads->map(fn ($document) => [
                 'id'  => $document->id,

@@ -45,6 +45,7 @@ class TaskCreateRequest extends FormRequest
             'viewer'                => 'nullable',
             'remark'                => 'nullable',
             'lead_id'               => 'required',
+            'ife_report_id'         => 'nullable|integer',
         ];
     }
 }

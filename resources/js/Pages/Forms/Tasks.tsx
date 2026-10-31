@@ -23,7 +23,7 @@ interface FormTask {
 
 type Tab = 'all' | 'approval' | 'fill';
 
-/** My tasks: approvals waiting on the signed-in user, and parts of forms for them to fill in. */
+/** Waiting on me: approvals waiting on the signed-in user, and parts of forms for them to fill in. */
 export default function FormTasks({ tasks }: { tasks: FormTask[] }) {
     const [tab, setTab] = useState<Tab>('all');
     const isFill = (task: FormTask) => task.stage_type === 'fill';
@@ -36,11 +36,11 @@ export default function FormTasks({ tasks }: { tasks: FormTask[] }) {
     ];
 
     return (
-        <AppLayout title="My tasks">
+        <AppLayout title="Waiting on me">
             <SurfacePage>
                 <PageHeader
-                    crumbs={[{ label: 'Home', href: '/index' }, { label: 'My tasks' }]}
-                    title="My tasks"
+                    crumbs={[{ label: 'Home', href: '/index' }, { label: 'Waiting on me' }]}
+                    title="Waiting on me"
                     lede="Forms waiting on you: approvals to give and parts to fill in."
                 />
 
@@ -60,7 +60,7 @@ export default function FormTasks({ tasks }: { tasks: FormTask[] }) {
                     </nav>
 
                     <div className="rd-scroll">
-                        <table className="rd-table rd-table--band records-table">
+                        <table className="rd-table rd-table--band rd-table--stack records-table">
                             <thead>
                                 <tr>
                                     <th scope="col">Record</th>
@@ -79,7 +79,7 @@ export default function FormTasks({ tasks }: { tasks: FormTask[] }) {
 
                                     return (
                                         <tr key={task.submission_id}>
-                                            <td className="records-table__record">
+                                            <td className="rd-cell-main records-table__record">
                                                 <Link href={href} className="records-table__title">
                                                     {task.record_title}
                                                 </Link>
@@ -88,7 +88,7 @@ export default function FormTasks({ tasks }: { tasks: FormTask[] }) {
                                                     {task.form_name}
                                                 </span>
                                             </td>
-                                            <td>
+                                            <td data-label="Submitted">
                                                 <span className="rd-person rd-person--sm">
                                                     <Initials name={task.submitted_by} size="sm" />
                                                     <span className="rd-person__text">
@@ -102,7 +102,7 @@ export default function FormTasks({ tasks }: { tasks: FormTask[] }) {
                                                     </span>
                                                 </span>
                                             </td>
-                                            <td>
+                                            <td data-label="Waiting for you to">
                                                 <span className={tagClass(meta.hue)}>
                                                     {fill ? 'Fill in' : 'Approve'}: {task.stage_name ?? meta.label}
                                                 </span>

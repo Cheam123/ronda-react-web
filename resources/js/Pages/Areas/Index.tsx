@@ -23,12 +23,13 @@ export default function AreasIndex({ areas }: { areas: IfeArea[] }) {
         <AppLayout title="IFE areas">
             <SurfacePage>
                 <PageHeader
-                    crumbs={[{ label: 'Admin' }, { label: 'IFE areas' }]}
+                    crumbs={[{ label: 'Home', href: '/index' }, { label: 'Admin' }, { label: 'IFE areas' }]}
                     title="IFE areas"
-                    lede="The territories outlets and visit reports are filed under. An area with no outlets or visits can be deleted."
+                    lede="In-field (IFE) areas: the territories outlets and visit reports are filed under. An area with no outlets or visits can be deleted."
                 />
 
-                <ErrorSummary />
+                {/* The add form's errors only; each row shows its own under its fields. */}
+                <ErrorSummary errors={errors} />
 
                 <section className="rd-panel" aria-labelledby="add-area-title">
                     <h2 id="add-area-title" className="rd-panel__title">

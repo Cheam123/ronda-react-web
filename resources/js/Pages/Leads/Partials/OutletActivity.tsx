@@ -1,4 +1,4 @@
-import { router, usePage } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import clsx from 'clsx';
 import { Fragment, useState } from 'react';
 import Meter from '@/Components/surface/Meter';
@@ -21,7 +21,7 @@ export function VisitHistory({ visits }: { visits: Visit[] }) {
 
     return (
         <div className="rd-scroll">
-            <table className="rd-table rd-table--flush lead-activity__table">
+            <table className="rd-table rd-table--flush rd-table--stack lead-activity__table">
                 <thead>
                     <tr>
                         <th scope="col">Visited</th>
@@ -39,14 +39,16 @@ export function VisitHistory({ visits }: { visits: Visit[] }) {
 
                         return (
                             <tr key={visit.id} className="lead-activity__top">
-                                <td className="text-nowrap">
+                                <td className="rd-cell-main text-nowrap">
                                     <span className="rd-person__text">
                                         <span className="lead-activity__strong">{date}</span>
                                         {time && <span className="rd-person__sub">{time}</span>}
                                     </span>
                                 </td>
-                                <td className="text-nowrap">{visit.visited_by ?? '—'}</td>
-                                <td>
+                                <td data-label="By" className="text-nowrap">
+                                    {visit.visited_by ?? '—'}
+                                </td>
+                                <td data-label="What happened">
                                     <div className="lead-activity__stack">
                                         {visit.status && (
                                             <span className="rd-chip align-self-start">{visit.status}</span>
@@ -54,7 +56,10 @@ export function VisitHistory({ visits }: { visits: Visit[] }) {
                                         <span>{visit.summary}</span>
                                     </div>
                                 </td>
-                                <td>
+                                <td
+                                    data-label="Next follow-up"
+                                    className={visit.followup_date ? undefined : 'is-empty'}
+                                >
                                     {visit.followup_date ? (
                                         <span className="rd-person__text">
                                             <span className="lead-activity__strong">{visit.followup_date}</span>
@@ -67,16 +72,14 @@ export function VisitHistory({ visits }: { visits: Visit[] }) {
                                     )}
                                 </td>
                                 <td className="rd-col-actions">
-                                    <a
+                                    <Link
                                         href={route('ifereport.view', { id: visit.id })}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
                                         className="rd-btn rd-btn--icon"
-                                        aria-label={`Open the IFE report from ${date}`}
+                                        aria-label={`Open the visit report from ${date}`}
                                         title="Open the report"
                                     >
                                         <i className="mdi mdi-clipboard-text-outline" aria-hidden="true" />
-                                    </a>
+                                    </Link>
                                 </td>
                             </tr>
                         );
@@ -96,6 +99,8 @@ export function OrderHistory({ orders }: { orders: Order[] }) {
         const confirmed = await confirm({
             title: `Cancel ${order.order_no}?`,
             text: 'It stays on the history but stops counting as a purchase.',
+            confirmText: 'Cancel order',
+            cancelText: 'Keep it',
             danger: true,
         });
         if (confirmed) {
@@ -109,7 +114,7 @@ export function OrderHistory({ orders }: { orders: Order[] }) {
 
     return (
         <div className="rd-scroll">
-            <table className="rd-table rd-table--flush lead-activity__table">
+            <table className="rd-table rd-table--flush rd-table--stack lead-activity__table">
                 <thead>
                     <tr>
                         <th scope="col">Order</th>
@@ -127,14 +132,16 @@ export function OrderHistory({ orders }: { orders: Order[] }) {
                 <tbody>
                     {orders.map((order) => (
                         <tr key={order.id} className={clsx('lead-activity__top', order.cancelled && 'is-inactive')}>
-                            <td className="text-nowrap">
+                            <td className="rd-cell-main text-nowrap">
                                 <div className="lead-activity__stack">
                                     <span className="rd-mono lead-activity__strong">{order.order_no}</span>
                                     {order.cancelled && <span className="rd-chip align-self-start">Cancelled</span>}
                                 </div>
                             </td>
-                            <td className="text-nowrap">{order.order_date}</td>
-                            <td>
+                            <td data-label="Date" className="text-nowrap">
+                                {order.order_date}
+                            </td>
+                            <td data-label="Products">
                                 <div className="lead-activity__stack lead-activity__stack--tight">
                                     {order.lines.map((line, index) => (
                                         <span key={index}>
@@ -144,8 +151,12 @@ export function OrderHistory({ orders }: { orders: Order[] }) {
                                     {order.remark && <span className="lead-activity__note">{order.remark}</span>}
                                 </div>
                             </td>
-                            <td className="num lead-activity__strong">{formatMoney(order.total_amount)}</td>
-                            <td className="text-nowrap">{order.recorded_by ?? '—'}</td>
+                            <td data-label={`Total (${currency})`} className="num lead-activity__strong">
+                                {formatMoney(order.total_amount)}
+                            </td>
+                            <td data-label="Recorded by" className="text-nowrap">
+                                {order.recorded_by ?? '—'}
+                            </td>
                             <td className="rd-col-actions">
                                 {can('manage_order') && !order.cancelled && (
                                     <button
@@ -171,12 +182,16 @@ export function OrderHistory({ orders }: { orders: Order[] }) {
  */
 export function SuggestedOrders({ recommendation, leadId }: { recommendation: Recommendation; leadId: number }) {
     const { currency } = usePage<PageProps>().props.app;
+    const { can } = useAuth();
     const items = recommendation.items ?? [];
     const explanation = recommendation.explanation;
     const [open, setOpen] = useState<string | null>(null);
     const [tips, setTips] = useState<PitchTips | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    // Ticked products go onto a new order; all of them to start with.
+    const [picked, setPicked] = useState<string[]>(() => items.map((item) => item.sku));
+    const canOrder = can('record_order');
 
     // One call writes the tips for every product; they are cached server-side.
     const toggle = async (sku: string) => {
@@ -205,6 +220,24 @@ export function SuggestedOrders({ recommendation, leadId }: { recommendation: Re
 
     const gaps = recommendation.gap_count ?? 0;
     const topUps = items.filter((item) => item.status === 'top_up').length;
+    const chosen = items.filter((item) => picked.includes(item.sku));
+    const allPicked = chosen.length === items.length;
+    const togglePick = (sku: string) =>
+        setPicked((current) => (current.includes(sku) ? current.filter((other) => other !== sku) : [...current, sku]));
+
+    // Record an order reads ?suggested=<product id>:<quantity>,…; a top-up starts at the gap.
+    const orderHref = route('lead.orders.create', {
+        id: leadId,
+        suggested: chosen
+            .map((item) => {
+                const quantity =
+                    item.status === 'top_up'
+                        ? Math.max(item.recommended_qty - item.current_qty, 0)
+                        : item.recommended_qty;
+                return `${item.product_id}:${Math.round(quantity * 100) / 100}`;
+            })
+            .join(','),
+    });
 
     return (
         <div className="lead-activity__suggested">
@@ -216,10 +249,41 @@ export function SuggestedOrders({ recommendation, leadId }: { recommendation: Re
                 </strong>{' '}
                 more a month.
             </p>
+            {canOrder && (
+                <div className="lead-activity__order">
+                    {chosen.length > 0 ? (
+                        <Link href={orderHref} className="rd-btn rd-btn--primary">
+                            <i className="mdi mdi-cart-plus" aria-hidden="true" />
+                            Start an order with {pluralize(chosen.length, 'product')}
+                        </Link>
+                    ) : (
+                        <span className="rd-btn rd-btn--primary is-disabled" aria-disabled="true">
+                            <i className="mdi mdi-cart-plus" aria-hidden="true" />
+                            Start an order
+                        </span>
+                    )}
+                    <span className="lead-activity__note">
+                        {chosen.length > 0
+                            ? 'Each ticked product becomes a line at its suggested quantity; change any of them on the order.'
+                            : 'Tick the products to put on the order.'}
+                    </span>
+                </div>
+            )}
             <div className="rd-scroll">
-                <table className="rd-table rd-table--flush lead-activity__table">
+                <table className="rd-table rd-table--flush rd-table--stack lead-activity__table">
                     <thead>
                         <tr>
+                            {canOrder && (
+                                <th scope="col" className="rd-col-check">
+                                    <input
+                                        type="checkbox"
+                                        className="rd-check"
+                                        aria-label="Put every suggested product on the order"
+                                        checked={allPicked}
+                                        onChange={() => setPicked(allPicked ? [] : items.map((item) => item.sku))}
+                                    />
+                                </th>
+                            )}
                             <th scope="col">Product</th>
                             <th scope="col">
                                 <span className="visually-hidden">Kind</span>
@@ -240,7 +304,18 @@ export function SuggestedOrders({ recommendation, leadId }: { recommendation: Re
                         {items.map((item) => (
                             <Fragment key={item.sku}>
                                 <tr className={clsx(open === item.sku && 'is-open')}>
-                                    <td>
+                                    {canOrder && (
+                                        <td className="rd-col-check">
+                                            <input
+                                                type="checkbox"
+                                                className="rd-check"
+                                                aria-label={`Put ${item.name} on the order`}
+                                                checked={picked.includes(item.sku)}
+                                                onChange={() => togglePick(item.sku)}
+                                            />
+                                        </td>
+                                    )}
+                                    <td className="rd-cell-main">
                                         <span className="rd-person__text">
                                             <span className="lead-activity__strong">{item.name}</span>
                                             <span className="lead-pitch__line">
@@ -265,14 +340,14 @@ export function SuggestedOrders({ recommendation, leadId }: { recommendation: Re
                                         <span
                                             className={
                                                 item.status === 'gap'
-                                                    ? 'rd-chip rd-chip--good'
+                                                    ? 'rd-chip rd-chip--blue'
                                                     : 'rd-chip rd-chip--serious'
                                             }
                                         >
                                             {item.status === 'gap' ? 'Not ordered' : 'Top up'}
                                         </span>
                                     </td>
-                                    <td>
+                                    <td data-label="Similar outlets buying">
                                         <div className="lead-activity__support">
                                             <Meter value={item.support} max={1} thin />
                                             <span className="text-nowrap">
@@ -280,17 +355,22 @@ export function SuggestedOrders({ recommendation, leadId }: { recommendation: Re
                                             </span>
                                         </div>
                                     </td>
-                                    <td className="num">
+                                    <td className="num" data-label="Suggested a month">
                                         {item.recommended_qty} {item.unit}
                                     </td>
-                                    <td className="num">
+                                    <td className="num" data-label="Now a month">
                                         {item.current_qty} {item.unit}
                                     </td>
-                                    <td className="num lead-activity__strong">{formatMoney(item.est_monthly_value)}</td>
+                                    <td
+                                        className="num lead-activity__strong"
+                                        data-label={`Value a month (${currency})`}
+                                    >
+                                        {formatMoney(item.est_monthly_value)}
+                                    </td>
                                 </tr>
                                 {open === item.sku && (
                                     <tr className="lead-pitch__row">
-                                        <td colSpan={6} id={`pitch-${item.sku}`}>
+                                        <td colSpan={canOrder ? 7 : 6} id={`pitch-${item.sku}`}>
                                             <PitchTip
                                                 tip={tips?.pitches[item.sku]}
                                                 source={tips?.source ?? null}

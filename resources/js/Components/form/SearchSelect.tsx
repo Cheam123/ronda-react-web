@@ -1,6 +1,13 @@
 import clsx from 'clsx';
-import ReactSelect, { type GroupBase, type Props as ReactSelectProps, type StylesConfig } from 'react-select';
+import ReactSelect, {
+    components,
+    type GroupBase,
+    type InputProps,
+    type Props as ReactSelectProps,
+    type StylesConfig,
+} from 'react-select';
 import type { SelectOption } from '@/types';
+import { describedBy, useField, type FieldState } from './Field';
 import type { OptionGroup } from './Select';
 
 type Value = string | number;
@@ -9,6 +16,13 @@ const styles: StylesConfig<SelectOption, boolean, GroupBase<SelectOption>> = {
     // Menus render into <body> so table cells and cards never clip them.
     menuPortal: (base) => ({ ...base, zIndex: 1100 }),
 };
+
+/** react-select's own input, also described by the surrounding Field's hint or error. */
+function DescribedInput(props: InputProps<SelectOption, boolean, GroupBase<SelectOption>>) {
+    const field = useField();
+
+    return <components.Input {...props} aria-describedby={describedBy(props['aria-describedby'], field.describedBy)} />;
+}
 
 interface BaseProps {
     options: SelectOption[];
@@ -29,34 +43,42 @@ interface BaseProps {
     className?: string;
 }
 
-function commonProps({
-    options,
-    groups = [],
-    placeholder,
-    id,
-    name,
-    ariaLabel,
-    invalid,
-    disabled,
-    clearable = true,
-    searchable = true,
-    compact = false,
-    className,
-}: BaseProps): Partial<ReactSelectProps<SelectOption, boolean>> {
+function commonProps(
+    {
+        options,
+        groups = [],
+        placeholder,
+        id,
+        name,
+        ariaLabel,
+        invalid,
+        disabled,
+        clearable = true,
+        searchable = true,
+        compact = false,
+        className,
+    }: BaseProps,
+    field: FieldState,
+): Partial<ReactSelectProps<SelectOption, boolean>> {
+    const bad = invalid || field.invalid;
+
     return {
         options: [...options, ...groups],
-        placeholder: placeholder ?? '-- Select --',
+        placeholder: placeholder ?? 'Choose…',
         inputId: id,
         name,
         'aria-label': ariaLabel,
+        'aria-invalid': bad || undefined,
+        'aria-errormessage': field.errorId,
         isDisabled: disabled,
         isClearable: clearable,
         isSearchable: searchable,
         isOptionDisabled: (option) => Boolean(option.disabled),
-        className: clsx('search-select', compact && 'search-select--compact', invalid && 'is-invalid', className),
+        className: clsx('search-select', compact && 'search-select--compact', bad && 'is-invalid', className),
         classNamePrefix: 'rs',
         menuPortalTarget: typeof document !== 'undefined' ? document.body : undefined,
         styles,
+        components: { Input: DescribedInput },
     };
 }
 
@@ -75,11 +97,12 @@ interface SearchSelectProps extends BaseProps {
  * a filter's "All ..." is an option whose value is ''.
  */
 export default function SearchSelect({ value, onChange, ...props }: SearchSelectProps) {
+    const field = useField();
     const selected = allOptions(props).find((option) => String(option.value) === String(value ?? '')) ?? null;
 
     return (
         <ReactSelect<SelectOption, false>
-            {...(commonProps(props) as ReactSelectProps<SelectOption, false>)}
+            {...(commonProps(props, field) as ReactSelectProps<SelectOption, false>)}
             value={selected}
             onChange={(option) => onChange(option ? String(option.value) : '')}
         />
@@ -93,12 +116,13 @@ interface MultiSearchSelectProps extends BaseProps {
 
 /** A searchable multi select with removable chips. */
 export function MultiSearchSelect({ value, onChange, ...props }: MultiSearchSelectProps) {
+    const field = useField();
     const wanted = new Set(value.map(String));
     const selected = allOptions(props).filter((option) => wanted.has(String(option.value)));
 
     return (
         <ReactSelect<SelectOption, true>
-            {...(commonProps(props) as ReactSelectProps<SelectOption, true>)}
+            {...(commonProps(props, field) as ReactSelectProps<SelectOption, true>)}
             isMulti
             closeMenuOnSelect={false}
             value={selected}

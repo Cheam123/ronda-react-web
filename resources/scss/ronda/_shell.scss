@@ -398,3 +398,180 @@ html #nprogress .bar {
         gap: 8px;
     }
 }
+
+// ------------------------------------------------------------- Quick find
+
+// The top bar's "Find" (Layouts/partials/QuickFind): a search-box look that
+// opens the finder; "/" opens it too. Just the magnifier on narrow screens.
+.rd-find {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 40px;
+    padding: 0 8px 0 12px;
+    border: 1px solid $rd-control;
+    border-radius: 10px;
+    background: $rd-panel;
+    color: $rd-ink-2;
+    font: 500 14px/1 $rd-sans;
+    cursor: pointer;
+
+    i {
+        font-size: 18px;
+    }
+
+    &:hover {
+        border-color: $rd-control-hover;
+        color: $rd-ink;
+    }
+
+    &:focus-visible {
+        outline: 2px solid $rd-brand;
+        outline-offset: 2px;
+    }
+
+    &__label {
+        min-width: 40px;
+        text-align: left;
+    }
+
+    &__key {
+        padding: 2px 7px;
+        border: 1px solid $rd-line;
+        border-radius: 6px;
+        background: $rd-row-alt;
+        color: $rd-muted;
+        font: 500 12px/1.2 $rd-mono;
+    }
+
+    @media (max-width: 1199.98px) {
+        width: 44px;
+        height: 44px;
+        justify-content: center;
+        padding: 0;
+
+        &__label,
+        &__key {
+            display: none;
+        }
+    }
+}
+
+.rd-find-dialog {
+    max-width: 600px;
+
+    .modal-content {
+        overflow: hidden;
+    }
+
+    &__search {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 12px 12px 20px;
+        border-bottom: 1px solid $rd-line;
+
+        > i {
+            color: $rd-muted;
+            font-size: 20px;
+        }
+
+        input {
+            flex: 1;
+            min-width: 0;
+            height: 44px;
+            border: 0;
+            background: transparent;
+            color: $rd-ink;
+            font: 400 16px $rd-sans;
+            outline: none;
+        }
+    }
+
+    &__body {
+        max-height: min(60vh, 460px);
+        overflow-y: auto;
+        padding: 8px;
+    }
+
+    &__status {
+        margin: 0;
+        padding: 12px;
+        color: $rd-muted;
+        font-size: 14px;
+
+        &:empty {
+            display: none;
+        }
+    }
+
+    &__group {
+        padding: 10px 12px 4px;
+        color: $rd-ink-2;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    &__hit {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        cursor: pointer;
+
+        > i {
+            color: $rd-muted;
+            font-size: 18px;
+        }
+
+        &.is-active {
+            background: $rd-track;
+            box-shadow: inset 3px 0 0 $rd-brand;
+        }
+    }
+
+    &__text {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }
+
+    &__title {
+        overflow: hidden;
+        color: $rd-ink;
+        font-weight: 600;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    &__sub {
+        overflow: hidden;
+        color: $rd-muted;
+        font-size: 13px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    &__foot {
+        margin: 0;
+        padding: 10px 20px;
+        border-top: 1px solid $rd-line;
+        background: $rd-row-alt;
+        color: $rd-muted;
+        font-size: 12px;
+
+        kbd {
+            padding: 1px 6px;
+            border: 1px solid $rd-line;
+            border-radius: 5px;
+            background: $rd-panel;
+            color: $rd-ink-2;
+            font: 500 12px/1.4 $rd-mono;
+        }
+
+        @media (max-width: 767.98px) {
+            display: none;
+        }
+    }
+}

@@ -45,7 +45,7 @@ class HomeController extends Controller
 
         if ($isAdmin && $request->query('view') !== 'team') {
             return Inertia::render('Dashboard/Admin', [
-                'summary'   => AdminDashboardResource::make(app(AdminDashboardService::class)->summary($user))->resolve(),
+                'summary'   => AdminDashboardResource::make(app(AdminDashboardService::class)->summary())->resolve(),
                 'teamRisks' => app(DashboardService::class)->riskCounts(),
             ]);
         }

@@ -200,14 +200,39 @@ class TelegramController extends Controller
         return redirect()->back();
     }
 
-    public function telegram_message() 
+    /**
+     * The latest messages to the bot, so an admin can copy someone's chat ID
+     * into their user record. Names and chat IDs are personal, so only people
+     * who manage users see them.
+     */
+    public function telegram_message()
     {
+        if (!Auth::guard('web')->user()->can('manage_user')) {
+            $response['title']      = trans('translation.access_error');
+            $response['message'][0] = trans('translation.access_error_msg');
+            $response['message'][1] = trans('translation.check_with_ur_superior');
+            return Inertia::render('Errors/CustomError', compact('response'));
+        }
+
         $i           = 0;
         $data        = [];
-        $token       = GeneralSetting::where('key', 'telegram_api')->first()->value;
-        $url         = 'https://api.telegram.org/bot'.$token.'/getUpdates';
-        $response    = Curl::to($url)->returnResponseObject()->get();
-        $parsed_json = json_decode($response->content);
+        $problem     = null;
+        $token       = GeneralSetting::where('key', 'telegram_api')->value('value');
+        $parsed_json = null;
+
+        if (blank($token)) {
+            $problem = 'The Telegram bot isn’t set up yet: there is no bot token in the settings.';
+        } else {
+            $url         = 'https://api.telegram.org/bot'.$token.'/getUpdates';
+            $response    = Curl::to($url)->returnResponseObject()->get();
+            $parsed_json = json_decode($response->content ?? '');
+
+            // Telegram keeps no messages here while the bot's webhook is on, and says why.
+            if (!$parsed_json || empty($parsed_json->ok)) {
+                $problem = 'Telegram didn’t return the bot’s messages'
+                    . (isset($parsed_json->description) ? ': ' . $parsed_json->description : '.');
+            }
+        }
 
         if (isset($parsed_json->result)) {
             if (count($parsed_json->result) > 0) {
@@ -216,7 +241,8 @@ class TelegramController extends Controller
                     if (isset($item->message)) {
                         $data[$i]['name']       = $item->message->chat->first_name . ' ' . (isset($item->message->chat->last_name) ? $item->message->chat->last_name : '');
                         $data[$i]['chat_id']    = $item->message->chat->id;
-                        $data[$i]['date']       = date('Y M d h:i:s A', $item->message->date);
+                        // "30 Sep 2026, 10:42 am"
+                        $data[$i]['date']       = date('j M Y, g:i a', $item->message->date);
                         $data[$i]['text']       = isset($item->message->text) ? $item->message->text : (isset($item->message->sticker->file_id) ? $item->message->sticker->file_id : '');
                         $i = $i+1;
                     }
@@ -224,12 +250,12 @@ class TelegramController extends Controller
             }
         }
 
-        $collection  = (new Collection($data));
-        $tmenu_part1 = 'Telegrame Chat ID';
+        $collection = (new Collection($data));
 
         return Inertia::render('Telegram/Index', [
-            'messages'    => $collection->values()->all(),
-            'tmenu_part1' => $tmenu_part1,
+            'messages' => $collection->values()->all(),
+            // Why there may be nothing to show; null when Telegram answered.
+            'problem'  => $problem,
         ]);
     }
 }

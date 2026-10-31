@@ -122,6 +122,10 @@ export interface TaskDetail {
         sub_subscribers: number[];
         owners: number[];
         viewers: number[];
+        /** The same people by name, for reading; the ids are for the edit form. */
+        sub_subscriber_names: string[];
+        owner_names: string[];
+        viewer_names: string[];
         creator: string | null;
         checker: string | null;
     };

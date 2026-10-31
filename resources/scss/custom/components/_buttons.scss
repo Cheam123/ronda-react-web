@@ -2,8 +2,12 @@
 // _buttons.scss
 // 
 
-button,a {
-  outline: none !important;
+// Only a mouse click goes without a ring. This used to be `outline: none
+// !important` on every button and link, which wiped out the surface focus
+// rings too, so keyboard users couldn't see where they were (WCAG 2.4.7).
+button:focus:not(:focus-visible),
+a:focus:not(:focus-visible) {
+  outline: none;
 }
 
 

@@ -14,7 +14,9 @@ interface DocumentListProps {
 /** A lead's files as rows: type, name (opens it), size and date, download and delete. */
 export default function DocumentList({ documents, deletable = false, empty = 'No documents yet.' }: DocumentListProps) {
     const remove = async (document: DocumentFile) => {
-        if (await confirm({ title: 'Delete this file?', text: document.name, icon: 'warning', danger: true })) {
+        if (
+            await confirm({ title: 'Delete this file?', text: document.name, confirmText: 'Delete file', danger: true })
+        ) {
             router.get(
                 route('lead.file.delete', { doc_id: document.id }),
                 {},

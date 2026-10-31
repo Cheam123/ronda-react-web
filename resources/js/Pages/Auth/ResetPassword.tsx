@@ -1,8 +1,10 @@
 import { useForm } from '@inertiajs/react';
 import type { FormEvent } from 'react';
-import AuthField from '@/Components/form/AuthField';
-import Button from '@/Components/ui/Button';
+import Field from '@/Components/form/Field';
+import PasswordInput from '@/Components/form/PasswordInput';
+import TextInput from '@/Components/form/TextInput';
 import GuestLayout from '@/Layouts/GuestLayout';
+import { PASSWORD_HINT, PASSWORD_MAX, PASSWORD_MIN } from '@/lib/password';
 
 interface ResetPasswordProps {
     token: string;
@@ -23,52 +25,51 @@ export default function ResetPassword({ token, email }: ResetPasswordProps) {
     };
 
     return (
-        <GuestLayout title="Reset Password">
-            <div className="card">
-                <div className="card-body p-4">
-                    <div className="text-center mt-2">
-                        <h5 className="text-primary">Reset Password</h5>
-                    </div>
-                    <div className="p-2 mt-4">
-                        <form onSubmit={submit}>
-                            <AuthField
-                                id="email"
-                                label="Email"
-                                type="text"
-                                required
-                                autoComplete="username"
-                                value={data.email}
-                                onChange={(event) => setData('email', event.target.value)}
-                                error={errors.email}
-                            />
-                            <AuthField
-                                id="password"
-                                label="Password"
-                                type="password"
-                                required
-                                autoComplete="new-password"
-                                value={data.password}
-                                onChange={(event) => setData('password', event.target.value)}
-                                error={errors.password}
-                            />
-                            <AuthField
-                                id="password-confirm"
-                                label="Confirm Password"
-                                type="password"
-                                required
-                                autoComplete="new-password"
-                                value={data.password_confirmation}
-                                onChange={(event) => setData('password_confirmation', event.target.value)}
-                            />
-                            <div className="mt-3 text-end">
-                                <Button type="submit" className="w-sm" shadow={false} loading={processing}>
-                                    Reset Password
-                                </Button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
+        <GuestLayout title="Set a new password" heading="Set a new password">
+            <form className="rd-guest__form" onSubmit={submit} noValidate>
+                <Field label="Email" htmlFor="email" error={errors.email}>
+                    <TextInput
+                        id="email"
+                        type="email"
+                        inputMode="email"
+                        large
+                        required
+                        autoComplete="username"
+                        value={data.email}
+                        onChange={(event) => setData('email', event.target.value)}
+                    />
+                </Field>
+                <Field label="New password" htmlFor="password" error={errors.password} hint={PASSWORD_HINT}>
+                    <PasswordInput
+                        id="password"
+                        required
+                        minLength={PASSWORD_MIN}
+                        maxLength={PASSWORD_MAX}
+                        autoComplete="new-password"
+                        autoFocus
+                        value={data.password}
+                        onChange={(event) => setData('password', event.target.value)}
+                    />
+                </Field>
+                <Field label="Type it again" htmlFor="password-confirm">
+                    <PasswordInput
+                        id="password-confirm"
+                        required
+                        maxLength={PASSWORD_MAX}
+                        autoComplete="new-password"
+                        value={data.password_confirmation}
+                        onChange={(event) => setData('password_confirmation', event.target.value)}
+                    />
+                </Field>
+                <button
+                    type="submit"
+                    className="rd-btn rd-btn--primary rd-btn--lg rd-guest__submit"
+                    disabled={processing}
+                >
+                    {processing && <span className="spinner-border spinner-border-sm" aria-hidden="true" />}
+                    Save the new password
+                </button>
+            </form>
         </GuestLayout>
     );
 }

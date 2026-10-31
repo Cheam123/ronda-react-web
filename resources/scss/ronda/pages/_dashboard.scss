@@ -3,21 +3,28 @@
 // view. Built on the surface styles (ronda/_surface.scss).
 //
 
-// Morning Round-Up: the AI brief across the top of the team dashboard, on a
-// warm paper tint. The summary in the serif on the left, today's focus and the
-// actions on the right, the other sections underneath when asked for.
+// Morning Round-Up: the AI brief across the top of the team dashboard, a white
+// panel like the rest; the serif alone marks it out. The summary on the left,
+// today's focus and the actions on the right, the other sections underneath
+// when asked for. Folded: an old round-up (or none) is one line and its actions.
 .dash-roundup {
     display: grid;
     grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
     gap: 20px 48px;
     padding: 24px 28px;
-    border: 1px solid $rd-paper-line;
+    border: 1px solid $rd-line;
     border-radius: 16px;
-    background: $rd-paper;
-    color: $rd-paper-ink;
+    background: $rd-panel;
+    color: $rd-ink;
+    box-shadow: $rd-shadow-panel;
 
     @media (max-width: 991.98px) {
         grid-template-columns: minmax(0, 1fr);
+    }
+
+    &--folded {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 16px;
     }
 
     @media (max-width: 575.98px) {
@@ -34,8 +41,9 @@
 
     &__head {
         display: flex;
+        flex-wrap: wrap;
         align-items: center;
-        gap: 12px;
+        gap: 8px 12px;
     }
 
     .dash-roundup__title {
@@ -58,8 +66,18 @@
         font-size: 13px;
     }
 
-    &__empty {
-        color: $rd-muted;
+    // Folded: why there is no round-up to read.
+    .dash-roundup__lede {
+        max-width: 760px;
+        margin: 0;
+        font-size: 15px;
+        line-height: 1.55;
+        color: $rd-ink-2;
+    }
+
+    .dash-roundup__from {
+        grid-column: 1 / -1;
+        margin: 0;
     }
 
     &__summary {
@@ -129,6 +147,12 @@
             text-decoration: underline;
         }
 
+        &:focus-visible {
+            border-radius: 4px;
+            outline: 2px solid $rd-brand;
+            outline-offset: 2px;
+        }
+
         i {
             font-size: 18px;
         }
@@ -140,7 +164,7 @@
         grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
         gap: 16px 48px;
         padding-top: 16px;
-        border-top: 1px solid $rd-paper-line;
+        border-top: 1px solid $rd-line-soft;
 
         &[hidden] {
             display: none;
@@ -148,302 +172,195 @@
     }
 }
 
-// The team's open work by risk, then today's other counts: one panel of
-// cells, the panel's line colour showing through the 1px gaps as dividers
-// (so they stay right however the cells wrap).
-.dash-strip {
+// The right-hand column beside Needs attention (Today and this week on the
+// team view; Suggested orders and the rep's week): a third of the row on a
+// wide screen, two panels side by side on a tablet, stacked on a phone.
+.rd-grid > .dash-side {
     display: flex;
-    flex-wrap: wrap;
-    gap: 1px;
-    overflow: hidden;
-    border: 1px solid $rd-line;
-    border-radius: 16px;
-    background: $rd-line;
-    box-shadow: $rd-shadow-panel;
+    flex-direction: column;
+    gap: 24px;
+    min-width: 0;
 
-    &__cell {
-        display: flex;
-        flex: 1 1 180px;
-        flex-direction: column;
-        gap: 2px;
-        min-width: 0;
-        padding: 18px 24px;
-        background: $rd-panel;
+    @media (min-width: 768px) and (max-width: 1199.98px) {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+        align-items: start;
+    }
+
+    @media (min-width: 1200px) {
+        grid-column: span 4;
+    }
+
+    // A panel on its own in the column fills it, so its foot lines up.
+    > .rd-panel:only-child {
+        flex: 1 1 auto;
+    }
+}
+
+// Today and this week: three counts as rows, two of them links.
+.dash-today {
+    gap: 4px;
+
+    &__row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto 18px;
+        align-items: center;
+        gap: 12px;
+        min-height: 64px;
+        padding: 12px 0;
+        border-top: 1px solid $rd-line-soft;
         color: $rd-ink;
-
-        &--wide {
-            flex: 3 1 420px;
-            gap: 0;
-        }
 
         &--link {
             text-decoration: none;
 
             &:hover {
-                background: $rd-row-alt;
                 color: $rd-ink;
-                text-decoration: none;
+
+                .dash-today__label {
+                    color: $rd-brand-ink;
+                    text-decoration: underline;
+                }
             }
 
             &:focus-visible {
+                border-radius: 6px;
                 outline: 2px solid $rd-brand;
-                outline-offset: -2px;
+                outline-offset: 2px;
             }
         }
     }
 
-    &__lead {
+    li:first-child &__row {
+        border-top: 0;
+    }
+
+    &__text {
         display: flex;
-        align-items: baseline;
-        gap: 10px;
-        font-weight: 500;
-        color: $rd-ink-2;
-    }
-
-    &__value {
-        font-size: 32px;
-        font-weight: 600;
-        line-height: 40px;
-        letter-spacing: -0.02em;
-        color: $rd-ink;
-        font-variant-numeric: tabular-nums;
-    }
-
-    &__bar.rd-stack {
-        height: 10px;
-        margin-top: 12px;
-    }
-
-    &__legend {
-        margin-top: 10px;
-        font-size: 13px;
-
-        strong {
-            font-weight: 600;
-            color: $rd-ink;
-        }
-    }
-
-    &__label {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 8px;
-        font-size: 13px;
-        font-weight: 500;
-        color: $rd-ink-2;
-
-        i {
-            font-size: 18px;
-            line-height: 1;
-            color: $rd-muted;
-        }
-    }
-
-    &__figure {
-        font-size: 28px;
-        font-weight: 600;
-        line-height: 36px;
-        letter-spacing: -0.02em;
-        font-variant-numeric: tabular-nums;
-    }
-
-    &__note {
-        font-size: 12.5px;
-        color: $rd-muted;
-    }
-}
-
-// The team: a card per person (TeamBoard).
-.dash-team {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-
-    &__head {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px 16px;
-    }
-
-    &__title {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-
-        h2 {
-            margin: 0;
-            font-size: 20px;
-            font-weight: 600;
-            line-height: 28px;
-        }
-    }
-
-    &__sort {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        font-size: 13px;
-        color: $rd-muted;
-    }
-
-    &__grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
-        gap: 24px;
-
-        // The card fills its cell, so the cards in a row end level.
-        > li {
-            display: flex;
-            min-width: 0;
-        }
-    }
-
-    &__note {
-        font-size: 12.5px;
-        color: $rd-muted;
-    }
-}
-
-.dash-member {
-    display: flex;
-    flex: 1 1 auto;
-    flex-direction: column;
-    min-width: 0;
-    overflow: hidden;
-    border: 1px solid $rd-line;
-    border-radius: 16px;
-    background: $rd-panel;
-    box-shadow: $rd-shadow-panel;
-
-    &__head {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 20px 20px 0;
-    }
-
-    &__who {
-        display: flex;
-        flex: 1 1 auto;
         flex-direction: column;
+        gap: 2px;
         min-width: 0;
     }
 
-    .dash-member__name {
-        margin: 0;
-        overflow: hidden;
-        font-size: 16px;
+    &__label {
+        font-size: 14px;
         font-weight: 600;
-        line-height: 22px;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-
-        a {
-            color: $rd-ink;
-            text-decoration: none;
-
-            &:hover {
-                color: $rd-brand-ink;
-                text-decoration: underline;
-            }
-        }
     }
 
-    &__role {
+    &__note {
         font-size: 12.5px;
         color: $rd-muted;
     }
 
-    &__open {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-end;
-        font-size: 12px;
-        color: $rd-muted;
-    }
-
-    &__count {
-        font-size: 22px;
+    &__value {
+        font-size: 24px;
         font-weight: 600;
-        line-height: 28px;
-        color: $rd-ink;
+        line-height: 1.2;
+        letter-spacing: -0.02em;
         font-variant-numeric: tabular-nums;
     }
 
-    &__load {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        padding: 14px 20px 0;
+    &__go {
+        font-size: 18px;
+        color: $rd-muted;
     }
+}
 
-    // The bar's length is their load against the busiest person; its parts
-    // are overdue, at risk and on track.
-    &__track {
-        display: block;
-        height: 8px;
-        overflow: hidden;
-        border-radius: 999px;
-        background: $rd-track;
+// A rep's last 7 days: four figures two abreast, the chart on request.
+.dash-week {
+    &__figures {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0 16px;
+        margin: 0;
 
-        .rd-stack {
-            height: 100%;
+        > div {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 0;
+            padding: 12px 0;
+            border-top: 1px solid $rd-line-soft;
+        }
+
+        dt {
+            font-size: 13px;
+            font-weight: 400;
+            color: $rd-ink-2;
+        }
+
+        dd {
+            margin: 0;
         }
     }
 
-    &__chips {
+    &__value {
+        font-size: 24px;
+        font-weight: 600;
+        line-height: 1.25;
+        letter-spacing: -0.02em;
+        font-variant-numeric: tabular-nums;
+        overflow-wrap: anywhere;
+    }
+
+    &__note {
         display: flex;
         flex-wrap: wrap;
         align-items: center;
         gap: 6px;
-        min-height: 24px;
-    }
-
-    &__quiet {
-        margin: 0;
-        font-size: 13px;
+        font-size: 12px;
         color: $rd-muted;
     }
 
-    &__urgent {
-        flex: 1 1 auto;
-        padding: 16px 20px 18px;
-
-        .dash-member__quiet {
-            padding-top: 8px;
-            border-top: 1px solid $rd-line-soft;
-        }
-    }
-
-    .dash-member__label {
-        margin: 0 0 6px;
-        font-size: 12px;
-        font-weight: 600;
-        line-height: 1.4;
-        color: $rd-ink-2;
-    }
-
-    &__task {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 12px;
-        padding: 8px 0;
-        border-top: 1px solid $rd-line-soft;
-    }
-
-    &__what {
+    &__chart {
         display: flex;
         flex-direction: column;
+        gap: 12px;
+
+        &[hidden] {
+            display: none;
+        }
+    }
+}
+
+// The team table: a row per person; the headings sort it.
+.dash-table {
+    &__group th {
+        padding-bottom: 4px;
+        border-bottom: 1px solid $rd-line;
+        color: $rd-muted;
+        font-weight: 500;
+    }
+
+    &__group td {
+        border-bottom: 0;
+    }
+
+    &__critical {
+        color: $rd-critical;
+        font-weight: 600;
+    }
+
+    &__serious {
+        color: $rd-serious;
+        font-weight: 600;
+    }
+
+    &__urgent-cell {
+        width: 34%;
+        max-width: 0;
+    }
+
+    &__urgent {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
         min-width: 0;
 
         a {
             overflow: hidden;
             color: $rd-ink;
-            font-weight: 600;
+            font-weight: 500;
             text-decoration: none;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -453,30 +370,11 @@
                 text-decoration: underline;
             }
         }
-
-        > span {
-            overflow: hidden;
-            font-size: 12.5px;
-            color: $rd-muted;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
     }
 
     &__due {
-        display: flex;
-        flex: none;
-        flex-direction: column;
-        align-items: flex-end;
-        font-size: 13px;
+        font-size: 12.5px;
         font-weight: 600;
-        white-space: nowrap;
-
-        small {
-            font-size: 12px;
-            font-weight: 400;
-            color: $rd-muted;
-        }
 
         &--overdue {
             color: $rd-critical;
@@ -486,43 +384,93 @@
             color: $rd-serious;
         }
     }
+}
 
-    // Their last 7 days along the foot of the card.
-    &__week {
-        display: grid;
-        // Orders is wider: "Orders (RM)" and money on one line, even on a phone.
-        grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 1.5fr);
-        margin: 0;
-        border-top: 1px solid $rd-line;
-        background: $rd-row-alt;
+// A sortable column heading.
+.dash-sort {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 32px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
 
-        > div {
-            padding: 12px 0 12px 12px;
+    i {
+        font-size: 15px;
+        line-height: 1;
+        color: $rd-muted;
+    }
 
-            &:first-child {
-                padding-left: 20px;
-            }
+    &:hover {
+        color: $rd-ink;
+    }
 
-            &:last-child {
-                padding-right: 20px;
-                text-align: right;
-            }
-        }
+    &:focus-visible {
+        border-radius: 4px;
+        outline: 2px solid $rd-brand;
+        outline-offset: 2px;
+    }
 
-        dt {
-            font-size: 11.5px;
-            font-weight: 400;
-            color: $rd-muted;
-            white-space: nowrap;
-        }
+    &.is-active {
+        color: $rd-ink;
+        font-weight: 600;
 
-        dd {
-            margin: 0;
-            font-size: 15px;
-            font-weight: 600;
+        i {
             color: $rd-ink;
-            font-variant-numeric: tabular-nums;
         }
+    }
+}
+
+// The team on a phone or tablet: the table as a list.
+.dash-people {
+    &__row {
+        display: grid;
+        grid-template-columns: 32px minmax(0, 1fr) auto;
+        align-items: start;
+        gap: 12px;
+        padding: 14px 0;
+        border-top: 1px solid $rd-line-soft;
+
+        &:first-child {
+            border-top: 0;
+            padding-top: 0;
+        }
+    }
+
+    &__text {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+    }
+
+    &__urgent {
+        margin-top: 4px;
+        font-size: 13px;
+
+        .dash-table__urgent {
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 0 6px;
+        }
+    }
+
+    &__week {
+        font-size: 12px;
+        color: $rd-muted;
+    }
+
+    &__counts {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 4px;
+        font-size: 12.5px;
+        white-space: nowrap;
     }
 }
 
@@ -613,7 +561,9 @@
         line-height: 1.5;
     }
 
-    &__foot {
+    // Nested so its margin beats `.rd p`: the auto top margin keeps it at the
+    // foot of the panel when the panel is as tall as Needs attention beside it.
+    .dash-suggested__foot {
         margin: auto 0 0;
         padding-top: 12px;
         border-top: 1px solid $rd-line-soft;
@@ -623,7 +573,8 @@
     }
 }
 
-// Needs attention: level, task, owner, due.
+// Needs attention: level, task, owner, due. A rep's own list has no owner
+// column; the team's has the open work split by risk above it.
 .dash-attention {
     &__row {
         display: grid;
@@ -634,12 +585,81 @@
         border-bottom: 1px solid $rd-line-soft;
     }
 
+    &--mine &__row {
+        grid-template-columns: 96px minmax(0, 1fr) 132px;
+    }
+
     &__row--head {
         padding: 8px 0;
         border-bottom-color: $rd-line;
         color: $rd-muted;
         font-size: 12px;
         font-weight: 600;
+    }
+
+    &__summary {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+
+        .rd-stack {
+            height: 10px;
+        }
+
+        strong {
+            color: $rd-ink;
+            font-weight: 600;
+        }
+    }
+
+    // Show more, a note and the task list, pinned to the foot of the panel.
+    &__foot {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px 16px;
+        margin-top: auto;
+        font-size: 13px;
+        color: $rd-muted;
+
+        .rd-more {
+            margin-top: 0;
+            font-size: 13.5px;
+        }
+    }
+
+    &__note {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 4px 12px;
+
+        a {
+            font-weight: 600;
+            text-decoration: none;
+        }
+    }
+
+    &__more {
+        min-height: 32px;
+        padding: 0;
+        border: 0;
+        background: none;
+        color: $rd-brand-ink;
+        font: 600 13.5px/1.4 $rd-sans;
+        cursor: pointer;
+
+        &:hover {
+            color: $rd-brand-ink-hover;
+            text-decoration: underline;
+        }
+
+        &:focus-visible {
+            border-radius: 4px;
+            outline: 2px solid $rd-brand;
+            outline-offset: 2px;
+        }
     }
 
     &__task {
@@ -702,18 +722,44 @@
         }
     }
 
+    // On a phone the task leads, across the top; its level and owner sit
+    // under it with the due time beside them.
     @media (max-width: 767.98px) {
         &__row {
             grid-template-columns: minmax(0, 1fr) auto;
+            grid-template-areas:
+                'task task'
+                'level due'
+                'owner due';
             gap: 6px 12px;
+        }
+
+        &--mine &__row {
+            grid-template-columns: minmax(0, 1fr) auto;
+            grid-template-areas:
+                'task task'
+                'level due';
         }
 
         &__row--head {
             display: none;
         }
 
+        &__level {
+            grid-area: level;
+        }
+
+        &__task {
+            grid-area: task;
+        }
+
         &__owner {
-            grid-column: 1;
+            grid-area: owner;
+        }
+
+        &__due {
+            grid-area: due;
+            align-self: start;
         }
     }
 }
@@ -741,23 +787,54 @@
     }
 }
 
+// The "Field output" panel: three figures stacked beside the chart, side by
+// side once the panel has the page's width to itself.
+.dash-output-panel {
+    container-type: inline-size;
+}
+
+.dash-outputs {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+
+    @container (min-width: 640px) {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0;
+    }
+}
+
 // A block of the "Field output" panel.
 .dash-output {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    padding: 16px 0;
+    padding-top: 16px;
     border-top: 1px solid $rd-line-soft;
 
-    &:last-child {
-        padding-bottom: 0;
+    @container (min-width: 640px) {
+        padding: 16px 20px 0;
+
+        & + & {
+            border-left: 1px solid $rd-line-soft;
+        }
+
+        &:first-child {
+            padding-left: 0;
+        }
+
+        &:last-child {
+            padding-right: 0;
+        }
     }
 
     &__row {
         display: flex;
+        flex-wrap: wrap;
         align-items: center;
         justify-content: space-between;
-        gap: 16px;
+        gap: 12px 16px;
     }
 
     &__label {
@@ -807,35 +884,64 @@
     }
 
     &__action {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
         align-self: center;
         font-size: 13px;
         font-weight: 600;
         text-decoration: none;
         white-space: nowrap;
+
+        // Regenerate does the job there and then, so it is a button dressed as the links beside it.
+        @at-root button#{&} {
+            padding: 0;
+            border: 0;
+            background: none;
+            color: $rd-brand-ink;
+            cursor: pointer;
+
+            &:hover:not(:disabled) {
+                color: $rd-brand-ink-hover;
+                text-decoration: underline;
+            }
+
+            &:disabled {
+                color: $rd-muted;
+                cursor: progress;
+            }
+        }
     }
 }
 
-// A titled block under a rule inside a panel.
-.dash-subsection {
+// The admin's four figures, two abreast beside the to-do list at every width.
+.rd-kpis.dash-figures {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    @media (max-width: 575.98px) {
+        .rd-kpi__value {
+            font-size: 24px;
+        }
+
+        .dash-spark {
+            display: none;
+        }
+    }
+}
+
+.dash-spark {
+    flex-shrink: 0;
+}
+
+// One view of the admin's sales panel, under its tabs.
+.dash-sales {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding-top: 20px;
-    border-top: 1px solid $rd-line-soft;
-    font-size: 13px;
+    gap: 16px;
+    margin: 0;
 
-    &__head {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: baseline;
-        justify-content: space-between;
-        gap: 4px 12px;
-    }
-
-    .dash-subsection__title {
-        margin: 0;
-        font-size: 14px;
-        font-weight: 600;
+    > .rd-more {
+        align-self: flex-start;
     }
 }
 
@@ -1001,30 +1107,24 @@
     }
 }
 
-// Automations: one block per scheduled job.
-.dash-job {
+// The admin's IFE area coverage: one line, the areas on request.
+.dash-coverage {
     display: flex;
     flex-direction: column;
+    align-items: flex-start;
     gap: 8px;
-    padding: 16px 0;
-    border-top: 1px solid $rd-line-soft;
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.5;
+    color: $rd-ink-2;
 
-    &:last-child {
-        padding-bottom: 0;
-    }
-
-    &__head {
+    &__list {
         display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 8px;
-        font-size: 14px;
-        font-weight: 600;
-    }
+        flex-direction: column;
+        gap: 12px;
 
-    &__text {
-        font-size: 13px;
-        line-height: 1.45;
-        color: $rd-muted;
+        &[hidden] {
+            display: none;
+        }
     }
 }

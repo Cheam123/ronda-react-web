@@ -7,6 +7,7 @@ import { FormFoot, FormSection } from '@/Components/surface/FormSection';
 import PageHeader from '@/Components/surface/PageHeader';
 import SurfacePage from '@/Components/surface/SurfacePage';
 import ErrorSummary from '@/Components/ui/ErrorSummary';
+import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
 import AppLayout from '@/Layouts/AppLayout';
 import { DOCUMENT_FILE_TYPES } from '@/lib/files';
 import type { DocumentFile } from '@/types/documents';
@@ -14,6 +15,9 @@ import type { Lead, LeadFormOptions } from '@/types/leads';
 import LeadFields from './Partials/LeadFields';
 import LeadFormAside from './Partials/LeadFormAside';
 import { leadFormData } from './Partials/leadFormData';
+
+/** Largest attachment the form accepts, in MB (the same as when adding an outlet). */
+const MAX_FILE_MB = 20;
 
 interface EditLeadProps extends LeadFormOptions {
     lead: Lead;
@@ -24,8 +28,10 @@ interface EditLeadProps extends LeadFormOptions {
 export default function EditLead({ lead, documents, today, ...options }: EditLeadProps) {
     const toast = useToast();
     const [uploading, setUploading] = useState(false);
-    const { data, setData, post, processing, errors } = useForm({ ...leadFormData(lead, today), id: lead.id });
+    const { data, setData, post, processing, errors, isDirty } = useForm({ ...leadFormData(lead, today), id: lead.id });
     const title = lead.business_name || lead.name || 'Unnamed outlet';
+
+    useUnsavedChanges(isDirty, title);
 
     const submit = (event: FormEvent) => {
         event.preventDefault();
@@ -53,7 +59,7 @@ export default function EditLead({ lead, documents, today, ...options }: EditLea
                 <PageHeader
                     crumbs={[
                         { label: 'Home', href: '/index' },
-                        { label: 'Lead/Customer', href: route('lead.index') },
+                        { label: 'Outlets', href: route('lead.index') },
                         { label: title, href: route('lead.view', lead.id) },
                         { label: 'Edit' },
                     ]}
@@ -75,9 +81,9 @@ export default function EditLead({ lead, documents, today, ...options }: EditLea
                                 onFiles={upload}
                                 busy={uploading}
                                 accept={DOCUMENT_FILE_TYPES}
-                                maxSizeMb={10}
+                                maxSizeMb={MAX_FILE_MB}
                                 maxFiles={25}
-                                hint="PNG, JPG, PDF, Word, Excel, PowerPoint or audio · up to 10 MB each"
+                                hint={`PNG, JPG, PDF, Word, Excel, PowerPoint or audio · up to ${MAX_FILE_MB} MB each`}
                                 onReject={(message) => toast(message, 'error')}
                             />
                             <DocumentList documents={documents} deletable empty="No documents on this outlet yet." />

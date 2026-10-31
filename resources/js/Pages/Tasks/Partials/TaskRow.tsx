@@ -122,27 +122,31 @@ export default function TaskRow({ task, filters, open, onActivity, onAppointment
 
             <td className="task-table__people">
                 {task.subscriber ? (
-                    <button type="button" className="task-sub" title="Open appointments" onClick={onAppointments}>
+                    <div className="task-sub">
                         <Initials name={task.subscriber.name} colorKey={task.subscriber.id} size="sm" />
                         <span className="task-sub__text">
                             <span className="task-sub__name">
                                 {task.subscriber.name}
                                 {subscribers > 0 && (
-                                    <span
-                                        className="rd-count"
-                                        title={`Sub-subscribers: ${task.sub_subscribers.join(', ')}`}
-                                    >
+                                    <span className="rd-count" title={`Helping: ${task.sub_subscribers.join(', ')}`}>
                                         +{subscribers}
+                                        <span className="visually-hidden">
+                                            {' '}
+                                            helping: {task.sub_subscribers.join(', ')}
+                                        </span>
                                     </span>
                                 )}
                             </span>
-                            <span className="task-sub__appts">
-                                {task.subscriber.appointments.length > 0
-                                    ? pluralize(task.subscriber.appointments.length, 'open appointment')
-                                    : 'No open appointments'}
-                            </span>
+                            {/* Only the appointments line opens them; the name is just the name. */}
+                            {task.subscriber.appointments.length > 0 ? (
+                                <button type="button" className="task-sub__appts is-link" onClick={onAppointments}>
+                                    {pluralize(task.subscriber.appointments.length, 'open appointment')}
+                                </button>
+                            ) : (
+                                <span className="task-sub__appts">No open appointments</span>
+                            )}
                         </span>
-                    </button>
+                    </div>
                 ) : (
                     <span className="rd-muted">—</span>
                 )}

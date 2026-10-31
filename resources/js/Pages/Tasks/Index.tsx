@@ -1,3 +1,4 @@
+import { Link } from '@inertiajs/react';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import IfeAreaListButton from '@/Components/areas/IfeAreaListButton';
 import SearchSelect from '@/Components/form/SearchSelect';
@@ -6,6 +7,7 @@ import PageHeader from '@/Components/surface/PageHeader';
 import Pager from '@/Components/surface/Pager';
 import SurfacePage from '@/Components/surface/SurfacePage';
 import ImageLightbox from '@/Components/ui/ImageLightbox';
+import { useAuth } from '@/hooks/useAuth';
 import { useFilters } from '@/hooks/useFilters';
 import AppLayout from '@/Layouts/AppLayout';
 import { formatNumber } from '@/lib/format';
@@ -41,12 +43,15 @@ const AHEAD = ['due_date', 'reminder_date'];
 interface TasksIndexProps extends TaskFilterOptions {
     tasks: Paginated<TaskListItem>;
     statusCounts: Record<string, number | string>;
+    /** Overdue, at-risk and due-today tasks among the open ones the other filters leave (TaskRisk). */
+    riskCounts: { overdue: number; at_risk: number; due_today: number };
     /** The query string, with the status and sort the controller defaulted. */
     filters: TaskFilters;
 }
 
-/** The task list: a tab per status, the filters, and each task's follow-ups beside it. */
-export default function TasksIndex({ tasks, statusCounts, filters, ...options }: TasksIndexProps) {
+/** The task list: Open and a tab per status, the filters, and each task's follow-ups beside it. */
+export default function TasksIndex({ tasks, statusCounts, riskCounts, filters, ...options }: TasksIndexProps) {
+    const { user, can } = useAuth();
     const { values, set, apply, choose } = useFilters(route('tasks.index2'), taskFilterValues(filters));
     const [panelTask, setPanelTask] = useState<TaskListItem | null>(null);
     const [filtersOpen, setFiltersOpen] = useState(false);
@@ -62,7 +67,34 @@ export default function TasksIndex({ tasks, statusCounts, filters, ...options }:
     const more = useMemo(() => moreFilterValues(values), [values]);
     const chips = filterChips(values, options);
     const filtered =
-        chips.length > 0 || Boolean(values.search || values.filter_subscriber || values.updated_date_start);
+        chips.length > 0 ||
+        Boolean(values.search || values.filter_subscriber || values.risk || values.due || values.updated_date_start);
+    const onOpen = values.status === 'open';
+    const mine = user !== null && values.filter_subscriber === String(user.id);
+    // Overdue and At risk exclude each other; Due today combines with either.
+    const quick = [
+        {
+            key: 'overdue',
+            label: 'Overdue',
+            count: riskCounts.overdue,
+            pressed: values.risk === 'overdue',
+            toggle: { risk: values.risk === 'overdue' ? '' : 'overdue' },
+        },
+        {
+            key: 'at_risk',
+            label: 'At risk',
+            count: riskCounts.at_risk,
+            pressed: values.risk === 'at_risk',
+            toggle: { risk: values.risk === 'at_risk' ? '' : 'at_risk' },
+        },
+        {
+            key: 'due_today',
+            label: 'Due today',
+            count: riskCounts.due_today,
+            pressed: values.due === 'today',
+            toggle: { due: values.due === 'today' ? '' : 'today' },
+        },
+    ];
 
     const search = (event: FormEvent) => {
         event.preventDefault();
@@ -77,17 +109,57 @@ export default function TasksIndex({ tasks, statusCounts, filters, ...options }:
         <AppLayout title="Tasks">
             <SurfacePage>
                 <PageHeader
-                    crumbs={[{ label: 'Home', href: '/index' }, { label: 'Task' }]}
+                    crumbs={[{ label: 'Home', href: '/index' }, { label: 'Tasks' }]}
                     title="Tasks"
-                    actions={<IfeAreaListButton areas={options.ifeAreas} label="IFE area codes" surface />}
+                    actions={
+                        <>
+                            <IfeAreaListButton areas={options.ifeAreas} label="IFE area codes" surface />
+                            {can('add_task') && (
+                                <Link href={route('tasks.create')} className="rd-btn rd-btn--primary rd-btn--lg">
+                                    <i className="mdi mdi-plus" aria-hidden="true" />
+                                    New task
+                                </Link>
+                            )}
+                        </>
+                    }
                 />
 
                 <section className="rd-panel rd-list task-list" aria-label="Tasks">
                     <StatusTabs
                         status={values.status}
                         counts={statusCounts}
-                        onStatus={(status) => choose({ status })}
+                        // Overdue, At risk and Due today belong to the Open tab.
+                        onStatus={(status) => choose({ status, risk: '', due: '' })}
                     />
+
+                    {onOpen && (
+                        <div className="task-list__quick" role="group" aria-label="Show only">
+                            <span className="task-list__quick-label" aria-hidden="true">
+                                Show only
+                            </span>
+                            {quick.map((item) => (
+                                <button
+                                    key={item.key}
+                                    type="button"
+                                    className="task-list__toggle"
+                                    aria-pressed={item.pressed}
+                                    onClick={() => choose(item.toggle)}
+                                >
+                                    {item.label} <span className="rd-count">{formatNumber(item.count)}</span>
+                                </button>
+                            ))}
+                            {user && (
+                                <button
+                                    type="button"
+                                    className="task-list__toggle"
+                                    aria-pressed={mine}
+                                    onClick={() => choose({ filter_subscriber: mine ? '' : String(user.id) })}
+                                >
+                                    Assigned to me
+                                </button>
+                            )}
+                        </div>
+                    )}
 
                     <div className="task-list__toolbar">
                         <div className="task-list__filters">
@@ -108,8 +180,8 @@ export default function TasksIndex({ tasks, statusCounts, filters, ...options }:
                             <SearchSelect
                                 compact
                                 className="task-list__subscriber"
-                                ariaLabel="Subscriber"
-                                options={[{ value: '', label: 'All subscribers' }, ...options.users]}
+                                ariaLabel="Assigned to"
+                                options={[{ value: '', label: 'Assigned to anyone' }, ...options.users]}
                                 clearable={false}
                                 value={values.filter_subscriber}
                                 onChange={(value) => choose({ filter_subscriber: value })}
@@ -209,7 +281,7 @@ export default function TasksIndex({ tasks, statusCounts, filters, ...options }:
                                             Due
                                         </SortedHead>
                                     </th>
-                                    <th scope="col">Subscriber</th>
+                                    <th scope="col">Assigned to</th>
                                     <th scope="col" className="rd-col-actions text-end">
                                         Actions
                                     </th>

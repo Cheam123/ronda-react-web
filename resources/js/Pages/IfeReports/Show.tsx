@@ -1,8 +1,12 @@
+import { Link, router } from '@inertiajs/react';
 import { useState, type ReactNode } from 'react';
 import PageHeader from '@/Components/surface/PageHeader';
 import SurfacePage from '@/Components/surface/SurfacePage';
 import ImageLightbox from '@/Components/ui/ImageLightbox';
+import { useAuth } from '@/hooks/useAuth';
 import AppLayout from '@/Layouts/AppLayout';
+import { confirm } from '@/lib/dialogs';
+import { compactParams } from '@/lib/input';
 import { formatPhone, phoneHref } from '@/lib/phone';
 import type { QueryParams } from '@/types';
 
@@ -12,6 +16,10 @@ interface IfeReport {
     created_at: string;
     updated_at: string;
     task_title: string | null;
+    /** The outlet it was filed at, when that outlet still exists. */
+    lead_id: number | null;
+    /** The task made from it, if one was. */
+    task_id: number | null;
     company_name: string | null;
     nature_of_business: string | null;
     status: string | null;
@@ -78,19 +86,34 @@ interface ShowIfeReportProps {
     filters: QueryParams;
 }
 
-/** One visit report: what happened and what's next, the outlet and who to call beside it. */
+/** One visit report: what happened and what's next, the outlet and who to call beside it, and what to do with it. */
 export default function ShowIfeReport({ report, filters }: ShowIfeReportProps) {
+    const { can } = useAuth();
     const [photo, setPhoto] = useState<string | null>(null);
     const title = report.shop_name || report.company_name || 'Visit report';
     const needsSupport = (report.support_required ?? '').toLowerCase() === 'yes';
+    const outletHref = report.lead_id && can('view_lead') ? route('lead.view', report.lead_id) : null;
+
+    const makeTask = async () => {
+        const confirmed = await confirm({
+            title: 'Make a task from this report?',
+            text:
+                `An in-progress task on ${title}, with ${report.salesperson ?? 'whoever filed it'} as the person assigned ` +
+                'and you as checker and owner. If the visit isn’t linked to an outlet yet, it is added as a new outlet first.',
+            confirmText: 'Make task',
+        });
+        if (confirmed) {
+            router.post(route('ifereport.convert'), { ...compactParams(filters), id: report.id });
+        }
+    };
 
     return (
-        <AppLayout title={`IFE report: ${title}`}>
+        <AppLayout title={`Visit report: ${title}`}>
             <SurfacePage>
                 <PageHeader
                     crumbs={[
                         { label: 'Home', href: '/index' },
-                        { label: 'IFE Report', href: route('ifereport.index', filters) },
+                        { label: 'Visit reports', href: route('ifereport.index', filters) },
                         { label: title },
                     ]}
                     title={title}
@@ -102,6 +125,36 @@ export default function ShowIfeReport({ report, filters }: ShowIfeReportProps) {
                                 {report.salesperson ? `By ${report.salesperson}, ` : ''}
                                 {report.created_at}
                             </span>
+                        </>
+                    }
+                    actions={
+                        <>
+                            {outletHref && (
+                                <Link href={outletHref} className="rd-btn rd-btn--lg">
+                                    <i className="mdi mdi-storefront-outline" aria-hidden="true" />
+                                    Open the outlet
+                                </Link>
+                            )}
+                            {report.task_id ? (
+                                <Link
+                                    href={route('tasks.view', report.task_id)}
+                                    className="rd-btn rd-btn--primary rd-btn--lg"
+                                >
+                                    <i className="mdi mdi-format-list-checks" aria-hidden="true" />
+                                    Open its task
+                                </Link>
+                            ) : (
+                                can('manage_ife_report') && (
+                                    <button
+                                        type="button"
+                                        className="rd-btn rd-btn--primary rd-btn--lg"
+                                        onClick={makeTask}
+                                    >
+                                        <i className="mdi mdi-playlist-plus" aria-hidden="true" />
+                                        Make a task
+                                    </button>
+                                )
+                            )}
                         </>
                     }
                 />
@@ -164,7 +217,7 @@ export default function ShowIfeReport({ report, filters }: ShowIfeReportProps) {
                             <dl className="rd-facts">
                                 <Fact label="Person">{report.pic_name}</Fact>
                                 <Fact label="Mobile">
-                                    <Phone value={report.mobile_number} />
+                                    {report.mobile_number && <Phone value={report.mobile_number} />}
                                 </Fact>
                                 <Fact label="Other numbers">{report.other_mobile_numbers}</Fact>
                                 <Fact label="Email">

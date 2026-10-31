@@ -421,13 +421,15 @@ class FormApprovalService
                 continue;
             }
 
-            // Person pickers decide who handles later steps — only ids the
-            // field actually offers may be written.
+            // Person pickers decide who handles later steps — only active
+            // people the field offers may be written (or the answer already
+            // there, kept as it was).
             $element = $elements->get($elementId);
             if ($element && ($element['type'] ?? '') === 'user' && !$evaluator->isEmptyValue($value)) {
-                $picked = (int) (is_array($value) ? reset($value) : $value);
-                if (!isset($this->schema->userOptionsFor($element)[$picked])) {
-                    $errors[$elementId] = 'Select a valid person for ' . ($element['label'] ?? 'this field') . '.';
+                $picked  = (int) (is_array($value) ? reset($value) : $value);
+                $refusal = $this->schema->personPickError($element, $picked, $answers[$elementId] ?? null);
+                if ($refusal) {
+                    $errors[$elementId] = $refusal;
                     continue;
                 }
                 $value = $picked;

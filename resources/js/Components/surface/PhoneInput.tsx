@@ -1,5 +1,6 @@
 import clsx from 'clsx';
 import { useEffect, useState } from 'react';
+import { useField } from '@/Components/form/Field';
 import { phoneFromInput, phoneInputText } from '@/lib/phone';
 
 interface PhoneInputProps {
@@ -18,6 +19,8 @@ interface PhoneInputProps {
  * country code and tidied into "12-345 6789" when they leave the field.
  */
 export default function PhoneInput({ id, value, onChange, invalid = false, required, readOnly }: PhoneInputProps) {
+    const field = useField();
+    const bad = invalid || field.invalid;
     const [text, setText] = useState(() => phoneInputText(value));
     const [editing, setEditing] = useState(false);
 
@@ -29,7 +32,7 @@ export default function PhoneInput({ id, value, onChange, invalid = false, requi
     }, [value, editing]);
 
     return (
-        <div className={clsx('rd-affix rd-affix--full', invalid && 'is-invalid')}>
+        <div className={clsx('rd-affix rd-affix--full', bad && 'is-invalid')}>
             <span className="rd-affix__start" aria-hidden="true">
                 +60
             </span>
@@ -38,8 +41,8 @@ export default function PhoneInput({ id, value, onChange, invalid = false, requi
                 type="tel"
                 inputMode="tel"
                 autoComplete="tel-national"
-                aria-invalid={invalid || undefined}
-                aria-describedby={invalid ? `${id}-error` : undefined}
+                aria-invalid={bad || undefined}
+                aria-describedby={field.describedBy}
                 required={required}
                 readOnly={readOnly}
                 maxLength={16}

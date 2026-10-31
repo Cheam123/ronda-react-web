@@ -3,13 +3,13 @@ import type { SelectOption } from '@/types';
 import type { IfeAreaOption } from '@/types/leads';
 import type { TaskFilters } from '@/types/tasks';
 
-/** The people filters in "More filters": [key, label]. The subscriber sits on the toolbar. */
+/** The people filters in "More filters": [key, label]. Assigned to sits on the toolbar. */
 export const PEOPLE_FILTERS = [
-    ['filter_subsubscriber', 'Sub-subscriber'],
+    ['filter_subsubscriber', 'Helping'],
     ['filter_creator', 'Creator'],
     ['filter_checker', 'Checker'],
     ['filter_owner', 'Owner'],
-    ['filter_viewer', 'Viewer'],
+    ['filter_viewer', 'Can see it'],
 ] as const;
 
 /** The date ranges in "More filters": [start key, end key, label]. Last updated sits on the toolbar. */
@@ -39,6 +39,8 @@ const MORE_KEYS = [
 const TEXT_KEYS = [
     'search',
     'filter_subscriber',
+    'risk',
+    'due',
     'updated_date_start',
     'updated_date_end',
     ...MORE_KEYS,
@@ -84,6 +86,8 @@ export const NO_FILTERS: Partial<TaskFilterValues> = {
     ...NO_MORE_FILTERS,
     search: '',
     filter_subscriber: '',
+    risk: '',
+    due: '',
     updated_date_start: '',
     updated_date_end: '',
 };

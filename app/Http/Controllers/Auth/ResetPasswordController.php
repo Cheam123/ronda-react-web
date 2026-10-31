@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Providers\RouteServiceProvider;
+use App\Support\PasswordPolicy;
 use Illuminate\Foundation\Auth\ResetsPasswords;
 
 use Illuminate\Auth\Events\PasswordReset;
@@ -101,7 +102,7 @@ class ResetPasswordController extends Controller
         return [
             'token' => 'required',
             'email' => 'required',
-            'password' => ['required', 'confirmed', 'min:10'],
+            'password' => array_merge(PasswordPolicy::rules(), ['confirmed']),
         ];
     }
 
@@ -112,7 +113,9 @@ class ResetPasswordController extends Controller
      */
     protected function validationErrorMessages()
     {
-        return [];
+        return PasswordPolicy::messages('password') + [
+            'password.confirmed' => 'The two passwords don’t match.',
+        ];
     }
 
     /**

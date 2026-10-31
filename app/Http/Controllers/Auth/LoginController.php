@@ -81,19 +81,16 @@ class LoginController extends Controller
         }  else {
             $this->incrementLoginAttempts($request);
             $user = User::where('email',$request->email)->first();
-            $message = '';
 
-            if (isset($user) === false) {
-                $message = 'Opps! You have entered invalid credentials (1).';
-            } else {
-                if ($user->status != 1) {
-                    $message = 'Opps! Your account has been blocked (2).';
-                } else {
-                    $message = 'Opps! You have entered invalid credentials (3).';
-                }
+            // The same words whether or not the email has an account, so the
+            // form can't be used to find out who works here. Only someone who
+            // knows the password learns their account is switched off.
+            $message = 'The email or password isn’t right. Check both and try again.';
+            if ($user && $user->status != 1 && Hash::check((string) $request->password, $user->password)) {
+                $message = 'Your account is switched off. Ask your manager or an admin to turn it back on.';
             }
-            
-            return redirect()->back()->withInput()->withErrors(['message' => $message]);
+
+            return redirect()->back()->withInput($request->only('email'))->withErrors(['message' => $message]);
         }
     }
 

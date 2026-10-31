@@ -232,6 +232,8 @@ export default function LeadFields({ data, setData, errors = {}, options }: Lead
                             type="number"
                             min={0}
                             max={5000}
+                            aria-invalid={errors.seats ? true : undefined}
+                            aria-describedby={errors.seats ? 'seats-error' : 'seats-hint'}
                             value={data.seats}
                             onChange={(event) => setData('seats', event.target.value)}
                         />

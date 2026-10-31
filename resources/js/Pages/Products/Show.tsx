@@ -125,6 +125,7 @@ export default function ProductShow({
             <SurfacePage>
                 <PageHeader
                     crumbs={[
+                        { label: 'Home', href: '/index' },
                         { label: 'Admin' },
                         { label: 'Products', href: route('product.index') },
                         { label: product.name },

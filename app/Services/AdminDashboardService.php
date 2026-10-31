@@ -17,9 +17,10 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 /**
- * The figures behind the admin dashboard: sales, outlets, people, the
- * catalogue and the scheduled jobs across the whole organisation. The team's
- * open work stays on the team dashboard (DashboardService).
+ * The figures behind the admin dashboard: sales, outlets, users, the
+ * catalogue and any scheduled job that missed its run, across the whole
+ * organisation. The team's open work stays on the team dashboard
+ * (DashboardService).
  *
  * "This month" runs from the 1st to today and is compared with the same
  * days of last month.
@@ -30,24 +31,29 @@ class AdminDashboardService
     public const SLOW_APPROVAL_HOURS = 48;
 
     /** When the jobs run (App\Console\Kernel::schedule()). */
-    public const DIGEST_SCHEDULE          = '7:00 AM';
-    public const RECOMMENDATIONS_SCHEDULE = '2:45 AM';
+    public const DIGEST_SCHEDULE          = '7:00 am';
+    public const RECOMMENDATIONS_SCHEDULE = '2:45 am';
 
-    public function summary(User $viewer, ?Carbon $now = null): array
+    /** Suggested orders older than this mean the nightly refresh was missed. */
+    public const RECOMMENDATIONS_STALE_HOURS = 26;
+
+    /** Recent activity shows this many events. */
+    public const ACTIVITY_LIMIT = 5;
+
+    public function summary(?Carbon $now = null): array
     {
-        $now    = $now ? $now->copy() : Carbon::now();
-        $people = $this->people($viewer);
+        $now = $now ? $now->copy() : Carbon::now();
 
         return [
             'generated_at'   => $now->toIso8601String(),
             'sales'          => $this->sales($now),
             'outlets'        => $this->outlets($now),
-            'people'         => $people,
+            'users'          => $this->users(),
             'approvals'      => $this->approvals($now),
             'stale_products' => Product::stale($now)->orderBy('name')->pluck('name')->all(),
             'areas'          => $this->areas($now),
-            'activity'       => $this->activity(),
-            'automations'    => $this->automations($people, $now),
+            'activity'       => $this->activity(self::ACTIVITY_LIMIT),
+            'missed_jobs'    => $this->missedJobs($now),
         ];
     }
 
@@ -142,24 +148,25 @@ class AdminDashboardService
         ];
     }
 
-    /** Active users, admins first. */
-    private function people(User $viewer): array
+    /** Active users by role, and the ones Telegram can't reach (admins first). */
+    private function users(): array
     {
-        return User::where('status', 1)
+        $users = User::where('status', 1)
             ->orderBy('type')
             ->orderBy('name')
-            ->get(['id', 'name', 'type', 'telegram_chat_id', 'fcm_token', 'enable_notification'])
-            ->map(fn (User $user) => [
-                'id'       => $user->id,
-                'name'     => $user->name,
-                'type'     => (int) $user->type,
-                'role'     => User::getUserType($user->type),
-                'telegram' => filled($user->telegram_chat_id),
-                'push'     => filled($user->fcm_token) && (bool) $user->enable_notification,
-                'is_you'   => $user->id === $viewer->id,
-            ])
-            ->values()
-            ->all();
+            ->get(['id', 'name', 'type', 'telegram_chat_id']);
+
+        $ofType   = fn (int $type) => $users->filter(fn (User $user) => (int) $user->type === $type)->count();
+        $unlinked = $users->filter(fn (User $user) => blank($user->telegram_chat_id));
+
+        return [
+            'active'         => $users->count(),
+            'admins'         => $ofType(User::TYPE_ADMIN),
+            'managers'       => $ofType(User::TYPE_MANAGER),
+            'reps'           => $ofType(User::TYPE_USER),
+            'unlinked'       => $unlinked->count(),
+            'unlinked_names' => $unlinked->take(2)->pluck('name')->values()->all(),
+        ];
     }
 
     /** Form submissions waiting on an approver (closed records excluded). */
@@ -207,7 +214,7 @@ class AdminDashboardService
     }
 
     /** The latest orders, visits, form submissions and finished tasks, newest first. */
-    private function activity(int $limit = 8): array
+    private function activity(int $limit): array
     {
         $outlet = fn ($lead) => $lead ? ($lead->business_name ?: $lead->name) : 'an outlet';
 
@@ -262,37 +269,34 @@ class AdminDashboardService
             ->all();
     }
 
-    /** The scheduled jobs an admin looks after, and how notifications reach people. */
-    private function automations(array $people, Carbon $now): array
+    /**
+     * Scheduled jobs that should have run by now and haven't. When both are
+     * listed, the server's scheduler has most likely stopped.
+     */
+    private function missedJobs(Carbon $now): array
     {
+        $missed = [];
+
         $digest = DailyDigest::latestDigest();
-
-        $recommendations = OutletRecommendation::query()
-            ->selectRaw('COUNT(*) AS outlets, SUM(gap_count) AS gaps, SUM(estimated_monthly_value) AS value, MAX(computed_at) AS last_run')
-            ->first();
-        $lastRun = $recommendations && $recommendations->last_run ? Carbon::parse($recommendations->last_run) : null;
-
-        return [
-            'digest'          => [
+        if ($now->gte($now->copy()->modify(self::DIGEST_SCHEDULE)) && !($digest && $digest->digest_date->isSameDay($now))) {
+            $missed[] = [
+                'job'      => 'digest',
                 'schedule' => self::DIGEST_SCHEDULE,
-                'ran_at'   => $digest ? $digest->updated_at->toIso8601String() : null,
-                'today'    => $digest !== null && $digest->digest_date->isSameDay($now),
-                'source'   => optional($digest)->source,
-                'error'    => optional($digest)->error,
-            ],
-            'recommendations' => [
+                'last_run' => $digest ? $digest->digest_date->toDateString() : null,
+            ];
+        }
+
+        // Each run writes a row for every outlet, so outlets without rows means it has never run.
+        $lastRun = OutletRecommendation::max('computed_at');
+        $lastRun = $lastRun ? Carbon::parse($lastRun) : null;
+        if ($lastRun ? $lastRun->lt($now->copy()->subHours(self::RECOMMENDATIONS_STALE_HOURS)) : Leads::exists()) {
+            $missed[] = [
+                'job'      => 'recommendations',
                 'schedule' => self::RECOMMENDATIONS_SCHEDULE,
-                'ran_at'   => optional($lastRun)->toIso8601String(),
-                'fresh'    => $lastRun !== null && $lastRun->gte($now->copy()->subHours(26)),
-                'outlets'  => (int) optional($recommendations)->outlets,
-                'gaps'     => (int) optional($recommendations)->gaps,
-                'value'    => round((float) optional($recommendations)->value, 2),
-            ],
-            'notifications'   => [
-                'users'    => count($people),
-                'telegram' => count(array_filter($people, fn (array $person) => $person['telegram'])),
-                'push'     => count(array_filter($people, fn (array $person) => $person['push'])),
-            ],
-        ];
+                'last_run' => optional($lastRun)->toIso8601String(),
+            ];
+        }
+
+        return $missed;
     }
 }

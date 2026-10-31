@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { useId, type ReactNode } from 'react';
+import { useId, type FormEvent, type ReactNode } from 'react';
 import Modal from 'react-bootstrap/Modal';
 
 interface DialogProps {
@@ -15,21 +15,34 @@ interface DialogProps {
     wide?: boolean;
     /** The buttons, right-aligned on the grey foot. */
     footer: ReactNode;
+    /** Makes the dialog a form, so Enter submits it and a submit button in the foot works. */
+    onSubmit?: (event: FormEvent<HTMLFormElement>) => void;
+    /** After the opening animation: put focus where it belongs. */
+    onEntered?: () => void;
+    /** After the closing animation. */
+    onExited?: () => void;
     children?: ReactNode;
 }
 
 /** A surface dialog (react-bootstrap Modal drawn with .rd-dialog): title, body, buttons. */
-export default function Dialog({ show, onHide, title, text, icon, tone, wide = false, footer, children }: DialogProps) {
+export default function Dialog({
+    show,
+    onHide,
+    title,
+    text,
+    icon,
+    tone,
+    wide = false,
+    footer,
+    onSubmit,
+    onEntered,
+    onExited,
+    children,
+}: DialogProps) {
     const titleId = useId();
 
-    return (
-        <Modal
-            show={show}
-            onHide={onHide}
-            centered
-            dialogClassName={clsx('rd-dialog', wide && 'rd-dialog--wide')}
-            aria-labelledby={titleId}
-        >
+    const content = (
+        <>
             <div className="rd-dialog__body">
                 <div className="rd-dialog__head">
                     {icon && (
@@ -50,6 +63,26 @@ export default function Dialog({ show, onHide, title, text, icon, tone, wide = f
                 {children}
             </div>
             <div className="rd-dialog__foot">{footer}</div>
+        </>
+    );
+
+    return (
+        <Modal
+            show={show}
+            onHide={onHide}
+            onEntered={onEntered}
+            onExited={onExited}
+            centered
+            dialogClassName={clsx('rd-dialog', wide && 'rd-dialog--wide')}
+            aria-labelledby={titleId}
+        >
+            {onSubmit ? (
+                <form onSubmit={onSubmit} noValidate>
+                    {content}
+                </form>
+            ) : (
+                content
+            )}
         </Modal>
     );
 }

@@ -1,15 +1,13 @@
 import { Link } from '@inertiajs/react';
 import clsx from 'clsx';
+import { useState } from 'react';
 import Initials from '@/Components/surface/Initials';
 import Meter from '@/Components/surface/Meter';
 import { useAuth } from '@/hooks/useAuth';
-import { formatMoney, formatNumber, formatQuantity, pluralize } from '@/lib/format';
+import { formatMoney, pluralize } from '@/lib/format';
 import type { AdminSummary } from '../types';
 
-/**
- * The smaller panels of the admin dashboard: top products, people, IFE area
- * coverage, the activity feed and the scheduled jobs.
- */
+/** The smaller panels of the admin dashboard: the activity feed and IFE area coverage. */
 
 function MoreLink({ href, children }: { href: string; children: string }) {
     return (
@@ -20,97 +18,35 @@ function MoreLink({ href, children }: { href: string; children: string }) {
     );
 }
 
-export function TopProducts({ sales, currency }: { sales: AdminSummary['sales']; currency: string }) {
-    const { can } = useAuth();
-    const products = sales.top_products;
-    const best = Math.max(0, ...products.map((product) => product.value));
+/** "8 areas with 24 outlets between them. 2 visit reports this month, all in Kuala Lumpur." */
+function coverageLine(areas: AdminSummary['areas']): string {
+    const outlets = areas.reduce((sum, area) => sum + area.outlets, 0);
+    const reports = areas.reduce((sum, area) => sum + area.reports_month, 0);
+    const visited = areas.filter((area) => area.reports_month > 0);
 
-    return (
-        <section className="rd-panel rd-span-4" aria-labelledby="top-products-title">
-            <div className="rd-panel__head">
-                <h2 id="top-products-title" className="rd-panel__title">
-                    Top products
-                </h2>
-                <span className="rd-panel__sub">{sales.month_label}, by value</span>
-            </div>
-            {products.length === 0 ? (
-                <p className="rd-muted">No confirmed orders this month yet.</p>
-            ) : (
-                <ol className="dash-top">
-                    {products.map((product, index) => (
-                        <li key={product.id}>
-                            <div className="dash-top__line">
-                                <span className="dash-top__rank">{index + 1}</span>
-                                <span className="dash-top__name">
-                                    {can('manage_product') ? (
-                                        <Link href={route('product.view', product.id)}>{product.name}</Link>
-                                    ) : (
-                                        <strong>{product.name}</strong>
-                                    )}
-                                    <span className="rd-mono rd-muted" style={{ fontSize: 11 }}>
-                                        {product.sku} &middot; {formatQuantity(product.quantity)} {product.unit}
-                                    </span>
-                                </span>
-                                <span className="dash-top__value">
-                                    {currency} {formatNumber(product.value)}
-                                </span>
-                            </div>
-                            <Meter value={product.value} max={best} thin />
-                        </li>
-                    ))}
-                </ol>
-            )}
-            {can('manage_product') && <MoreLink href={route('product.index')}>Manage products</MoreLink>}
-        </section>
-    );
+    const where =
+        areas.length === 1
+            ? `1 area, with ${pluralize(outlets, 'outlet')}.`
+            : `${areas.length} areas with ${pluralize(outlets, 'outlet')} between them.`;
+    const visits =
+        reports === 0
+            ? 'No visit reports this month.'
+            : visited.length === 1
+              ? `${pluralize(reports, 'visit report')} this month, ${reports === 1 ? 'in' : 'all in'} ${visited[0].name}.`
+              : `${pluralize(reports, 'visit report')} this month, across ${visited.length} areas.`;
+
+    return `${where} ${visits}`;
 }
 
-const ROLE_TONES: Record<number, string> = { 0: 'rd-chip--dark', 1: 'rd-chip--plum' };
-
-export function PeoplePanel({ people }: { people: AdminSummary['people'] }) {
-    const { can } = useAuth();
-
-    return (
-        <section className="rd-panel rd-span-4" aria-labelledby="people-title">
-            <div className="rd-panel__head">
-                <h2 id="people-title" className="rd-panel__title">
-                    People
-                </h2>
-                <span className="rd-panel__sub">{people.length} active</span>
-            </div>
-            <ul className="rd-rows">
-                {people.map((person) => (
-                    <li key={person.id}>
-                        <Initials name={person.name} colorKey={person.id} />
-                        <span className="d-flex flex-column flex-grow-1" style={{ minWidth: 0 }}>
-                            <span className="fw-semibold">
-                                {person.name}
-                                {person.is_you && <span className="rd-muted fw-normal"> (you)</span>}
-                            </span>
-                            <span className={clsx('rd-status', person.telegram ? 'rd-status--good' : 'rd-muted')}>
-                                <i
-                                    className={`mdi ${person.telegram ? 'mdi-check' : 'mdi-telegram'}`}
-                                    aria-hidden="true"
-                                />
-                                {person.telegram ? 'Telegram linked' : 'No Telegram'}
-                                {person.push && <span className="rd-muted fw-normal"> &middot; push on</span>}
-                            </span>
-                        </span>
-                        <span className={clsx('rd-chip', ROLE_TONES[person.type])}>{person.role}</span>
-                    </li>
-                ))}
-            </ul>
-            {can('manage_user') && <MoreLink href={route('users.index')}>Manage users</MoreLink>}
-        </section>
-    );
-}
-
+/** One line, with the per-area figures on request. */
 export function AreaCoverage({ areas }: { areas: AdminSummary['areas'] }) {
     const { can } = useAuth();
+    const [open, setOpen] = useState(false);
     const most = Math.max(0, ...areas.map((area) => area.outlets));
+    const empty = areas.filter((area) => area.outlets === 0).length;
 
     return (
-        <section className="rd-panel rd-span-4" aria-labelledby="areas-title">
+        <section className="rd-panel rd-span-5" aria-labelledby="areas-title">
             <div className="rd-panel__head">
                 <h2 id="areas-title" className="rd-panel__title">
                     Coverage by IFE area
@@ -119,30 +55,61 @@ export function AreaCoverage({ areas }: { areas: AdminSummary['areas'] }) {
             {areas.length === 0 ? (
                 <p className="rd-muted">No IFE areas yet.</p>
             ) : (
-                <ul className="dash-bars dash-bars--areas">
-                    <li className="dash-bars__head" aria-hidden="true">
-                        <span>Area</span>
-                        <span />
-                        <span className="num">Outlets</span>
-                        <span className="num">Reports</span>
-                    </li>
-                    {areas.map((area) => (
-                        <li key={area.id}>
-                            <span className="fw-medium">{area.name}</span>
-                            <Meter value={area.outlets} max={most} />
-                            <span className={clsx('num', area.outlets === 0 && 'rd-status--serious fw-semibold')}>
-                                <span className="visually-hidden">Outlets: </span>
-                                {area.outlets}
+                <>
+                    <p className="dash-coverage">
+                        {coverageLine(areas)}
+                        {empty > 0 && (
+                            <span className="rd-status rd-status--serious">
+                                <i className="mdi mdi-alert" aria-hidden="true" />
+                                {pluralize(empty, 'area has', 'areas have')} no outlets yet.
                             </span>
-                            <span className="num rd-muted">
-                                <span className="visually-hidden">IFE reports this month: </span>
-                                {area.reports_month}
-                            </span>
-                        </li>
-                    ))}
-                </ul>
+                        )}
+                    </p>
+                    <div>
+                        <button
+                            type="button"
+                            className="rd-btn rd-btn--sm"
+                            aria-expanded={open}
+                            aria-controls="areas-list"
+                            onClick={() => setOpen((shown) => !shown)}
+                        >
+                            {open
+                                ? 'Hide the areas'
+                                : areas.length === 1
+                                  ? 'Show the area'
+                                  : `Show the ${areas.length} areas`}
+                            <i className={`mdi mdi-chevron-${open ? 'up' : 'down'}`} aria-hidden="true" />
+                        </button>
+                    </div>
+                    <div id="areas-list" className="dash-coverage__list" hidden={!open}>
+                        <ul className="dash-bars dash-bars--areas">
+                            <li className="dash-bars__head" aria-hidden="true">
+                                <span>Area</span>
+                                <span />
+                                <span className="num">Outlets</span>
+                                <span className="num">Reports</span>
+                            </li>
+                            {areas.map((area) => (
+                                <li key={area.id}>
+                                    <span className="fw-medium">{area.name}</span>
+                                    <Meter value={area.outlets} max={most} />
+                                    <span
+                                        className={clsx('num', area.outlets === 0 && 'rd-status--serious fw-semibold')}
+                                    >
+                                        <span className="visually-hidden">Outlets: </span>
+                                        {area.outlets}
+                                    </span>
+                                    <span className="num rd-muted">
+                                        <span className="visually-hidden">Visit reports this month: </span>
+                                        {area.reports_month}
+                                    </span>
+                                </li>
+                            ))}
+                        </ul>
+                        <span className="rd-panel__sub">Reports are visit reports filed this month.</span>
+                    </div>
+                </>
             )}
-            <span className="rd-panel__sub">Reports are IFE reports filed this month.</span>
             {can('manage_area') && <MoreLink href={route('area.index')}>Manage IFE areas</MoreLink>}
         </section>
     );
@@ -157,7 +124,7 @@ const KIND_ICONS: Record<AdminSummary['activity'][number]['kind'], string> = {
 
 export function ActivityFeed({ activity, currency }: { activity: AdminSummary['activity']; currency: string }) {
     return (
-        <section className="rd-panel rd-span-8" aria-labelledby="activity-title">
+        <section className="rd-panel rd-span-7" aria-labelledby="activity-title">
             <div className="rd-panel__head">
                 <h2 id="activity-title" className="rd-panel__title">
                     Recent activity
@@ -188,85 +155,6 @@ export function ActivityFeed({ activity, currency }: { activity: AdminSummary['a
                     ))}
                 </ul>
             )}
-        </section>
-    );
-}
-
-interface JobProps {
-    name: string;
-    ok: boolean;
-    status: string;
-    children: string;
-}
-
-function Job({ name, ok, status, children }: JobProps) {
-    return (
-        <div className="dash-job">
-            <div className="dash-job__head">
-                {name}
-                <span className={clsx('rd-status', ok ? 'rd-status--good' : 'rd-status--serious')}>
-                    <i className={`mdi ${ok ? 'mdi-check' : 'mdi-alert'}`} aria-hidden="true" />
-                    {status}
-                </span>
-            </div>
-            <p className="dash-job__text">{children}</p>
-        </div>
-    );
-}
-
-export function Automations({ automations, currency }: { automations: AdminSummary['automations']; currency: string }) {
-    const { digest, recommendations, notifications } = automations;
-    const unlinked = notifications.users - notifications.telegram;
-
-    const digestText = !digest.today
-        ? `No brief for today yet. It is written daily at ${digest.schedule}.`
-        : digest.source === 'bedrock'
-          ? "Today's brief was written by Claude through Amazon Bedrock. Managers see it on their dashboard."
-          : `Bedrock was ${digest.error ? 'unavailable' : 'not configured'}, so today's brief used the template summary.`;
-
-    return (
-        <section className="rd-panel rd-span-4" aria-labelledby="jobs-title">
-            <div className="rd-panel__head">
-                <h2 id="jobs-title" className="rd-panel__title">
-                    Automations
-                </h2>
-                <span className="rd-panel__sub">Scheduled jobs</span>
-            </div>
-            <div>
-                <Job
-                    name="Morning Round-Up"
-                    ok={digest.today && digest.source === 'bedrock'}
-                    status={
-                        digest.today
-                            ? digest.source === 'bedrock'
-                                ? `Ran ${digest.ran_label}`
-                                : 'Template used'
-                            : 'Not run today'
-                    }
-                >
-                    {digestText}
-                </Job>
-                <Job
-                    name="Product recommendations"
-                    ok={recommendations.fresh}
-                    status={
-                        recommendations.ran_label
-                            ? `${recommendations.fresh ? 'Ran' : 'Last ran'} ${recommendations.ran_label}`
-                            : 'Not run yet'
-                    }
-                >
-                    {recommendations.ran_at
-                        ? `${pluralize(recommendations.outlets, 'outlet')} refreshed. ${pluralize(recommendations.gaps, 'product gap')} found, worth about ${currency} ${formatNumber(recommendations.value)} a month.`
-                        : `Runs daily at ${recommendations.schedule}.`}
-                </Job>
-                <Job
-                    name="Notifications"
-                    ok={unlinked === 0}
-                    status={unlinked === 0 ? 'All linked' : `${unlinked} not linked`}
-                >
-                    {`Telegram linked for ${notifications.telegram} of ${notifications.users} users. Push notifications on for ${notifications.push} of ${notifications.users}.`}
-                </Job>
-            </div>
         </section>
     );
 }

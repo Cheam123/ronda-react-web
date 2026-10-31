@@ -1,5 +1,5 @@
 import { router, usePage } from '@inertiajs/react';
-import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import AssigneePicker from '@/Components/forms/AssigneePicker';
 import FormRenderer from '@/Components/forms/FormRenderer';
 import Field from '@/Components/form/Field';
@@ -9,6 +9,9 @@ import { FormSection } from '@/Components/surface/FormSection';
 import ErrorSummary from '@/Components/ui/ErrorSummary';
 import ImageLightbox from '@/Components/ui/ImageLightbox';
 import { useFormFill } from '@/hooks/useFormFill';
+import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
+import { clearDraft, draftTime, readDraft, writeDraft, type FormDraft } from '@/lib/drafts';
+import { focusField } from '@/lib/focus';
 import { renderTree } from '@/lib/forms/schema';
 import type { PageProps } from '@/types';
 import type { Answers, CaseLink, FormSchema, Person } from '@/types/forms';
@@ -30,6 +33,8 @@ interface SubmissionFormProps {
     parentCase?: CaseLink | null;
     submitLabel: string;
     onCancel: () => void;
+    /** Keep the answers as a draft in this browser under this key (lib/drafts.ts), and offer them back. */
+    draftKey?: string;
     /** Beside the form on wide screens: what happens after submitting. */
     aside?: ReactNode;
 }
@@ -48,22 +53,55 @@ export default function SubmissionForm({
     parentCase,
     submitLabel,
     onCancel,
+    draftKey,
     aside,
 }: SubmissionFormProps) {
-    const serverErrors = usePage<PageProps>().props.errors;
+    const { component, props } = usePage<PageProps>();
+    const serverErrors = props.errors;
     const fill = useFormFill({ schema, initial: answers, deferredIds });
     const tree = useMemo(() => renderTree(schema), [schema]);
     const [title, setTitle] = useState(recordTitle ?? '');
     const [parent, setParent] = useState(parentId ? String(parentId) : '');
     const [sending, setSending] = useState(false);
     const [photo, setPhoto] = useState<string | null>(null);
+    // A draft left from an earlier visit, offered until it is restored or discarded.
+    const [offered, setOffered] = useState<FormDraft | null>(() => (draftKey ? readDraft(draftKey) : null));
+
+    const started = useRef(JSON.stringify([answers, recordTitle ?? '', parentId ? String(parentId) : '']));
+    const pickedFiles = Object.values(fill.files).some((picked) => picked.length > 0);
+    const dirty = pickedFiles || JSON.stringify([fill.answers, title, parent]) !== started.current;
+
+    useUnsavedChanges(dirty, undefined, { keptAsDraft: Boolean(draftKey) });
+
+    // Keep what is typed as a draft (not the files) once it differs from the start,
+    // but leave an offered draft alone until the user decides about it.
+    useEffect(() => {
+        if (!draftKey || offered || !dirty) return;
+        writeDraft(draftKey, { answers: fill.answers, title, parent, savedAt: Date.now() });
+    }, [draftKey, offered, dirty, fill.answers, title, parent]);
+
+    const restore = (draft: FormDraft) => {
+        Object.entries(draft.answers).forEach(([id, value]) => fill.setAnswer(id, value));
+        setTitle(draft.title);
+        setParent(draft.parent);
+        setOffered(null);
+    };
+
+    const discard = () => {
+        if (draftKey) clearDraft(draftKey);
+        setOffered(null);
+    };
+
+    // Server errors are keyed by the field's element id; its control's id is "field-<id>".
+    const fieldId = (key: string) =>
+        schema.elements.some((element) => element.id === key) ? `field-${key}` : key.replace(/\./g, '-');
 
     const submit = (event: FormEvent) => {
         event.preventDefault();
 
         const firstProblem = fill.validate();
         if (firstProblem) {
-            document.getElementById(`field-${firstProblem}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            focusField(`field-${firstProblem}`);
             return;
         }
 
@@ -83,13 +121,34 @@ export default function SubmissionForm({
                 preserveState: 'errors',
                 onStart: () => setSending(true),
                 onFinish: () => setSending(false),
+                // Sent once the response is another page; a refusal (a handler to pick) comes back here.
+                onSuccess: (page) => {
+                    if (draftKey && page.component !== component) clearDraft(draftKey);
+                },
             },
         );
     };
 
     return (
         <>
-            <ErrorSummary />
+            <ErrorSummary fieldId={fieldId} />
+
+            {offered && (
+                <div className="rd-notice form-fill__draft" role="status">
+                    <i className="mdi mdi-content-save-outline" aria-hidden="true" />
+                    <span className="form-fill__draft-text">
+                        You have an unsent draft of this form from {draftTime(offered.savedAt)} on this device.
+                    </span>
+                    <span className="form-fill__draft-actions">
+                        <button type="button" className="rd-btn rd-btn--quiet rd-btn--sm" onClick={discard}>
+                            Discard
+                        </button>
+                        <button type="button" className="rd-btn rd-btn--sm" onClick={() => restore(offered)}>
+                            Restore the draft
+                        </button>
+                    </span>
+                </div>
+            )}
 
             <div className="rd-form-page">
                 <form className="rd-form" onSubmit={submit} noValidate>

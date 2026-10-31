@@ -66,7 +66,9 @@ export default function AssigneePicker({ people }: { people: Person[] }) {
             <Field label="Person" htmlFor="next-assignee">
                 <SearchSelect
                     id="next-assignee"
-                    options={people.map((person) => ({ value: person.id, label: person.name }))}
+                    options={people
+                        .filter((person) => person.active !== false)
+                        .map((person) => ({ value: person.id, label: person.name }))}
                     placeholder="Search for a person"
                     value={picked}
                     onChange={setPicked}

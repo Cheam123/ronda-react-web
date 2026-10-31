@@ -18,7 +18,7 @@ class AdminDashboardResource extends JsonResource
         $summary = $this->resource;
         $now     = Carbon::parse($summary['generated_at']);
 
-        $summary['generated_label'] = $now->format('g:i A');
+        $summary['generated_label'] = $now->format('g:i a');
         $summary['date_label']      = $now->format('l, j F Y');
 
         $summary['sales']['daily'] = array_map(fn (array $day) => $day + [
@@ -34,25 +34,25 @@ class AdminDashboardResource extends JsonResource
             'when' => $this->whenLabel(Carbon::parse($event['at']), $now),
         ], $summary['activity']);
 
-        foreach (['digest', 'recommendations'] as $job) {
-            $ranAt = $summary['automations'][$job]['ran_at'];
-            $summary['automations'][$job]['ran_label'] = $ranAt ? $this->whenLabel(Carbon::parse($ranAt), $now) : null;
-        }
+        // "Wednesday, 30 Sep"
+        $summary['missed_jobs'] = array_map(fn (array $job) => $job + [
+            'last_label' => $job['last_run'] ? Carbon::parse($job['last_run'])->format('l, j M') : null,
+        ], $summary['missed_jobs']);
 
         return $summary;
     }
 
-    /** 7:31 AM today, "Yesterday, 6:12 PM", or "28 Sep, 3:15 PM". */
+    /** 7:31 am today, "Yesterday, 6:12 pm", or "28 Sep, 3:15 pm". */
     private function whenLabel(Carbon $at, Carbon $now): string
     {
         if ($at->isSameDay($now)) {
-            return $at->format('g:i A');
+            return $at->format('g:i a');
         }
 
         if ($at->isSameDay($now->copy()->subDay())) {
-            return 'Yesterday, ' . $at->format('g:i A');
+            return 'Yesterday, ' . $at->format('g:i a');
         }
 
-        return $at->format('j M, g:i A');
+        return $at->format('j M, g:i a');
     }
 }

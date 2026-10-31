@@ -11,27 +11,24 @@ export default function VerifyEmail({ resent }: { resent: boolean }) {
     };
 
     return (
-        <GuestLayout title="Verify Your Email Address">
-            <div className="card">
-                <div className="card-body p-4">
-                    <h5 className="text-primary text-center">Verify Your Email Address</h5>
-                    {resent && (
-                        <div className="alert alert-success" role="alert">
-                            A fresh verification link has been sent to your email address.
-                        </div>
-                    )}
-                    <div>
-                        Before proceeding, please check your email for a verification link. If you did not receive the
-                        email,{' '}
-                        <form className="d-inline" onSubmit={submit}>
-                            <button type="submit" className="btn btn-link p-0 m-0 align-baseline" disabled={processing}>
-                                click here to request another
-                            </button>
-                        </form>
-                        .
-                    </div>
-                </div>
-            </div>
+        <GuestLayout
+            title="Check your email"
+            heading="Check your email"
+            lede="Before you go on, open the link Ronda sent to your email address."
+        >
+            {resent && (
+                <p className="rd-guest__status" role="status">
+                    <i className="mdi mdi-check-circle-outline" aria-hidden="true" />A new link is on its way to your
+                    email.
+                </p>
+            )}
+            <form className="rd-guest__form" onSubmit={submit}>
+                <button type="submit" className="rd-btn rd-btn--lg rd-guest__submit" disabled={processing}>
+                    {processing && <span className="spinner-border spinner-border-sm" aria-hidden="true" />}
+                    Send the link again
+                </button>
+                <p className="rd-guest__alt">Nothing after a few minutes? Check your spam folder first.</p>
+            </form>
         </GuestLayout>
     );
 }

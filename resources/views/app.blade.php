@@ -14,7 +14,7 @@
                 var saved = localStorage.getItem('ronda-theme');
                 var dark = saved === 'dark' || (saved !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
                 var root = document.documentElement;
-                root.dataset.theme = root.dataset.swal2Theme = dark ? 'dark' : 'light';
+                root.dataset.theme = dark ? 'dark' : 'light';
                 root.style.colorScheme = dark ? 'dark' : 'light';
                 if (dark) document.querySelector('meta[name="theme-color"]').setAttribute('content', '#121823');
             } catch (e) {}

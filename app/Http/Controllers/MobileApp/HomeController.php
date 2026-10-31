@@ -5,10 +5,13 @@ namespace App\Http\Controllers\MobileApp;
 use App\Http\Controllers\Controller;
 use App\Models\GeneralSetting;
 use App\Models\IFEReport;
+use App\Models\Leads;
+use App\Models\OutletRecommendation;
 use App\Models\Tasks;
 use App\Models\User;
 use App\Services\FormApprovalService;
 use App\Services\FormRecordService;
+use App\Services\Recommendation\RecommendationService;
 use App\Services\TaskRisk;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -113,11 +116,32 @@ class HomeController extends Controller
             ->map($taskRow)
             ->values();
 
-        $atRisk = (clone $mine)
+        // Every open task with its assessment, most urgent first: overdue,
+        // then at risk, each by due time.
+        $assessed = (clone $mine)
             ->whereIn('status', TaskRisk::OPEN_STATUSES)
             ->get()
-            ->filter(fn (Tasks $task) => $risk->assessTask($task, $now)['level'] !== TaskRisk::ON_TRACK)
-            ->count();
+            ->map(fn (Tasks $task) => ['task' => $task, 'risk' => $risk->assessTask($task, $now)])
+            ->filter(fn ($row) => $row['risk']['level'] !== TaskRisk::ON_TRACK)
+            ->sortBy(fn ($row) => [
+                $row['risk']['level'] === TaskRisk::OVERDUE ? 0 : 1,
+                optional($row['risk']['due_at'])->getTimestamp() ?? PHP_INT_MAX,
+            ])
+            ->values();
+
+        // at_risk keeps its meaning (overdue included); overdue is the subset.
+        $atRisk       = $assessed->count();
+        $overdueCount = $assessed->where('risk.level', TaskRisk::OVERDUE)->count();
+
+        $overdue = $assessed->where('risk.level', TaskRisk::OVERDUE)
+            ->take(20)
+            ->map(fn ($row) => $taskRow($row['task']))
+            ->values();
+
+        $atRiskOnly = $assessed->where('risk.level', TaskRisk::AT_RISK)
+            ->take(20)
+            ->map(fn ($row) => $taskRow($row['task']))
+            ->values();
 
         // Follow-up visits the caller planned for today in an earlier IFE report.
         $visits = IFEReport::where('created_by', $user->id)
@@ -162,12 +186,49 @@ class HomeController extends Controller
                 'visits_planned' => $visits->count(),
                 'form_steps'     => $formSteps->count(),
                 'at_risk'        => $atRisk,
+                'overdue'        => $overdueCount,
             ],
             'tasks_due'      => $dueToday,
             'appointments'   => $appointments,
             'visits_planned' => $visits,
             'form_steps'     => $formSteps,
+            // Open tasks past their due time, and those at risk but not yet
+            // overdue (same row shape as tasks_due), most urgent first.
+            'overdue'        => $overdue,
+            'at_risk'        => $atRiskOnly,
+            // A rep's outlets that could order more ("Suggested orders" card).
+            'suggestions'    => $this->suggestionsFor($user),
         ];
+    }
+
+    /**
+     * The Suggested orders card on a rep's Today: how many of their outlets
+     * could order more, and roughly how much a month. Null for people who
+     * see every outlet (the card is a rep's), or when nothing is computed.
+     */
+    private function suggestionsFor(User $user): ?array
+    {
+        if ($user->seesAllRecords()) {
+            return null;
+        }
+
+        try {
+            $top = app(RecommendationService::class)->topForUser($user, 5);
+            $all = OutletRecommendation::query()
+                ->whereIn('lead_id', Leads::visibleTo($user)->select('id'))
+                ->where('estimated_monthly_value', '>', 0);
+
+            return [
+                'outlets'                 => $top['outlets'],
+                'total'                   => $top['total'],
+                'estimated_monthly_value' => round((float) $all->sum('estimated_monthly_value'), 2),
+                'currency'                => config('ife.currency', 'RM'),
+            ];
+        } catch (\Throwable $e) {
+            Log::warning('Mobile home: suggestions unavailable', ['error' => $e->getMessage()]);
+
+            return null;
+        }
     }
 
     public function getLifeVersion(Request $request)

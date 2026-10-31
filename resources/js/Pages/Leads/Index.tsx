@@ -72,7 +72,12 @@ export default function LeadsIndex({ leads, ifeAreas, stats, counts, filters }: 
 
     const deleteLead = async (lead: LeadListItem) => {
         if (
-            await confirm({ title: 'Delete this outlet?', text: lead.business_name ?? lead.name ?? '', danger: true })
+            await confirm({
+                title: 'Delete this outlet?',
+                text: `${lead.business_name ?? lead.name ?? 'It'} leaves the list for everyone.`,
+                confirmText: 'Delete outlet',
+                danger: true,
+            })
         ) {
             router.post(route('lead.delete'), { id: lead.id }, { preserveScroll: true });
         }
@@ -100,12 +105,9 @@ export default function LeadsIndex({ leads, ifeAreas, stats, counts, filters }: 
     const columns = ticking ? 9 : 8;
 
     return (
-        <AppLayout title="Leads and customers">
+        <AppLayout title="Outlets">
             <SurfacePage>
-                <PageHeader
-                    crumbs={[{ label: 'Home', href: '/index' }, { label: 'Lead/Customer' }]}
-                    title="Leads and customers"
-                />
+                <PageHeader crumbs={[{ label: 'Home', href: '/index' }, { label: 'Outlets' }]} title="Outlets" />
 
                 <section className="rd-panel rd-list" aria-labelledby="outlets-title">
                     <div className="rd-list__head">
@@ -117,7 +119,7 @@ export default function LeadsIndex({ leads, ifeAreas, stats, counts, filters }: 
                             {can('create_lead') && (
                                 <Link href={route('lead.create')} className="rd-btn rd-btn--primary rd-btn--lg">
                                     <i className="mdi mdi-plus" aria-hidden="true" />
-                                    Add lead
+                                    Add outlet
                                 </Link>
                             )}
                         </div>
@@ -152,7 +154,7 @@ export default function LeadsIndex({ leads, ifeAreas, stats, counts, filters }: 
                                         key={tab.label}
                                         type="button"
                                         className={clsx('rd-tabs__tab', active && 'is-active')}
-                                        aria-current={active ? 'true' : undefined}
+                                        aria-pressed={active}
                                         onClick={() => choose('has_customerid', tab.value)}
                                     >
                                         {tab.label} <span className="rd-count">{formatNumber(tab.count)}</span>
@@ -198,7 +200,7 @@ export default function LeadsIndex({ leads, ifeAreas, stats, counts, filters }: 
                     </div>
 
                     <div className="rd-scroll">
-                        <table className="rd-table rd-table--band lead-table">
+                        <table className="rd-table rd-table--band rd-table--stack lead-table">
                             <thead>
                                 <tr>
                                     {ticking && (
@@ -321,7 +323,7 @@ function LeadRow({ lead, selectable, ticked, onToggle, onDelete }: LeadRowProps)
                     />
                 </td>
             )}
-            <td>
+            <td className="rd-cell-main">
                 <div className="rd-person">
                     <Initials name={title} colorKey={lead.id} size="lg" />
                     <span className="rd-person__text">
@@ -336,8 +338,10 @@ function LeadRow({ lead, selectable, ticked, onToggle, onDelete }: LeadRowProps)
                     </span>
                 </div>
             </td>
-            <td>{lead.customer_id ? <span className="rd-mono lead-table__id">{lead.customer_id}</span> : <Dash />}</td>
-            <td>
+            <td data-label="Customer ID" className={lead.customer_id ? undefined : 'is-empty'}>
+                {lead.customer_id ? <span className="rd-mono lead-table__id">{lead.customer_id}</span> : <Dash />}
+            </td>
+            <td data-label="Status">
                 {lead.customer_id ? (
                     <span className="rd-chip rd-chip--good">
                         <span className="rd-dot" />
@@ -350,14 +354,14 @@ function LeadRow({ lead, selectable, ticked, onToggle, onDelete }: LeadRowProps)
                     </span>
                 )}
             </td>
-            <td>
+            <td data-label="IFE area" className={lead.ife_area ? undefined : 'is-empty'}>
                 {lead.ife_area ? (
                     <span className={tagClass(areaHue(lead.ife_area_id))}>{lead.ife_area}</span>
                 ) : (
                     <Dash />
                 )}
             </td>
-            <td>
+            <td data-label="Assigned to" className={lead.assignee ? undefined : 'is-empty'}>
                 {lead.assignee ? (
                     <span className="rd-person rd-person--sm">
                         <Initials name={lead.assignee} colorKey={lead.assignee_id ?? lead.assignee} size="sm" />
@@ -367,8 +371,14 @@ function LeadRow({ lead, selectable, ticked, onToggle, onDelete }: LeadRowProps)
                     <Dash />
                 )}
             </td>
-            <td className="rd-num text-nowrap">{lead.mobile ? formatPhone(lead.mobile) : <Dash />}</td>
-            <td className="text-nowrap" title={`${lead.created_date ?? ''} ${lead.created_time ?? ''}`.trim()}>
+            <td data-label="Mobile" className={clsx('rd-num text-nowrap', !lead.mobile && 'is-empty')}>
+                {lead.mobile ? formatPhone(lead.mobile) : <Dash />}
+            </td>
+            <td
+                data-label="Created"
+                className="text-nowrap"
+                title={`${lead.created_date ?? ''} ${lead.created_time ?? ''}`.trim()}
+            >
                 {lead.created_label}
             </td>
             <td className="rd-col-actions">

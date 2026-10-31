@@ -77,7 +77,7 @@ export default function ProductsIndex({ products, categories, stats, filters }: 
         <AppLayout title="Products">
             <SurfacePage>
                 <PageHeader
-                    crumbs={[{ label: 'Admin' }, { label: 'Products' }]}
+                    crumbs={[{ label: 'Home', href: '/index' }, { label: 'Admin' }, { label: 'Products' }]}
                     title="Products"
                     lede="The catalogue reps order from and the recommender suggests. A product that is on past orders is deactivated, never deleted, so order history keeps its lines."
                     actions={
@@ -135,7 +135,7 @@ export default function ProductsIndex({ products, categories, stats, filters }: 
                         <button
                             type="button"
                             className={clsx('rd-tabs__tab', values.category === '' && 'is-active')}
-                            aria-current={values.category === '' ? 'true' : undefined}
+                            aria-pressed={values.category === ''}
                             onClick={() => choose('category', '')}
                         >
                             All <span className="rd-count">{categoryTotal}</span>
@@ -148,7 +148,7 @@ export default function ProductsIndex({ products, categories, stats, filters }: 
                                     key={value}
                                     type="button"
                                     className={clsx('rd-tabs__tab', values.category === value && 'is-active')}
-                                    aria-current={values.category === value ? 'true' : undefined}
+                                    aria-pressed={values.category === value}
                                     onClick={() => choose('category', value)}
                                 >
                                     {category.name ?? 'Uncategorised'}{' '}
@@ -165,7 +165,7 @@ export default function ProductsIndex({ products, categories, stats, filters }: 
                                 type="search"
                                 className="rd-input"
                                 aria-label="Search products"
-                                placeholder="Search by name or SKU, then press Enter"
+                                placeholder="Search by name or SKU"
                                 value={values.search}
                                 onChange={(event) => set('search', event.target.value)}
                             />
@@ -206,7 +206,7 @@ export default function ProductsIndex({ products, categories, stats, filters }: 
                     </form>
 
                     <div className="rd-scroll">
-                        <table className="rd-table prod-table">
+                        <table className="rd-table rd-table--stack prod-table">
                             <thead>
                                 <tr>
                                     <th scope="col">Product</th>
@@ -311,13 +311,11 @@ function ProductTableRow({ product, bestSeller, currency, onRetire, onReactivate
 
     return (
         <tr className={clsx(!product.is_active && 'is-inactive')}>
-            <td>
+            <td className="rd-cell-main">
                 <div className="prod-table__name">
                     <Link href={route('product.view', product.id)}>{product.name}</Link>
                     <span className="prod-table__sub">
-                        <span className="rd-mono" style={{ fontSize: 11 }}>
-                            {product.sku}
-                        </span>
+                        <span className="rd-mono">{product.sku}</span>
                         {product.stale && (
                             <span className="prod-stale">
                                 <i className="mdi mdi-alert" aria-hidden="true" />
@@ -327,9 +325,11 @@ function ProductTableRow({ product, bestSeller, currency, onRetire, onReactivate
                     </span>
                 </div>
             </td>
-            <td>{product.unit}</td>
-            <td className="num">{formatMoney(product.unit_price)}</td>
-            <td>
+            <td data-label="Unit">{product.unit}</td>
+            <td className="num" data-label={`Unit price (${currency})`}>
+                {formatMoney(product.unit_price)}
+            </td>
+            <td data-label="Sold, last 30 days">
                 <div className="prod-table__sold">
                     <Meter value={product.sold_value} max={bestSeller} thin />
                     <span className="prod-table__sold-figures">
@@ -342,9 +342,13 @@ function ProductTableRow({ product, bestSeller, currency, onRetire, onReactivate
                     </span>
                 </div>
             </td>
-            <td className="num">{product.outlets}</td>
-            <td className="num">{product.order_lines_count}</td>
-            <td>
+            <td className="num" data-label="Outlets">
+                {product.outlets}
+            </td>
+            <td className="num" data-label="Order lines">
+                {product.order_lines_count}
+            </td>
+            <td data-label="Status">
                 {product.is_active ? (
                     <span className="rd-chip rd-chip--good">
                         <span className="rd-dot" />
@@ -357,7 +361,7 @@ function ProductTableRow({ product, bestSeller, currency, onRetire, onReactivate
                     </span>
                 )}
             </td>
-            <td>
+            <td className="rd-col-actions">
                 <div className="prod-table__actions">
                     <Link
                         href={route('product.edit', product.id)}

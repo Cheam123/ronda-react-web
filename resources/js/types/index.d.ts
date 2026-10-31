@@ -29,8 +29,14 @@ export interface AuthUser {
     typeLabel: string;
 }
 
-/** A SweetAlert2 config queued by the controllers' alert()->... helper. */
-export type FlashAlert = Record<string, unknown>;
+/** The SweetAlert2 config the controllers queue with alert()->...; FlashMessages shows it as a toast. */
+export interface FlashAlert {
+    title?: string;
+    text?: string;
+    html?: string;
+    icon?: string;
+    [option: string]: unknown;
+}
 
 /** A form action held back until the next handler is picked (FormController). */
 export interface NeedsAssignee {

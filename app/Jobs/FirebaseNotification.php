@@ -21,6 +21,7 @@ use App\Models\GeneralSetting;
 use App\Models\Rating;
 use App\Models\Notification as NotificationModel;
 use App\Helpers\Helper;
+use App\Services\AlertInbox;
 use App\Services\FirebaseService;
 
 use Config;
@@ -72,8 +73,10 @@ class FirebaseNotification implements ShouldQueue
                 $body = $this->message;
 
                 if (isset($this->user)) {
+                    $data = ['type' => 'test', 'id' => (string)$this->user->id];
+                    AlertInbox::record($this->user, $title, (string) $body, $data);
+
                     if (isset($this->user->fcm_token)) {
-                        $data = ['type' => 'test', 'id' => (string)$this->user->id];
                         $firebaseService->sendToDevice($this->user->fcm_token, $title, $body, $data);
                     }
                 }
@@ -82,16 +85,18 @@ class FirebaseNotification implements ShouldQueue
             case 'lead': /* Admins and Managers will get notification */
                 switch ($this->messageType) {
                     case '0': /* Lead created, send firebase message to every Admin and Manager */
-                        $title = "New Lead";
+                        $title = "New outlet";
                         $body  = "Lead Name: " . $this->lead->name . ($this->lead->business_name ? " (" . $this->lead->business_name . ")" : "") . "\n";
                         if ($this->lead->business_category) {
                             $body .= "Sector: " . Helper::getBusinessCategory($this->lead->business_category);
                         }
 
                         $users = User::whereIn('type',[User::TYPE_ADMIN, User::TYPE_MANAGER])->where('status',1)->get();
+                        $data  = ['type' => 'lead', 'id' => (string)$this->lead->id];
+                        AlertInbox::record($users, $title, $this->lead->business_name ?: $this->lead->name, $data);
+
                         foreach($users as $u) {
                             if (isset($u->fcm_token)) {
-                                $data = ['type' => 'lead', 'id' => (string)$this->lead->id];
                                 $firebaseService->sendToDevice($u->fcm_token, $title, $body, $data);
                             }
                         }
@@ -113,17 +118,19 @@ class FirebaseNotification implements ShouldQueue
                     $title = "";
                     $bodyPrefix = "";
                     
+                    // Plain words: everyone on the task gets the same title,
+                    // whoever acted, so none of them says "you".
                     switch ($this->messageType) {
-                        case '1': $title = "New Sales Task"; break;
-                        case '2': $title = "Sales Task Accepted"; break;
-                        case '3': $title = "Sales Task Done"; break;
-                        case '4': $title = "Sales Task Verified"; break;
-                        case '5': $title = "Sales Task Completed"; break;
-                        case '6': $title = "Sales Task KIV"; break;
-                        case '7': $title = "Sales Task Rejected"; break;
-                        case '8': $title = "Sales Task Fallback"; break;
-                        case '9': $title = "Sales Task Detail Updated"; break;
-                        case '10': $title = "Sales Task Deleted"; break;
+                        case '1': $title = "New task"; break;
+                        case '2': $title = "Task started"; break;
+                        case '3': $title = "Task done"; break;
+                        case '4': $title = "Task verified"; break;
+                        case '5': $title = "Task completed"; break;
+                        case '6': $title = "Task kept in view"; break;
+                        case '7': $title = "Task rejected"; break;
+                        case '8': $title = "Task sent back"; break;
+                        case '9': $title = "Task changed"; break;
+                        case '10': $title = "Task deleted"; break;
                     }
 
                     if ($title) {
@@ -161,7 +168,13 @@ class FirebaseNotification implements ShouldQueue
 
                         $ids   = array_unique($this->task->users->pluck('user_id')->toArray());
                         $users = User::whereIn('id',$ids)->where('status',1)->get();
-                        
+
+                        // The inbox gets one plain line instead of the labelled push body.
+                        $outlet    = optional($this->task->lead)->business_name ?: optional($this->task->lead)->name;
+                        $inboxLine = $this->task->title . ($outlet ? ' at ' . $outlet : '');
+                        // A deleted task has nothing to open.
+                        $data      = $this->messageType == '10' ? ['type' => null, 'id' => null] : ['type' => 'task', 'id' => (string)$this->task->id];
+
                         foreach($users as $u) {
                             $r = TaskUsers::where('task_id',$this->task->id)
                                             ->where('user_id',$u->id)
@@ -184,8 +197,11 @@ class FirebaseNotification implements ShouldQueue
                                 // It fetches $r but doesn't use it. So it sends to everyone in $users.
                             }
 
+                            if ($shouldSend) {
+                                AlertInbox::record($u, $title, $inboxLine, $data);
+                            }
+
                             if ($shouldSend && isset($u->fcm_token)) {
-                                $data = ['type' => 'task', 'id' => (string)$this->task->id];
                                 $firebaseService->sendToDevice($u->fcm_token, $title, $body, $data);
                             }
                         }
@@ -193,18 +209,20 @@ class FirebaseNotification implements ShouldQueue
                         // Special case for Rating in case 5
                         if ($this->messageType == '5') {
                             foreach($this->task->users->whereIn('role',[2,6]) as $item) {
-                                if (isset($item->user->fcm_token)) {
-                                    $rating = Rating::where('task_id',$this->task->id)->where('user_id',$item->user_id)->first();
+                                $rating = Rating::where('task_id',$this->task->id)->where('user_id',$item->user_id)->first();
 
-                                    if ($rating) {
-                                        $ratingTitle = "Sales Task Rating";
-                                        $ratingBody  = "Role :\n" . ($item->role == 2 ? "Subscriber" : "Sub-Subscriber") . "\n" .
-                                                       "Reference :\n" .$this->task->task_reference . "\n" .
-                                                       "Title :\n" .$this->task->title . "\n\n" .
-                                                       "Rate :\n" . $rating->rate . "\n" .
-                                                       "Comment :\n" . $rating->comment;
+                                if ($rating && $item->user) {
+                                    $ratingTitle = "Task rated";
+                                    $ratingBody  = "Role :\n" . ($item->role == 2 ? "Subscriber" : "Sub-Subscriber") . "\n" .
+                                                   "Reference :\n" .$this->task->task_reference . "\n" .
+                                                   "Title :\n" .$this->task->title . "\n\n" .
+                                                   "Rate :\n" . $rating->rate . "\n" .
+                                                   "Comment :\n" . $rating->comment;
 
-                                        $data = ['type' => 'task', 'id' => (string)$this->task->id];
+                                    $data = ['type' => 'task', 'id' => (string)$this->task->id];
+                                    AlertInbox::record($item->user, $ratingTitle, $this->task->title . ': ' . $rating->rate . ($rating->comment ? '. ' . $rating->comment : ''), $data);
+
+                                    if (isset($item->user->fcm_token)) {
                                         $firebaseService->sendToDevice($item->user->fcm_token, $ratingTitle, $ratingBody, $data);
                                     }
                                 }
@@ -234,8 +252,17 @@ class FirebaseNotification implements ShouldQueue
                                     ])->first();
 
                                     if (!$existing_notification) {
-                                        if ($s->fcm_token) {    
-                                            $title = "New Comment";
+                                        // The inbox row, for everyone, token or not. The badge row below stays as it was.
+                                        $said = trim(str_replace('&nbsp;', ' ', strip_tags((string) $this->chat->message)));
+                                        AlertInbox::record(
+                                            $s,
+                                            optional($this->chat->submitBy)->name . ' sent a message',
+                                            $this->chat->task->title . ($said !== '' ? ': ' . \Illuminate\Support\Str::limit($said, 140) : ''),
+                                            ['type' => 'chat', 'id' => (string) $this->chat->task_id]
+                                        );
+
+                                        if ($s->fcm_token) {
+                                            $title = "New message";
                                             $body = "You have a new comment from " . $this->chat->submitBy->name . " for below task.\n\n";
                                             $body .= "Sales Task Reference : \n" . $this->chat->task->task_reference . "\n\n";
                                             $body .= "Lead : \n" . $this->chat->task->lead->name . ($this->chat->task->lead->business_name ? " (" . $this->chat->task->lead->business_name . ")" : "") . "\n\n";

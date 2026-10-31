@@ -101,6 +101,8 @@ export interface SuggestedOutlets {
 
 export interface DailyDigest {
     date_label: string;
+    /** False when the 7:00 am run was missed and this is an older one. */
+    is_today: boolean;
     source: string;
     content: string;
 }
@@ -129,7 +131,16 @@ export interface AdminSummary {
         without_area: number;
         without_area_names: string[];
     };
-    people: AdminPerson[];
+    /** Active users. */
+    users: {
+        active: number;
+        admins: number;
+        managers: number;
+        reps: number;
+        /** Without Telegram linked. */
+        unlinked: number;
+        unlinked_names: string[];
+    };
     approvals: {
         pending: number;
         forms: number;
@@ -141,30 +152,17 @@ export interface AdminSummary {
     stale_products: string[];
     areas: AreaCoverage[];
     activity: ActivityEvent[];
-    automations: {
-        digest: {
-            schedule: string;
-            ran_at: string | null;
-            ran_label: string | null;
-            today: boolean;
-            source: string | null;
-            error: string | null;
-        };
-        recommendations: {
-            schedule: string;
-            ran_at: string | null;
-            ran_label: string | null;
-            fresh: boolean;
-            outlets: number;
-            gaps: number;
-            value: number;
-        };
-        notifications: {
-            users: number;
-            telegram: number;
-            push: number;
-        };
-    };
+    /** Scheduled jobs that should have run by now and haven't. */
+    missed_jobs: MissedJob[];
+}
+
+export interface MissedJob {
+    job: 'digest' | 'recommendations';
+    /** "7:00 am" */
+    schedule: string;
+    last_run: string | null;
+    /** "Wednesday, 30 Sep" */
+    last_label: string | null;
 }
 
 export interface SalesDay {
@@ -183,16 +181,6 @@ export interface TopProduct {
     unit: string;
     quantity: number;
     value: number;
-}
-
-export interface AdminPerson {
-    id: number;
-    name: string;
-    type: number;
-    role: string;
-    telegram: boolean;
-    push: boolean;
-    is_you: boolean;
 }
 
 export interface AreaCoverage {

@@ -1,7 +1,7 @@
 import { Link, useForm, usePage } from '@inertiajs/react';
 import type { FormEvent } from 'react';
-import AuthField from '@/Components/form/AuthField';
-import Button from '@/Components/ui/Button';
+import Field from '@/Components/form/Field';
+import TextInput from '@/Components/form/TextInput';
 import GuestLayout from '@/Layouts/GuestLayout';
 import type { PageProps } from '@/types';
 
@@ -15,46 +15,43 @@ export default function ForgotPassword() {
     };
 
     return (
-        <GuestLayout title="Reset Password">
-            <div className="card">
-                <div className="card-body p-4">
-                    <div className="text-center mt-2">
-                        <h5 className="text-primary">Reset Password</h5>
-                    </div>
-                    <div className="p-2 mt-4">
-                        {flash.status && (
-                            <div className="alert alert-success mb-4" role="alert">
-                                {flash.status}
-                            </div>
-                        )}
-                        <form onSubmit={submit}>
-                            <AuthField
-                                id="email"
-                                label="Email"
-                                type="text"
-                                autoComplete="username"
-                                placeholder="Enter email"
-                                value={data.email}
-                                onChange={(event) => setData('email', event.target.value)}
-                                error={errors.email}
-                            />
-                            <div className="mt-3 text-end">
-                                <Button type="submit" className="w-sm" shadow={false} loading={processing}>
-                                    Reset
-                                </Button>
-                            </div>
-                            <div className="mt-4 text-center">
-                                <p className="mb-0">
-                                    Remember it?{' '}
-                                    <Link href={route('login')} className="fw-medium text-primary">
-                                        Sign in
-                                    </Link>
-                                </p>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
+        <GuestLayout
+            title="Reset your password"
+            heading="Reset your password"
+            lede="Enter the email you sign in with and Ronda sends you a link to set a new password."
+        >
+            {flash.status && (
+                <p className="rd-guest__status" role="status">
+                    <i className="mdi mdi-check-circle-outline" aria-hidden="true" />
+                    {flash.status}
+                </p>
+            )}
+            <form className="rd-guest__form" onSubmit={submit} noValidate>
+                <Field label="Email" htmlFor="email" error={errors.email}>
+                    <TextInput
+                        id="email"
+                        type="email"
+                        inputMode="email"
+                        large
+                        required
+                        autoComplete="username"
+                        autoFocus
+                        value={data.email}
+                        onChange={(event) => setData('email', event.target.value)}
+                    />
+                </Field>
+                <button
+                    type="submit"
+                    className="rd-btn rd-btn--primary rd-btn--lg rd-guest__submit"
+                    disabled={processing}
+                >
+                    {processing && <span className="spinner-border spinner-border-sm" aria-hidden="true" />}
+                    Send the link
+                </button>
+                <p className="rd-guest__alt">
+                    Remember it? <Link href={route('login')}>Back to sign in</Link>
+                </p>
+            </form>
         </GuestLayout>
     );
 }

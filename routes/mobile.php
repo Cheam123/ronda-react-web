@@ -45,6 +45,15 @@ Route::group(['middleware' => ['api'], 'prefix' => 'mobile'], function () {
       Route::post('/leads/orders/create', 'MobileApp\LeadController@addLeadOrder')->name('leads.orders.create');
       Route::get('/leads/recommendations', 'MobileApp\LeadController@getLeadRecommendations')->name('leads.recommendations');
 
+    // Ronda assistant on the outlet screen (Claude on Bedrock), as on the web.
+      Route::get('/leads/{id}/assistant/brief', 'MobileApp\OutletAssistantController@showBrief')->name('leads.assistant.showBrief');
+      Route::middleware('throttle:assistant')->group(function () {
+        Route::post('/leads/{id}/assistant/brief', 'MobileApp\OutletAssistantController@brief')->name('leads.assistant.brief');
+        Route::post('/leads/{id}/assistant/chat', 'MobileApp\OutletAssistantController@chat')->name('leads.assistant.chat');
+        Route::post('/leads/{id}/assistant/follow-up', 'MobileApp\OutletAssistantController@followUp')->name('leads.assistant.followUp');
+        Route::post('/leads/{id}/assistant/pitches', 'MobileApp\OutletAssistantController@pitches')->name('leads.assistant.pitches');
+      });
+
     // Product catalogue (read-only)
       Route::get('/products', 'MobileApp\ProductController@index')->name('products');
 
@@ -76,6 +85,20 @@ Route::group(['middleware' => ['api'], 'prefix' => 'mobile'], function () {
      // IFE
      Route::get('/ife/list', 'MobileApp\IFEController@getIFEList')->name('ife.list');
      Route::get('/ife/fields', 'MobileApp\IFEController@getIFEFields')->name('ife.fields');
+     Route::get('/ife/get', 'MobileApp\IFEController@getIFEReport')->name('ife.get');
+     Route::get('/ife/recent', 'MobileApp\IFEController@getRecentReports')->name('ife.recent');
+
+     // Focus alerts: every push, saved (see AlertInbox)
+     Route::get('/alerts', 'MobileApp\AlertController@index')->name('alerts');
+     Route::post('/alerts/read', 'MobileApp\AlertController@markRead')->name('alerts.read');
+
+     // Me: this month, and the orders I recorded
+     Route::get('/me/stats', 'MobileApp\MeController@stats')->name('me.stats');
+     Route::get('/orders', 'MobileApp\MeController@orders')->name('orders.mine');
+
+     // Team (Managers and Admins)
+     Route::get('/team', 'MobileApp\TeamController@index')->name('team');
+     Route::get('/team/person', 'MobileApp\TeamController@person')->name('team.person');
      Route::post('/ife/create', 'MobileApp\IFEController@addIFEAdhocReport')->name('ife.create');
      Route::post('/ife/update', 'MobileApp\IFEController@updateIFEReport')->name('ife.update');
      Route::post('/ife/delete', 'MobileApp\IFEController@deleteIFEReport')->name('ife.delete');
@@ -95,6 +118,7 @@ Route::group(['middleware' => ['api'], 'prefix' => 'mobile'], function () {
     // My Records
     Route::get('/forms/records', 'MobileApp\FormsController@getRecords')->name('forms.records.index');
     Route::get('/forms/records/{id}', 'MobileApp\FormsController@getRecord')->name('forms.records.show');
+    Route::post('/forms/records/{id}/close', 'MobileApp\FormsController@closeRecord')->name('forms.records.close');
 
     // Entries of a record (also the detail a task links to)
     Route::get('/forms/entries/{id}', 'MobileApp\FormsController@getEntry')->name('forms.entries.show');

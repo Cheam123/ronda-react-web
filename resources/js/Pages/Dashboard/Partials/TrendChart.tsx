@@ -12,15 +12,26 @@ function shortDate(date: string): string {
     return new Date(`${date}T00:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
 }
 
-interface TrendChartProps {
-    trend: TrendDay[];
-    createdWeek: number;
-    doneWeek: number;
-    className?: string;
+/** Which colour is which. */
+export function TrendLegend() {
+    const colors = chartColors(useTheme().theme);
+
+    return (
+        <div className="rd-legend">
+            <span>
+                <span className="rd-swatch" style={{ background: colors.ochre }} />
+                Created
+            </span>
+            <span>
+                <span className="rd-swatch" style={{ background: colors.brand }} />
+                Done
+            </span>
+        </div>
+    );
 }
 
-/** Tasks created vs. done per day, with a table for screen readers. */
-export default function TrendChart({ trend, createdWeek, doneWeek, className }: TrendChartProps) {
+/** Tasks created vs. done per day, with a table for screen readers; no panel round it. */
+export function TrendBars({ trend }: { trend: TrendDay[] }) {
     const colors = chartColors(useTheme().theme);
     const options = useMemo(() => barOptions({ colors, titles: trend.map((day) => day.label) }), [colors, trend]);
 
@@ -33,28 +44,7 @@ export default function TrendChart({ trend, createdWeek, doneWeek, className }: 
     };
 
     return (
-        <section className={clsx('rd-panel', className)} aria-labelledby="trend-title">
-            <div className="rd-panel__head">
-                <div>
-                    <h2 id="trend-title" className="rd-panel__title">
-                        Tasks created vs. done
-                    </h2>
-                    <p className="rd-panel__sub">
-                        Last 14 days &middot; {createdWeek} created and {doneWeek} done in the last 7
-                    </p>
-                </div>
-                <div className="rd-legend">
-                    <span>
-                        <span className="rd-swatch" style={{ background: colors.ochre }} />
-                        Created
-                    </span>
-                    <span>
-                        <span className="rd-swatch" style={{ background: colors.brand }} />
-                        Done
-                    </span>
-                </div>
-            </div>
-
+        <>
             <div className="rd-chart">
                 <Bar
                     data={data}
@@ -85,6 +75,33 @@ export default function TrendChart({ trend, createdWeek, doneWeek, className }: 
                     </tbody>
                 </table>
             </details>
+        </>
+    );
+}
+
+interface TrendChartProps {
+    trend: TrendDay[];
+    createdWeek: number;
+    doneWeek: number;
+    className?: string;
+}
+
+/** The team's tasks created vs. done, as a panel. */
+export default function TrendChart({ trend, createdWeek, doneWeek, className }: TrendChartProps) {
+    return (
+        <section className={clsx('rd-panel', className)} aria-labelledby="trend-title">
+            <div className="rd-panel__head">
+                <div>
+                    <h2 id="trend-title" className="rd-panel__title">
+                        Tasks created vs. done
+                    </h2>
+                    <p className="rd-panel__sub">
+                        Last 14 days &middot; {createdWeek} created and {doneWeek} done in the last 7
+                    </p>
+                </div>
+                <TrendLegend />
+            </div>
+            <TrendBars trend={trend} />
         </section>
     );
 }

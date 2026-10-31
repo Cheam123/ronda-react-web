@@ -1,4 +1,4 @@
-import { useForm } from '@inertiajs/react';
+import { Link, useForm } from '@inertiajs/react';
 import type { FormEvent } from 'react';
 import Field from '@/Components/form/Field';
 import SearchSelect from '@/Components/form/SearchSelect';
@@ -9,6 +9,7 @@ import { FormFoot, FormRow, FormSection } from '@/Components/surface/FormSection
 import Initials from '@/Components/surface/Initials';
 import PhoneInput from '@/Components/surface/PhoneInput';
 import ErrorSummary from '@/Components/ui/ErrorSummary';
+import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
 import { formatPhone } from '@/lib/phone';
 import { tagClass, teamHue } from '@/lib/tags';
 import type { SelectOption } from '@/types';
@@ -34,7 +35,7 @@ interface UserFormProps {
 
 /** Create or edit a user. Posts to users.store / users.update. */
 export default function UserForm({ user, teams, userTypes }: UserFormProps) {
-    const { data, setData, post, processing, errors } = useForm({
+    const { data, setData, post, processing, errors, isDirty } = useForm({
         id: user?.id ?? '',
         name: user?.name ?? '',
         team: String(user?.team ?? ''),
@@ -47,6 +48,8 @@ export default function UserForm({ user, teams, userTypes }: UserFormProps) {
         statuss: String(user?.status ?? 1),
         enable_notification: String(user?.enable_notification ?? 1),
     });
+
+    useUnsavedChanges(isDirty, user?.name);
 
     const submit = (event: FormEvent) => {
         event.preventDefault();
@@ -130,7 +133,12 @@ export default function UserForm({ user, teams, userTypes }: UserFormProps) {
                                 label="Telegram chat ID"
                                 htmlFor="telegram_chat_id"
                                 error={errors.telegram_chat_id}
-                                hint="Task alerts go to this chat."
+                                hint={
+                                    <>
+                                        Task alerts go to this chat.{' '}
+                                        <Link href={route('setting.telegram_message')}>Find someone’s chat ID</Link>
+                                    </>
+                                }
                             >
                                 <TextInput
                                     id="telegram_chat_id"

@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
 
 use App\Models\User;
 use App\Http\Requests\UserRequest;
@@ -33,6 +34,10 @@ class UsersController extends Controller
 
         if ($request->get('user_type') !== NULL) {
             $users = $users->where('type', $request->get('user_type'));
+        }
+        // "none": people who get no task alerts on Telegram (the admin dashboard's to-do links here).
+        if ($request->get('telegram') === 'none') {
+            $users = $users->where(fn ($q) => $q->whereNull('telegram_chat_id')->orWhere('telegram_chat_id', ''));
         }
         // One box for the name, username, email or mobile.
         if ($request->filled('search')) {
@@ -80,7 +85,7 @@ class UsersController extends Controller
         return Inertia::render('Users/Index', [
             'users'     => UserResource::collection($users)->resolve(),
             'counts'    => $counts,
-            'filters'   => $request->only(['active', 'user_type', 'search', 'name', 'mobile', 'email']),
+            'filters'   => $request->only(['active', 'user_type', 'search', 'telegram', 'name', 'mobile', 'email']),
             'userTypes' => Options::fromMap(User::getUserTypeListing()),
         ]);
     }
@@ -240,22 +245,30 @@ class UsersController extends Controller
         return Inertia::render('Users/ChangePassword');
     }
 
+    /**
+     * Email someone a link to choose a new password themselves: the same mail
+     * and reset page as "Forgot your password?", so an admin never sets or
+     * sees it. Their current password works until they use the link.
+     */
     public function reset_password(Request $request)
     {
         if (!Auth::guard('web')->user()->can('manage_user')) {
             return $this->accessError();
         }
 
-        $data     = $request->all();
-        $password = $data['pwd'];
-        $hashed   = Hash::make($password);
+        $usr    = User::findOrFail($request->input('id'));
+        $status = Password::broker()->sendResetLink(['email' => $usr->email]);
 
-        $usr = User::findOrFail($data['id']);
-        $usr->password = $hashed;
-        $usr->update();
+        if ($status === Password::RESET_LINK_SENT) {
+            $minutes = config('auth.passwords.users.expire');
+            alert()->success(trans('translation.success'), "Ronda emailed {$usr->name} a link to choose a new password. It works for {$minutes} minutes.");
+        } elseif ($status === Password::RESET_THROTTLED) {
+            alert()->error('Oops...', "A link went to {$usr->name} less than a minute ago. Wait a minute before sending another.");
+        } else {
+            alert()->error('Oops...', "Ronda has no email address to send {$usr->name} a link. Add one on Edit user first.");
+        }
 
-        alert()->success(trans('translation.success'), trans('translation.successfully_update'))->iconHtml('<i class="far fa-thumbs-up"></i>')->showConfirmButton()->focusConfirm(true);
-        return redirect()->back()->withInput();
+        return redirect()->back();
     }
 
     public function update_password(ChangePasswordRequest $request)
@@ -272,12 +285,12 @@ class UsersController extends Controller
             $usr->password = $hashed;
             $usr->update();
 
-            alert()->success(trans('translation.success'), trans('translation.successfully_update'))->iconHtml('<i class="far fa-thumbs-up"></i>')->showConfirmButton()->focusConfirm(true);
+            alert()->success(trans('translation.success'), 'Your password is changed. Use the new one next time you sign in.');
             return redirect()->route('users.profile');
 
         } else {
-            alert()->error('Oops...', trans('translation.update_failed'))->showConfirmButton()->focusConfirm(true);
-            return redirect()->back()->withInput();
+            // Under the field it is about, like any other wrong answer on the form.
+            return redirect()->back()->withErrors(['oldpass' => 'That isn’t your current password.']);
         }
     }
 

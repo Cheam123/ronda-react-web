@@ -4,7 +4,7 @@ import Toast, { type ToastType } from './Toast';
 export interface ToastOptions {
     /** Heading; defaults per type. Pass '' to hide it. */
     title?: string;
-    /** Auto-dismiss after this many ms (default 3500). 0 keeps it until closed. */
+    /** Auto-dismiss after this many ms (5000; errors 0). 0 keeps it until closed. */
     duration?: number;
 }
 
@@ -25,6 +25,14 @@ const DEFAULT_TITLES: Record<ToastType, string> = {
     info: 'Notice',
 };
 
+// An error stays until it is dismissed: it has to be read to be dealt with.
+const DEFAULT_DURATIONS: Record<ToastType, number> = {
+    success: 5000,
+    info: 5000,
+    warning: 8000,
+    error: 0,
+};
+
 let nextId = 1;
 
 /** Bottom-right toast notifications for the whole app. */
@@ -43,7 +51,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 type,
                 message,
                 title: options.title ?? DEFAULT_TITLES[type],
-                duration: options.duration ?? 3500,
+                duration: options.duration ?? DEFAULT_DURATIONS[type],
             },
         ]);
     }, []);

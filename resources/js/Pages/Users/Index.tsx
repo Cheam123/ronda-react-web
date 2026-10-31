@@ -7,11 +7,12 @@ import Segmented from '@/Components/surface/Segmented';
 import SurfacePage from '@/Components/surface/SurfacePage';
 import { useFilters } from '@/hooks/useFilters';
 import AppLayout from '@/Layouts/AppLayout';
-import { confirm, promptText } from '@/lib/dialogs';
+import { confirm } from '@/lib/dialogs';
 import { pluralize } from '@/lib/format';
 import { formatPhone } from '@/lib/phone';
 import { tagClass, teamHue } from '@/lib/tags';
 import type { QueryParams, SelectOption } from '@/types';
+import { confirmPasswordReset } from './Partials/passwordReset';
 import type { User } from './types';
 
 /** The status filter: users.status 1 (active), 2 (inactive), or both. */
@@ -30,6 +31,7 @@ export default function UsersIndex({ users, counts, filters, userTypes }: UsersI
         active: filters.active ?? '1',
         user_type: filters.user_type ?? '',
         search: filters.search ?? '',
+        telegram: filters.telegram ?? '',
     });
 
     const choose = (key: keyof typeof values, value: string) => {
@@ -43,31 +45,33 @@ export default function UsersIndex({ users, counts, filters, userTypes }: UsersI
     };
 
     const resetPassword = async (user: User) => {
-        const password = await promptText({
-            title: 'Reset Password !',
-            text: user.name,
-            confirmText: 'Send',
-            minLength: 6,
-            maxLength: 12,
-            required: 'Please enter new password to proceed!',
-        });
-        if (password) {
-            router.post(route('users.resetpassword'), { id: user.id, pwd: password }, { preserveScroll: true });
+        if (await confirmPasswordReset(user)) {
+            router.post(route('users.resetpassword'), { id: user.id }, { preserveScroll: true });
         }
     };
 
     const deleteUser = async (user: User) => {
-        if (await confirm({ title: 'Please confirm to proceed on the deletion!', text: user.name, danger: true })) {
+        if (
+            await confirm({
+                title: `Delete ${user.name}?`,
+                text: 'They can no longer sign in. To stop access without deleting them, set them to inactive on Edit user.',
+                confirmText: 'Delete user',
+                danger: true,
+            })
+        ) {
             router.post(route('users.delete'), { id: user.id }, { preserveScroll: true });
         }
     };
 
-    const filtered = Boolean(filters.search || filters.user_type);
+    const filtered = Boolean(filters.search || filters.user_type || filters.telegram);
 
     return (
         <AppLayout title="Users">
             <SurfacePage>
-                <PageHeader crumbs={[{ label: 'Admin' }, { label: 'Users' }]} title="Users" />
+                <PageHeader
+                    crumbs={[{ label: 'Home', href: '/index' }, { label: 'Admin' }, { label: 'Users' }]}
+                    title="Users"
+                />
 
                 <section className="rd-panel rd-panel--flush rd-list rd-list--flush" aria-labelledby="users-title">
                     <div className="rd-list__head">
@@ -76,6 +80,17 @@ export default function UsersIndex({ users, counts, filters, userTypes }: UsersI
                                 All users
                             </h2>
                             <span className="rd-count rd-count--label">{pluralize(users.length, 'user')}</span>
+                            {values.telegram === 'none' && (
+                                <button
+                                    type="button"
+                                    className="task-list__chip"
+                                    aria-label="Remove the filter Telegram not linked"
+                                    onClick={() => choose('telegram', '')}
+                                >
+                                    Telegram not linked
+                                    <i className="mdi mdi-close" aria-hidden="true" />
+                                </button>
+                            )}
                         </div>
                         <div className="rd-list__actions">
                             <Segmented<Status>
@@ -119,7 +134,7 @@ export default function UsersIndex({ users, counts, filters, userTypes }: UsersI
                     </div>
 
                     <div className="rd-scroll">
-                        <table className="rd-table rd-table--flush rd-table--striped users-table">
+                        <table className="rd-table rd-table--flush rd-table--striped rd-table--stack users-table">
                             <thead>
                                 <tr>
                                     <th scope="col" aria-sort="ascending">
@@ -183,7 +198,7 @@ function UserRow({ user, onResetPassword, onDelete }: UserRowProps) {
 
     return (
         <tr>
-            <td>
+            <td className="rd-cell-main">
                 <div className="rd-person">
                     <Initials name={user.name} colorKey={user.id} size="lg" />
                     <span className="rd-person__text">
@@ -194,7 +209,7 @@ function UserRow({ user, onResetPassword, onDelete }: UserRowProps) {
                     </span>
                 </div>
             </td>
-            <td>
+            <td data-label="Status">
                 {active ? (
                     <span className="rd-chip rd-chip--good">
                         <span className="rd-dot" />
@@ -207,12 +222,14 @@ function UserRow({ user, onResetPassword, onDelete }: UserRowProps) {
                     </span>
                 )}
             </td>
-            <td className="users-table__soft">{user.email}</td>
-            <td className="rd-num text-nowrap users-table__soft">
+            <td data-label="Email address" className="users-table__soft">
+                {user.email}
+            </td>
+            <td data-label="Mobile" className="rd-num text-nowrap users-table__soft">
                 {user.mobile ? formatPhone(user.mobile) : <span className="rd-muted">—</span>}
             </td>
-            <td>{user.type_label}</td>
-            <td>
+            <td data-label="User type">{user.type_label}</td>
+            <td data-label="Team">
                 {user.team_label ? (
                     <span className={tagClass(teamHue(user.team))}>{user.team_label}</span>
                 ) : (

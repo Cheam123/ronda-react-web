@@ -339,8 +339,11 @@
 .rs__option {
     color: $rd-body !important;
 
+    // The option the arrow keys are on: a tint and a bar at its edge, so it
+    // reads as more than a hover.
     &--is-focused {
         background: $rd-track !important;
+        box-shadow: inset 3px 0 0 $rd-brand;
     }
 
     &--is-selected {
@@ -373,11 +376,17 @@
         border-color 0.15s,
         background-color 0.15s;
 
-    &:hover,
+    &:hover {
+        border-color: $rd-control-hover;
+        background: $rd-row-alt;
+    }
+
+    // Reached with the keyboard: the same ring every control has.
     &:focus-visible {
         border-color: $rd-control-hover;
         background: $rd-row-alt;
-        outline: none;
+        outline: 2px solid $rd-brand;
+        outline-offset: 2px;
     }
 
     &.is-active {
@@ -593,7 +602,9 @@
         gap: 16px;
     }
 
+    // Sits after the field's error or hint, so an error stays right under the box it is about.
     &__counter {
+        order: 1;
         align-self: flex-end;
         color: $rd-muted;
         font-size: 12px;

@@ -9,6 +9,7 @@ import PageHeader from '@/Components/surface/PageHeader';
 import SurfacePage from '@/Components/surface/SurfacePage';
 import TaskLeadDetails from '@/Components/tasks/TaskLeadDetails';
 import ErrorSummary from '@/Components/ui/ErrorSummary';
+import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
 import AppLayout from '@/Layouts/AppLayout';
 import { DOCUMENT_FILE_TYPES } from '@/lib/files';
 import type { SelectOption } from '@/types';
@@ -33,12 +34,14 @@ type CreateTaskForm = TaskFormData & { lead_id: number; file: File[] };
 /** A new task on a lead. */
 export default function CreateTask({ lead, documents, people, canAssign, today }: CreateTaskProps) {
     const toast = useToast();
-    const { data, setData, post, processing, errors } = useForm<CreateTaskForm>({
+    const { data, setData, post, processing, errors, isDirty } = useForm<CreateTaskForm>({
         ...blankTaskFormData(today),
         lead_id: lead.id,
         file: [],
     });
     const outlet = lead.business_name || lead.name || 'Unnamed outlet';
+
+    useUnsavedChanges(isDirty);
 
     const submit = (event: FormEvent) => {
         event.preventDefault();
@@ -51,7 +54,7 @@ export default function CreateTask({ lead, documents, people, canAssign, today }
                 <PageHeader
                     crumbs={[
                         { label: 'Home', href: '/index' },
-                        { label: 'Lead/Customer', href: route('lead.index') },
+                        { label: 'Outlets', href: route('lead.index') },
                         { label: outlet, href: route('lead.view', lead.id) },
                         { label: 'Add a task' },
                     ]}

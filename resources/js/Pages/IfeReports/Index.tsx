@@ -66,8 +66,8 @@ export default function IfeReportsIndex({ reports, counts, salespeople, ifeAreas
         const confirmed = await confirm({
             title: 'Make a task from this report?',
             text:
-                `An in-progress task on ${outlet}, with ${report.salesperson ?? 'the salesperson'} as subscriber ` +
-                'and you as checker and owner. If the visit isn’t linked to an outlet yet, it is added as a new lead first.',
+                `An in-progress task on ${outlet}, with ${report.salesperson ?? 'whoever filed it'} as the person assigned ` +
+                'and you as checker and owner. If the visit isn’t linked to an outlet yet, it is added as a new outlet first.',
             confirmText: 'Make task',
         });
 
@@ -88,22 +88,22 @@ export default function IfeReportsIndex({ reports, counts, salespeople, ifeAreas
     const filtered = Boolean(filters.search || filters.ifearea || filters.salesperson);
 
     return (
-        <AppLayout title="IFE reports">
+        <AppLayout title="Visit reports">
             <SurfacePage>
                 <PageHeader
-                    crumbs={[{ label: 'Home', href: '/index' }, { label: 'IFE Report' }]}
-                    title="IFE reports"
+                    crumbs={[{ label: 'Home', href: '/index' }, { label: 'Visit reports' }]}
+                    title="Visit reports"
                     lede={
                         canMakeTasks
-                            ? 'Visit reports filed from the mobile app. Make one into a task to follow it up.'
-                            : 'Visit reports filed from the mobile app.'
+                            ? 'In-field (IFE) visit reports, filed from the mobile app. Make one into a task to follow it up.'
+                            : 'In-field (IFE) visit reports, filed from the mobile app.'
                     }
                 />
 
                 <section className="rd-panel rd-list" aria-labelledby="ife-reports-title">
                     <div className="rd-list__head">
                         <h2 id="ife-reports-title" className="rd-list__title">
-                            Visit reports
+                            All reports
                         </h2>
                         <div className="rd-list__actions">
                             {/* A file download, so a plain link rather than an Inertia visit. */}
@@ -128,7 +128,7 @@ export default function IfeReportsIndex({ reports, counts, salespeople, ifeAreas
                                         key={tab.label}
                                         type="button"
                                         className={clsx('rd-tabs__tab', active && 'is-active')}
-                                        aria-current={active ? 'true' : undefined}
+                                        aria-pressed={active}
                                         onClick={() => choose({ task: tab.value })}
                                     >
                                         {tab.label} <span className="rd-count">{formatNumber(tab.count)}</span>
@@ -162,8 +162,8 @@ export default function IfeReportsIndex({ reports, counts, salespeople, ifeAreas
                             />
                             <SearchSelect
                                 compact
-                                ariaLabel="Salesperson"
-                                options={[{ value: '', label: 'All salespeople' }, ...salespeople]}
+                                ariaLabel="Filed by"
+                                options={[{ value: '', label: 'Filed by anyone' }, ...salespeople]}
                                 clearable={false}
                                 value={values.salesperson}
                                 onChange={(value) => choose({ salesperson: value })}
@@ -185,10 +185,10 @@ export default function IfeReportsIndex({ reports, counts, salespeople, ifeAreas
                                 <tr>
                                     <th scope="col">Outlet</th>
                                     <th scope="col">IFE area</th>
-                                    <th scope="col">Salesperson</th>
+                                    <th scope="col">Filed by</th>
                                     <th scope="col" aria-sort="descending">
                                         <span className="rd-sorted">
-                                            Filed
+                                            Filed on
                                             <i className="mdi mdi-arrow-down" aria-hidden="true" />
                                         </span>
                                     </th>

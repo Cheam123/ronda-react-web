@@ -5,6 +5,7 @@ import Logo from '@/Components/surface/Logo';
 import { useBodyAttributes } from '@/hooks/useBodyAttributes';
 import Breadcrumbs, { type BreadcrumbTrail } from './partials/Breadcrumbs';
 import { NavBar, NavSheet } from './partials/NavMenu';
+import QuickFind from './partials/QuickFind';
 import ScrollToTop from './partials/ScrollToTop';
 import UserMenu, { UserSheet } from './partials/UserMenu';
 
@@ -44,6 +45,7 @@ export default function AppLayout({ title, breadcrumb, children }: AppLayoutProp
                         <NavBar />
 
                         <div className="rd-topbar__end">
+                            <QuickFind />
                             <UserMenu />
                             <button
                                 type="button"

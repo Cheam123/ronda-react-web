@@ -1,7 +1,7 @@
 import { Link, router } from '@inertiajs/react';
 import { closestCenter, DndContext } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { useCallback, useMemo, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useToast } from '@/Components/feedback/ToastProvider';
 import GroupNameModal from '@/Components/forms/GroupNameModal';
 import PageHeader from '@/Components/surface/PageHeader';
@@ -88,6 +88,16 @@ export default function FormsIndex({ groups, ungrouped, search, formCount }: For
 
     const groupName = (id: number) => groups.find((group) => group.id === id)?.name ?? '';
     const draggingForm = dragging?.startsWith('form:') ?? false;
+
+    // Like the other lists, the forms follow the search box once typing stops.
+    useEffect(() => {
+        if (query === search) return;
+        const timer = window.setTimeout(
+            () => router.get(route('form.index'), query ? { search: query } : {}, { preserveState: true }),
+            400,
+        );
+        return () => window.clearTimeout(timer);
+    }, [query, search]);
 
     const searchForms = (event: FormEvent) => {
         event.preventDefault();

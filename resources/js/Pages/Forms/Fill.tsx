@@ -1,6 +1,9 @@
+import { router } from '@inertiajs/react';
 import PageHeader from '@/Components/surface/PageHeader';
 import SurfacePage from '@/Components/surface/SurfacePage';
+import { useAuth } from '@/hooks/useAuth';
 import AppLayout from '@/Layouts/AppLayout';
+import { draftKey } from '@/lib/drafts';
 import type { Answers, CaseLink, FormSchema, Person, ProcessDefinition } from '@/types/forms';
 import AfterSubmit from './Partials/AfterSubmit';
 import SubmissionForm from './Partials/SubmissionForm';
@@ -20,8 +23,10 @@ interface FillFormProps {
     parentId: number | null;
 }
 
-/** Start a new record from a form. */
+/** Start a new record from a form. The answers are kept as a draft on this device until it is sent. */
 export default function FillForm({ form, parentOptions, parentId, process, processNames, ...props }: FillFormProps) {
+    const { user } = useAuth();
+
     return (
         <AppLayout title={form.name}>
             <SurfacePage>
@@ -42,7 +47,9 @@ export default function FillForm({ form, parentOptions, parentId, process, proce
                     parentOptions={parentOptions}
                     parentId={parentId}
                     submitLabel="Submit"
-                    onCancel={() => window.history.back()}
+                    // Back to the list of forms, not back in history: a link from Telegram has no history here.
+                    onCancel={() => router.visit(route('form.entry'))}
+                    draftKey={user ? draftKey(user.id, form.id) : undefined}
                     aside={<AfterSubmit process={process} names={processNames} schema={props.schema} />}
                 />
             </SurfacePage>

@@ -102,7 +102,10 @@ class LeadController extends Controller
             });
         }
 
-        if ($request->get('ifearea') !== NULL) {
+        // "none": outlets not yet in an IFE area (the admin dashboard's to-do links here).
+        if ($request->get('ifearea') === 'none') {
+            $lead_detail = $lead_detail->whereNull('ife_area_id');
+        } elseif ($request->get('ifearea') !== NULL) {
             $keyword = $request->get('ifearea');
             $lead_detail = $lead_detail->where('ife_area_id', $keyword);
         }

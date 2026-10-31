@@ -1,7 +1,7 @@
 import { Link, useForm } from '@inertiajs/react';
 import type { FormEvent } from 'react';
-import AuthField from '@/Components/form/AuthField';
-import Button from '@/Components/ui/Button';
+import Field from '@/Components/form/Field';
+import PasswordInput from '@/Components/form/PasswordInput';
 import GuestLayout from '@/Layouts/GuestLayout';
 
 export default function ConfirmPassword() {
@@ -13,37 +13,34 @@ export default function ConfirmPassword() {
     };
 
     return (
-        <GuestLayout title="Confirm Password">
-            <div className="card">
-                <div className="card-body p-4">
-                    <div className="text-center mt-2">
-                        <h5 className="text-primary">Confirm Password</h5>
-                        <p className="text-muted">Please confirm your password before continuing.</p>
-                    </div>
-                    <div className="p-2 mt-4">
-                        <form onSubmit={submit}>
-                            <AuthField
-                                id="password"
-                                label="Password"
-                                type="password"
-                                required
-                                autoComplete="current-password"
-                                value={data.password}
-                                onChange={(event) => setData('password', event.target.value)}
-                                error={errors.password}
-                            />
-                            <div className="mt-3 d-flex align-items-center justify-content-between">
-                                <Link href={route('password.request')} className="text-muted">
-                                    Forgot your password?
-                                </Link>
-                                <Button type="submit" className="w-sm" shadow={false} loading={processing}>
-                                    Confirm Password
-                                </Button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
+        <GuestLayout
+            title="Confirm your password"
+            heading="Confirm your password"
+            lede="This step is protected. Enter your password to go on."
+        >
+            <form className="rd-guest__form" onSubmit={submit} noValidate>
+                <Field label="Password" htmlFor="password" error={errors.password}>
+                    <PasswordInput
+                        id="password"
+                        required
+                        autoComplete="current-password"
+                        autoFocus
+                        value={data.password}
+                        onChange={(event) => setData('password', event.target.value)}
+                    />
+                </Field>
+                <button
+                    type="submit"
+                    className="rd-btn rd-btn--primary rd-btn--lg rd-guest__submit"
+                    disabled={processing}
+                >
+                    {processing && <span className="spinner-border spinner-border-sm" aria-hidden="true" />}
+                    Confirm
+                </button>
+                <p className="rd-guest__alt">
+                    <Link href={route('password.request')}>Forgot your password?</Link>
+                </p>
+            </form>
         </GuestLayout>
     );
 }

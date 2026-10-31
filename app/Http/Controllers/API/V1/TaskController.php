@@ -44,6 +44,7 @@ use Inertia\Inertia;
 
 use Barryvdh\DomPDF\Facade\Pdf;
 use Elegant\Sanitizer\Sanitizer;
+use App\Services\TaskRisk;
 use Carbon\Carbon;
 use Maatwebsite\Excel\Facades\Excel;
 use ZipArchive;
@@ -77,22 +78,29 @@ class TaskController extends Controller
             return Inertia::render('Errors/CustomError', compact('response'));
         }
 
+        // "open" (New and In Progress together) is the list's first tab and its default.
+        $status   = $request->get('status', 'open');
+        $isOpen   = $status === 'open';
         $user     = Auth::guard('web')->user();
         $all      = Tasks::with('comments','lead','users.user')->visibleTo($user);
-        $tasks    = Tasks::with('comments','lead','users.user')->visibleTo($user)->where('status',$request->get('status', 1));
+        $tasks    = Tasks::with('comments','lead','users.user')->visibleTo($user)->when(
+            $isOpen,
+            fn ($query) => $query->whereIn('status', TaskRisk::OPEN_STATUSES),
+            fn ($query) => $query->where('status', $status)
+        );
         $ifeareas = IfeArea::orderBy('area','asc')->get();
 
         $queryString = $request->getQueryString();
 
         if (null == $request->get('status')) {
-            $request->merge(['status'=> 1]);
+            $request->merge(['status'=> 'open']);
 
             if (null == $request->get('sortby')) {
                 $request->merge(['sortby'=>'last_follow_up']);
             }
 
         } else {
-            if ($request->get('status') == 1) {
+            if ($isOpen || $request->get('status') == 1) {
                 if (null == $request->get('sortby')) {
                     $request->merge(['sortby'=>'last_follow_up']);
                 }
@@ -154,6 +162,12 @@ class TaskController extends Controller
                 : $query->where(fn ($q) => $q->where('alert', '!=', 2)->orWhereNull('alert'));
             $tasks = $tasks->where($flagged);
             $all   = $all->where($flagged);
+        }
+
+        // Due today (the dashboards' "Due today" counts and the Open tab's toggle).
+        if ($request->get('due') === 'today') {
+            $tasks = $tasks->whereDate('due_date', now()->toDateString());
+            $all   = $all->whereDate('due_date', now()->toDateString());
         }
 
         // The list's search box: the title or the reference.
@@ -370,6 +384,22 @@ class TaskController extends Controller
 
         $users = User::where('status',1)->whereNotIn('id',[1])->orderBy('name','asc')->get();
 
+        // Overdue, at risk and due today among the open tasks the other filters leave,
+        // by the dashboard's rule (TaskRisk), for the Open tab's toggles and their counts.
+        $risk       = TaskRisk::fromConfig();
+        $now        = now();
+        $levelOf    = fn (Tasks $task) => $risk->assessTask($task, $now)['level'];
+        $openRows   = (clone $all)->setEagerLoads([])
+            ->whereIn('status', TaskRisk::OPEN_STATUSES)
+            ->get(['id', 'status', 'start_date', 'start_time', 'creation_date', 'due_date', 'due_time']);
+        $riskCounts = $openRows->countBy($levelOf);
+        $dueToday   = $openRows->filter(fn (Tasks $task) => $task->due_date && Carbon::parse($task->due_date)->isSameDay($now))->count();
+        $riskFilter = ($isOpen || in_array((int) $status, TaskRisk::OPEN_STATUSES, true))
+            && in_array($request->get('risk'), [TaskRisk::OVERDUE, TaskRisk::AT_RISK], true)
+            ? $request->get('risk')
+            : null;
+        $byRisk = fn ($rows) => $riskFilter ? $rows->filter(fn (Tasks $task) => $levelOf($task) === $riskFilter) : $rows;
+
         $all = $all->select('status', DB::raw('COUNT( id ) as cnt'))
                    ->groupBy('status')
                    ->get();
@@ -408,11 +438,11 @@ class TaskController extends Controller
             }
         }
         
-        if($request->get('status') < 5) {
+        if($isOpen || $request->get('status') < 5) {
             if ($request->get('sortmode') == 'asc') {
                 $sortBy = $request->get('sortby');
-                $tasks = $tasks->get()
-                                ->sortBy(function($t) use($sortBy){                                    
+                $tasks = $byRisk($tasks->get())
+                                ->sortBy(function($t) use($sortBy){
                                     switch($sortBy) {
                                         case 'reminder_date':
                                             return [$t->reminder_date_time, $t->last_follow_up];
@@ -435,7 +465,7 @@ class TaskController extends Controller
                                 ->paginate(10);
             } else {
                 $sortBy = $request->get('sortby');
-                $tasks = $tasks->get()
+                $tasks = $byRisk($tasks->get())
                                 ->sortByDesc(function($t) use($sortBy){
                                     switch($sortBy) {
                                         case 'reminder_date':
@@ -480,6 +510,11 @@ class TaskController extends Controller
         return Inertia::render('Tasks/Index', [
             'tasks'              => $tasks->through(fn (Tasks $task) => TaskListItemResource::make($task)->resolve()),
             'statusCounts'       => $all->pluck('cnt', 'status'),
+            'riskCounts'         => [
+                'overdue'   => (int) ($riskCounts[TaskRisk::OVERDUE] ?? 0),
+                'at_risk'   => (int) ($riskCounts[TaskRisk::AT_RISK] ?? 0),
+                'due_today' => $dueToday,
+            ],
             'users'              => Options::fromCollection($users),
             'leadNames'          => array_values($leadNameOptions),
             'ifeAreas'           => $this->areaOptions($ifeareas),
@@ -507,6 +542,23 @@ class TaskController extends Controller
             $response['message'][0] = trans('translation.access_error_msg');
             $response['message'][1] = trans('translation.check_with_ur_superior');
             return Inertia::render('Errors/CustomError', compact('response'));
+        }
+
+        // "New task" from the task list or the dashboard has no outlet yet: pick one first.
+        // A prospect holds one running task at a time, so one that has it is offered greyed out.
+        if (!$request->filled('id')) {
+            $outlets = Leads::visibleTo($user)
+                ->withCount('runningTasks')
+                ->orderByRaw('COALESCE(NULLIF(business_name, \'\'), name)')
+                ->get(['id', 'name', 'business_name', 'customer_id'])
+                ->map(fn (Leads $lead) => [
+                    'value'    => $lead->id,
+                    'label'    => trim(($lead->business_name ?: $lead->name ?: 'Unnamed outlet') . ($lead->customer_id ? ' · ' . $lead->customer_id : '')),
+                    'disabled' => !$lead->customer_id && $lead->running_tasks_count > 0,
+                ])
+                ->values();
+
+            return Inertia::render('Tasks/ChooseOutlet', ['outlets' => $outlets]);
         }
 
         // Without create_task the view hides the people pickers (the task is
@@ -720,7 +772,6 @@ class TaskController extends Controller
             'task'       => TaskResource::make($task)->resolve(),
             'activities' => TaskCommentResource::collection($task->comments->sortByDesc('created_at')->values())->resolve(),
             'actions'    => $task->actionFlagsFor(Auth::guard('web')->user()),
-            'people'     => Options::fromCollection(User::assignable()->get()),
             // "comment" opens the Activity tab.
             'mode'       => $request->input('mode') ?? '',
             'filters'    => $request->except('mode'),
@@ -1109,7 +1160,7 @@ class TaskController extends Controller
             }
             
             alert()->success(trans('translation.success'), trans('translation.successfully_delete'))->iconHtml('<i class="far fa-thumbs-up"></i>')->showConfirmButton()->focusConfirm(true);
-            return redirect()->route('tasks.index2',['status' => 1]);
+            return redirect()->route('tasks.index2',['status' => 'open']);
             
         } catch (Throwable $e) {
 
