@@ -191,7 +191,6 @@ return [
         OwenIt\Auditing\AuditingServiceProvider::class,
         RealRashid\SweetAlert\SweetAlertServiceProvider::class,
         Jenssegers\Agent\AgentServiceProvider::class,
-        Fx3costa\LaravelChartJs\Providers\ChartjsServiceProvider::class,
         TelegramNotifications\TelegramServiceProvider::class,
         Ixudra\Curl\CurlServiceProvider::class,
         Maatwebsite\Excel\ExcelServiceProvider::class,

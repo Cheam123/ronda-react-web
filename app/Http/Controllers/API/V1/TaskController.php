@@ -2064,7 +2064,7 @@ class TaskController extends Controller
             }
 
             // User can only delete the message within 15 minutes of sending it.
-            if ( Carbon::parse($chat->created_at)->diffInMinutes(Carbon::now()) > 15 ) {
+            if ( (int) Carbon::parse($chat->created_at)->diffInMinutes(Carbon::now(), true) > 15 ) {
                 $message->put('type', 'error');
                 $message->put('message', trans('translation.delete_time_limit_exceeded'));
                 return response()->json($message->toArray(), 200);
@@ -2144,7 +2144,7 @@ class TaskController extends Controller
             }
 
             // User can only edit the message within 15 minutes of sending it.
-            if ( Carbon::parse($chat->created_at)->diffInMinutes(Carbon::now()) > 15 ) {
+            if ( (int) Carbon::parse($chat->created_at)->diffInMinutes(Carbon::now(), true) > 15 ) {
                 $message->put('type', 'error');
                 $message->put('message', trans('translation.delete_time_limit_exceeded'));
                 return response()->json($message->toArray(), 200);

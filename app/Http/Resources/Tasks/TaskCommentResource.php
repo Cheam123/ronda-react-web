@@ -29,7 +29,7 @@ class TaskCommentResource extends JsonResource
             'created_iso' => $created->toIso8601String(),
             'can_modify'  => $user
                 && $this->submit_by == $user->id
-                && $created->diffInMinutes(Carbon::now()) <= self::EDIT_WINDOW_MINUTES,
+                && (int) $created->diffInMinutes(Carbon::now(), true) <= self::EDIT_WINDOW_MINUTES,
             // The raw text for the edit box, and the stored HTML to display.
             'message'     => $message,
             'html'        => trim(strip_tags($message)) !== '' || str_contains($message, '<img') ? $this->formated_message : null,

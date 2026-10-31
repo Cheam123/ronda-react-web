@@ -7,7 +7,6 @@ use EloquentFilter\Filterable;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use betterapp\LaravelDbEncrypter\Traits\EncryptableDbAttribute;
 
 class Rating extends Model
 {

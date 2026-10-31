@@ -620,9 +620,10 @@ class FormSchemaService
             if ($captured === null || $captured === '') {
                 $capturedAt = Carbon::now();
             } elseif (is_numeric($captured)) {
+                // Carbon 3 defaults timestamps to UTC; keep them in the app timezone.
                 $capturedAt = $captured > 1e11
-                    ? Carbon::createFromTimestampMs((float) $captured)
-                    : Carbon::createFromTimestamp((float) $captured);
+                    ? Carbon::createFromTimestampMs((float) $captured, date_default_timezone_get())
+                    : Carbon::createFromTimestamp((float) $captured, date_default_timezone_get());
             } elseif (is_string($captured)) {
                 $capturedAt = Carbon::parse($captured);
             } else {

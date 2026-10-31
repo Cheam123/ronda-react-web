@@ -29,7 +29,9 @@ class CustomPasswordBrokerManager extends PasswordBrokerManager
             $this->app['hash'],
             $config['table'],
             $key,
-            $config['expire']
+            // DatabaseTokenRepository takes seconds since Laravel 12; config('auth.passwords.*.expire') is in minutes.
+            ($config['expire'] ?? 60) * 60,
+            $config['throttle'] ?? 0
         );
     }
 }

@@ -1,3 +1,4 @@
+import type { FormDataKeys, FormDataValues } from '@inertiajs/core';
 import { Link, useForm, usePage } from '@inertiajs/react';
 import clsx from 'clsx';
 import { useState, type FormEvent, type ReactNode } from 'react';
@@ -79,7 +80,7 @@ export default function ProductForm({ product, categories, units }: ProductFormP
     useUnsavedChanges(isDirty, product.name ?? undefined);
 
     // Editing a field clears its error from the last save.
-    const setData = <K extends keyof typeof data>(field: K, value: (typeof data)[K]) => {
+    const setData = <K extends FormDataKeys<typeof data>>(field: K, value: FormDataValues<typeof data, K>) => {
         form.setData(field, value);
         form.clearErrors(field);
     };

@@ -1377,7 +1377,7 @@ class TaskController extends Controller
             $created    = Carbon::parse($chat->created_at);
             $now        = Carbon::now();
             
-            if ($created->diffInMinutes($now) > 15) {
+            if ((int) $created->diffInMinutes($now, true) > 15) {
                 return $this->response_failed('Comments can only be edited within 15 minutes of creation.');
             }
 

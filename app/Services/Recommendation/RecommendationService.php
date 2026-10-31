@@ -359,7 +359,7 @@ TXT;
             $spend  = null;
 
             if (isset($firstOrder[$lead->id])) {
-                $days   = Carbon::parse($firstOrder[$lead->id]->first_date)->diffInDays($now);
+                $days   = (int) Carbon::parse($firstOrder[$lead->id]->first_date)->diffInDays($now, true);
                 $months = max(1.0, $days / 30.44);
                 $spend  = round((float) $firstOrder[$lead->id]->spend / $months, 2);
             }

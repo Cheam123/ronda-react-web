@@ -7,7 +7,6 @@ use EloquentFilter\Filterable;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use betterapp\LaravelDbEncrypter\Traits\EncryptableDbAttribute;
 use Carbon\Carbon;
 
 class Tasks extends Model
@@ -45,17 +44,17 @@ class Tasks extends Model
         'updated_at',
     ];
 
-    protected $dates = [
-        'at_risk_at',
-        'appointment_date',
-        'creation_date',
-        'inprogress_date',
-        'done_date',
-        'verify_date',
-        'complete_date',
-        'reject_date',
-        'kiv_date',
-        'onhold_date',
+    protected $casts = [
+        'at_risk_at' => 'datetime',
+        'appointment_date' => 'datetime',
+        'creation_date' => 'datetime',
+        'inprogress_date' => 'datetime',
+        'done_date' => 'datetime',
+        'verify_date' => 'datetime',
+        'complete_date' => 'datetime',
+        'reject_date' => 'datetime',
+        'kiv_date' => 'datetime',
+        'onhold_date' => 'datetime',
     ];
 
     protected $appends = ['reminder_date_time','last_follow_up','has_unread_notification'];
