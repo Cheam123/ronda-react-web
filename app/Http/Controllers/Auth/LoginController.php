@@ -57,6 +57,16 @@ class LoginController extends Controller
     protected function authenticated()
     {
         \Auth::logoutOtherDevices(request('password'));
+
+        // Since Laravel 11, login() stores the password hash in the session,
+        // and logoutOtherDevices() has just rehashed the password, so that
+        // stored hash is stale. Store the new one, or AuthenticateSession
+        // logs the user out again on the very next request.
+        $this->session->put(
+            'password_hash_'.Auth::getDefaultDriver(),
+            Auth::hashPasswordForCookie(Auth::user()->getAuthPassword())
+        );
+
         return redirect('/index');
     }
 
