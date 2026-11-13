@@ -190,4 +190,164 @@ This is the only evidence from outside the generated data.
 
 ## 13. Deviations
 
-None yet. Format: date, what changed, why, and whether any results had been seen at the time.
+Format: date, what changed, why, and whether any results had been seen at the time. No test seed (201 to 205) had been touched when any of these were made.
+
+**2026-11-06. Two supporting baselines added: `popularity_halal` and `type_only_halal`.** The same rankings with the engine's halal filter. The protocol's baselines have no filter, so part of the engine's lead could come from the filter and not from ranking. These rows show how much. The win rule still uses the baselines as written in section 7. Results seen: today's KNN on the development seeds.
+
+**2026-11-06. One more supporting row on the final test: `knn_before`.** The engine's old feature set (six profile fields, nothing bought) at k 5 and min_support 0.3, to show whether the upgrade helped. Not part of the win rule. It runs on the current `KnnRecommender`, so top-ups no longer take its slots. Results seen: as above.
+
+**2026-11-06. Sanity suite result on today's KNN: "Shuffle IDs" failed.** 10 of 210 outlets scored differently because ties were broken by id. This is what the check is for. The engine now breaks ties by outlet key and SKU, and the check passes on the hybrid. The other checks passed; "Scramble product tags" needs Stage 1 and first ran on the hybrid.
+
+**2026-11-06. Stage 1 ranking variant tried and dropped.** Ranking by match times popularity was tried once on the development seeds (cold P@5 0.281 against 0.291 for match alone). It did not help and was removed. Recorded so the report can say so.
+
+**2026-11-06. Engine values the grid in section 8 does not cover, fixed before tuning:** `min_match` 0.6, `min_compared_share` 0.5, a separate cap of 5 top-ups, `limit` 10. They are not tuned.
+
+**2026-11-06, added after the final test ran. The expert check in section 11 has not run.** The raters are still to be confirmed, and the supervisor has not yet answered on ethics approval. The final test ran first because the code and settings were ready, and its result can't affect the raters, who see no scores. The sheet will use the same frozen settings. Results seen: the final test. The `protocol_hash` in `run-log.csv` is from before this entry was added, and no rule changed.
+
+**2026-11-13. Version 2 added in section 14, after the version 1 final test.** A design review concluded the engine should suggest drinks made from catalogue products, not only single products. Version 2 is a new engine with its own generator, its own fresh seeds (401 to 405) and its own single final test. No version 1 rule changes, and the version 1 result is still reported as it stands. Section 14.8 replaces the sample in section 11, because no rater has seen a sheet yet. Results seen: the version 1 final test. No version 2 score exists.
+
+## 14. Version 2: drink ideas
+
+**Status:** written 2026-11-13, before any version 2 score exists. Approval: pending.
+
+Sections 1 to 12 still apply unless this section says otherwise.
+
+### 14.1 The question
+
+For an outlet on a given date, does adding drink ideas make the new-product suggestions better than the baselines and the frozen version 1 engine? And are the drink ideas themselves better than suggesting the most common drinks?
+
+### 14.2 What version 2 adds
+
+- **Drinks.** The admin enters drinks. Each drink is a recipe made from catalogue products and is tagged with:
+  - serve: hot, iced or either;
+  - outlet types;
+  - customer groups, using the 7 area kinds;
+  - price level.
+- **Customer groups.** An outlet's groups are the rep's "Main customers" answer when given, otherwise its area types.
+- **Drink scoring.**
+  - **Eligible drinks:**
+    - active, with every ingredient on sale at the cut;
+    - halal only, for a halal outlet;
+    - not already made, meaning the outlet doesn't already buy every ingredient in the profile window;
+    - for an outlet with purchases, no more than `max_missing` ingredients missing.
+  - **Score:** a weighted mean of type, customers, price, ease and neighbours, with unknown features skipped.
+    - "Ease" is the share of ingredients already bought.
+    - "Neighbours" is the share of the k similar outlets that make the drink.
+    - The same `min_compared_share` and `min_match` as Stage 1 apply.
+  - **Tie-break:** recipe slug.
+- **Output.**
+  - The top 3 drinks are the drink ideas.
+  - In the new-product list, the first `drink_slots` places go to missing drink ingredients, in drink order. The rest is the version 1 list with duplicates removed.
+  - Top-ups are unchanged.
+  - `drink_slots` 0 gives the version 1 list exactly.
+
+### 14.3 The dataset: generator version 2
+
+- **Catalogue:** the 80 products plus 6: Strawberry Syrup, Peach Syrup, Lychee Syrup, Brown Sugar Syrup, Tapioca Pearls and Jasmine Green Tea Leaves.
+- **Drinks:** the 36 drinks in `database/data/recipes.json`.
+  - Their written groups, outlet types and price levels are the world's hidden truth.
+  - Each drink also gets a hidden style vector.
+  - The tags the engine reads are noisy copies, made with `tag_fidelity` the same way as product tags.
+  - Ingredients are read as written.
+- **Buying.**
+  - At each adoption, with probability `menu_share` the outlet adopts a drink instead of a single product. It then adopts every ingredient of that drink it doesn't already have.
+  - Drinks are drawn by drink affinity, built like product affinity: `signal` blends structured fit with popularity plus noise.
+  - Structured fit uses the version 1 shares: type 0.35, price 0.20, customers 0.15, taste 0.30.
+  - A halal outlet never adopts a drink with a non-halal ingredient.
+  - The first order holds 1 to 3 drinks, filled with single products up to the version 1 basket size.
+- **Main customers:** left blank for every generated outlet, so the test doesn't depend on an invented answer rate.
+- **Primary settings:** `signal` 0.75, `tag_fidelity` 0.75, `menu_share` 0.5. All three are guesses with no measurement behind them.
+- **Version 1 datasets are unchanged** and reproduce byte for byte.
+- **Freeze:** generator version 2 parameters may change only until it meets the section 4 minimums, before any version 2 score. After that, only logged bug fixes.
+
+### 14.4 The test
+
+- **Unchanged:** windows, groups, targets, minimums and metrics (sections 3 to 6). The main metric is still Precision@5 on the new-product list.
+- **Supporting drink metrics,** on the same scored outlets:
+  - **Drink hit:** a suggested drink whose every missing ingredient the outlet newly buys in the target window. "Missing" means not bought in the profile window.
+  - **Partial drink hit:** at least one missing ingredient newly bought.
+  - **Drink hit@3:** hits in the top 3 drinks, always divided by 3. An outlet with fewer drinks counts the empty places as misses.
+
+### 14.5 Baselines
+
+All of section 7, plus:
+
+| Name | How it ranks |
+|---|---|
+| **Version 1, frozen** | The version 1 engine with the settings used in its final test |
+| **Popular drinks** | Eligible drinks, under the same rules as the engine, ranked by how many outlets make them in the profile window |
+| **Drink Oracle** | Eligible drinks ranked by the generator's true drink affinity |
+
+### 14.6 Choosing the settings
+
+- **Data:** validation windows of development seeds 101, 102 and 103, regenerated with generator version 2.
+- **Fixed:** the version 1 settings (k, min_support, Stage 1 and Stage 2 weights, switch) stay as selected for version 1. They are not re-tuned.
+- **Cold outlets (no purchases):**
+  1. The drink weight set is chosen on cold Drink hit@3.
+  2. Then `drink_slots_cold` is chosen on cold Precision@5.
+- **Outlets with purchases (thin and warm):**
+  1. The drink weight set and `max_missing` are chosen on warm Drink hit@3.
+  2. Then `drink_slots_warm` is chosen on warm Precision@5.
+- **Selection rule:** the section 8 rule. Best mean, then everything within one standard error, then the fewest changes from the defaults, then the smaller `drink_slots`.
+- **Defaults:** weight set `equal`, `max_missing` 2, `drink_slots` 0.
+- **Publication:** the whole grid is published.
+
+| Setting | Values |
+|---|---|
+| Drink weight set | `equal` (all features 1), `customers` (customers 2), `neighbours` (neighbours 2) |
+| `max_missing` | 1, 2 |
+| `drink_slots_cold`, `drink_slots_warm` | 0, 2, 3, 5 |
+
+### 14.7 Final test and win rule
+
+- **Data:** final test windows of fresh seeds 401 to 405, made with generator version 2 at the primary settings. No earlier phase touches them.
+- **Frozen:** engine code, generator version 2 and the selected settings.
+- **Run once.** Every run is logged in `evaluation/results/run-log.csv` with its reason.
+
+**Win rule, for each of cold and warm:**
+
+1. The comparison is against whichever of Popularity, Type-only and Version 1 frozen has the highest mean Precision@5 in that group.
+2. Version 2 wins the group if the 95% confidence interval of the paired per-seed difference is entirely above zero (t distribution, 5 seeds).
+3. Otherwise the result is "no demonstrated win".
+4. If the selected `drink_slots` is 0 for a group, version 2's list there is version 1's. That is reported as "drink ideas leave the product list unchanged", not as a win or a loss.
+
+**Drink ideas** are compared with Popular drinks on Drink hit@3, with the same paired interval. This is reported as supporting evidence.
+
+**Sensitivity:** the frozen settings are run across, one setting at a time:
+
+- `menu_share` 0, 0.25, 0.5, 0.75 and 1;
+- `tag_fidelity` 0, 0.25, 0.5, 0.75 and 1;
+- `signal` 0, 0.25, 0.5, 0.75 and 1.
+
+The settings not being swept stay at their primary values.
+
+### 14.8 Expert check (replaces the sample in section 11)
+
+- **Sample:** 20 outlets from final test seed 401, 10 cold and 10 warm, picked with sample seed 301.
+- **Sheet, two blocks:**
+  1. **Products:** the combined top-5 lists of Version 2, Version 1 frozen, Popularity and Type-only.
+  2. **Drinks:** the combined top-3 drinks of Version 2 and Popular drinks.
+  
+  Both blocks are shuffled and show no method. Raters mark each item "suits" or "doesn't suit".
+- **Unchanged:** raters, ethics and the separate answer key, as in section 11.
+- **Reported:** Precision@5 and drink precision@3 per method and rater, plus Cohen's kappa.
+
+### 14.9 Sanity suite additions
+
+All checks in section 10 run on version 2. These are added:
+
+| Check | Expected | If it fails |
+|---|---|---|
+| Scramble drink tags | Drink hit@3 falls | Drink tags are not doing what is claimed |
+| `menu_share` 0 | Version 2 is not above Version 1 frozen by more than one standard error | The evaluator flatters drink ideas |
+| `drink_slots` 0 | Product lists byte-identical to Version 1 frozen | The merge changes what it shouldn't |
+| Shuffle recipe IDs | Results unchanged | IDs or tie-breaks carry signal |
+| Compare with the Drink Oracle | No method above it by more than one standard error | Something is reading the answer |
+
+### 14.10 What the results can claim
+
+Section 12 applies. The report must also disclose:
+
+- the same author wrote the drink list, its tags, the pack sizes and the generated world that decides who makes each drink;
+- `menu_share`, how much buying follows drinks, is a guess, and the `menu_share` curve is shown, not only one figure;
+- the "Main customers" answer is not in the generated data, so the test doesn't measure it.
