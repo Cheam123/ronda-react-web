@@ -2,6 +2,7 @@ import type { FormDataKeys, FormDataValues } from '@inertiajs/core';
 import { Link, useForm, usePage } from '@inertiajs/react';
 import clsx from 'clsx';
 import { useState, type FormEvent, type ReactNode } from 'react';
+import { Choices } from '@/Components/surface/Choices';
 import PageHeader from '@/Components/surface/PageHeader';
 import SurfacePage from '@/Components/surface/SurfacePage';
 import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
@@ -74,6 +75,8 @@ export default function ProductForm({ product, categories, units }: ProductFormP
         unit_price: product.unit_price?.toString() ?? '',
         description: product.description ?? '',
         is_active: product.is_active,
+        is_halal: product.is_halal === null || product.is_halal === undefined ? '' : product.is_halal ? '1' : '0',
+        base_monthly_qty: product.base_monthly_qty?.toString() ?? '',
     });
     const { data, post, processing, errors, transform, isDirty } = form;
 
@@ -120,7 +123,7 @@ export default function ProductForm({ product, categories, units }: ProductFormP
                     title={title}
                     lede={
                         isNew
-                            ? "An active product shows up on the reps' order form straight away, and in recommendations once outlets start ordering it."
+                            ? "An active product shows up on the reps' order form straight away."
                             : 'Changes apply to new orders. Orders already recorded keep their price and lines.'
                     }
                 />
@@ -285,10 +288,7 @@ export default function ProductForm({ product, categories, units }: ProductFormP
                             </Field>
                         </Section>
 
-                        <Section
-                            title="Description"
-                            intro="Optional. Reps read it when they pitch the product, and it helps the recommendation write-ups."
-                        >
+                        <Section title="Description" intro="Optional. Reps read it when they pitch the product.">
                             <Field id="description" label="Description" error={errors.description}>
                                 <textarea
                                     id="description"
@@ -301,6 +301,40 @@ export default function ProductForm({ product, categories, units }: ProductFormP
                                 <span className="prod-form__counter">
                                     {formatNumber(data.description.length)} / 2,000
                                 </span>
+                            </Field>
+                        </Section>
+
+                        <Section
+                            title="Halal and quantity"
+                            intro="Optional. Used when this product is an ingredient in a drink."
+                        >
+                            <Choices
+                                legend="Halal?"
+                                hint="A drink is halal only when every product in it is."
+                                options={[
+                                    { value: '1', label: 'Yes' },
+                                    { value: '0', label: 'No' },
+                                ]}
+                                value={data.is_halal}
+                                error={errors.is_halal}
+                                onChange={(value) => setData('is_halal', value)}
+                            />
+                            <Field
+                                id="base_monthly_qty"
+                                label="Typical monthly quantity"
+                                error={errors.base_monthly_qty}
+                                hint={`For an outlet of about 50 seats, in ${data.unit || 'units'}. Scaled to each outlet's size.`}
+                            >
+                                <input
+                                    id="base_monthly_qty"
+                                    type="number"
+                                    min={0}
+                                    step="any"
+                                    className={clsx('rd-input', errors.base_monthly_qty && 'is-invalid')}
+                                    style={{ maxWidth: 200 }}
+                                    value={data.base_monthly_qty}
+                                    onChange={(event) => setData('base_monthly_qty', event.target.value)}
+                                />
                             </Field>
                         </Section>
 
@@ -322,8 +356,8 @@ export default function ProductForm({ product, categories, units }: ProductFormP
                                     <label htmlFor="is_active">{data.is_active ? 'Active' : 'Inactive'}</label>
                                     <p id="is_active-help">
                                         {data.is_active
-                                            ? 'Offered on the order form and included in outlet recommendations.'
-                                            : 'Hidden from the order form and recommendations. Past orders keep it.'}
+                                            ? 'Offered on the order form.'
+                                            : 'Hidden from the order form. Past orders keep it.'}
                                     </p>
                                 </div>
                             </div>
@@ -421,11 +455,6 @@ export default function ProductForm({ product, categories, units }: ProductFormP
                                             {!data.is_active && ' once it is active'}
                                         </li>
                                         <li>
-                                            <i className="mdi mdi-clock-outline is-info" aria-hidden="true" />
-                                            Recommendations pick it up at the nightly refresh, once outlets have ordered
-                                            it
-                                        </li>
-                                        <li>
                                             <i className="mdi mdi-tag-outline is-info" aria-hidden="true" />
                                             {data.category
                                                 ? `It is listed under ${data.category} in the catalogue and sales figures`
@@ -439,10 +468,6 @@ export default function ProductForm({ product, categories, units }: ProductFormP
                                             {(product.order_lines_count ?? 0) > 0
                                                 ? `It is on ${pluralize(product.order_lines_count ?? 0, 'order line')}. Those keep the price they were recorded at.`
                                                 : 'It has not been ordered yet.'}
-                                        </li>
-                                        <li>
-                                            <i className="mdi mdi-clock-outline is-info" aria-hidden="true" />
-                                            Recommendations use the new details from the next nightly refresh
                                         </li>
                                     </>
                                 )}

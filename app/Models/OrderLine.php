@@ -12,12 +12,14 @@ class OrderLine extends Model
         'quantity',
         'unit_price',
         'line_total',
+        'suggested',
     ];
 
     protected $casts = [
         'quantity'   => 'float',
         'unit_price' => 'float',
         'line_total' => 'float',
+        'suggested'  => 'boolean',
     ];
 
     public function order()

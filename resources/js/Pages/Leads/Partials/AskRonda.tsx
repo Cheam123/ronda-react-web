@@ -10,7 +10,7 @@ interface AskRondaProps {
     show: boolean;
     onHide: () => void;
     lead: { id: number; name: string; customerId: string | null };
-    /** Claude on Bedrock is set up; there is no template for free questions. */
+    /** Claude is set up; there is no template for free questions. */
     available: boolean;
 }
 
@@ -141,8 +141,7 @@ export default function AskRonda({ show, onHide, lead, available }: AskRondaProp
                     Ask Ronda
                 </h2>
                 <p className="rd-drawer__lede">
-                    Answers come from this outlet’s visits, orders, tasks and suggested orders. Contact details are not
-                    sent.
+                    Answers come from this outlet’s visits, orders and tasks. Contact details are not sent.
                 </p>
                 <button
                     type="button"
@@ -159,8 +158,8 @@ export default function AskRonda({ show, onHide, lead, available }: AskRondaProp
                 {!available ? (
                     <p className="rd-notice">
                         <i className="mdi mdi-information-outline" aria-hidden="true" />
-                        Ask Ronda needs Claude on Amazon Bedrock, which is not set up yet. Visit briefs and follow-up
-                        drafts still work from templates. An admin can turn it on.
+                        Ask Ronda needs Claude, which is not set up yet. Visit briefs and follow-up drafts still work
+                        from templates. An admin can turn it on.
                     </p>
                 ) : messages.length === 0 && !sending ? (
                     <div className="ask-ronda__start">

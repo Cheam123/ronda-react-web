@@ -335,34 +335,6 @@
     }
 }
 
-.prod-recommended {
-    li {
-        justify-content: space-between;
-    }
-
-    &__outlet {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-        min-width: 0;
-
-        a {
-            color: $rd-ink;
-            font-weight: 600;
-            text-decoration: none;
-
-            &:hover {
-                color: $rd-brand-ink;
-            }
-        }
-
-        small {
-            color: $rd-muted;
-            font-size: 12px;
-        }
-    }
-}
-
 // The add / edit form: a heading column beside each group of fields.
 .prod-form {
     &__section {

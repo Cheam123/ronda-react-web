@@ -75,6 +75,7 @@ class Order extends Model
                 'quantity'     => (float) $line->quantity,
                 'unit_price'   => (float) $line->unit_price,
                 'line_total'   => (float) $line->line_total,
+                'suggested'    => (bool) $line->suggested,
             ])->values()->all(),
         ];
     }

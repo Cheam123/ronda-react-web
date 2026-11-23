@@ -6,7 +6,7 @@ import type { VisitBrief as Brief } from '@/types/leads';
 interface VisitBriefProps {
     leadId: number;
     brief: Brief | null;
-    /** Claude on Bedrock is set up; otherwise the brief comes from a template. */
+    /** Claude is set up; otherwise the brief comes from a template. */
     available: boolean;
     onFollowUp: () => void;
 }
@@ -36,11 +36,9 @@ export default function VisitBrief({ leadId, brief: initial, available, onFollow
 
     let source: string;
     if (!brief) {
-        source = available
-            ? 'Written when you ask, by Claude on Amazon Bedrock.'
-            : 'Written from a template: AI is not set up.';
-    } else if (brief.source === 'bedrock') {
-        source = `Written by Claude (Amazon Bedrock) ${writtenWhen(brief.generated_at)}.`;
+        source = available ? 'Written when you ask, by Claude.' : 'Written from a template: AI is not set up.';
+    } else if (brief.source === 'claude') {
+        source = `Written by Claude ${writtenWhen(brief.generated_at)}.`;
     } else {
         const why = brief.fallback === 'unavailable' ? 'Claude could not be reached' : 'AI not configured';
         source = `Template summary (${why}), ${writtenWhen(brief.generated_at)}.`;

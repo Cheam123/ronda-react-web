@@ -3,7 +3,7 @@ import { errorMessage, postJson } from '@/lib/http';
 import type { ApiEnvelope } from '@/types';
 
 /** The rep assistant's endpoints on an outlet (OutletAssistantController). */
-type AssistantAction = 'brief' | 'chat' | 'followUp' | 'pitches';
+type AssistantAction = 'brief' | 'chat' | 'followUp';
 
 /** Most messages in one Ask Ronda chat (OutletAssistantService::MAX_TURNS). */
 export const MAX_CHAT_MESSAGES = 20;

@@ -13,7 +13,7 @@ type Language = 'en' | 'ms';
 
 interface Draft {
     text: string;
-    source: 'bedrock' | 'template';
+    source: 'claude' | 'template';
 }
 
 interface FollowUpDialogProps {
@@ -190,8 +190,8 @@ export default function FollowUpDialog({ show, onHide, lead, topics }: FollowUpD
                     error={error ?? undefined}
                     hint={
                         draft &&
-                        (draft.source === 'bedrock'
-                            ? 'Written by Claude (Amazon Bedrock) from this outlet’s visits, orders and suggested orders. Read it before you send it.'
+                        (draft.source === 'claude'
+                            ? 'Written by Claude from this outlet’s visits and orders. Read it before you send it.'
                             : 'Written from a template (AI not configured). Read it before you send it.')
                     }
                 >

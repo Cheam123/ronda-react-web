@@ -18,7 +18,22 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        //
+        // Menu photos the server reads: Amazon Textract (used only when MENU_READER=textract and a key is set).
+        $this->app->bind(\App\Services\Menu\PhotoReader::class, \App\Services\Menu\TextractPhotoReader::class);
+
+        // Seeded places unless the live lookup is on and Amazon Location has its key; live falls back to seeded.
+        $this->app->bind(\App\Services\Recommendation\Area\PlaceLookup::class, fn () => \App\Services\Recommendation\Area\AmazonPlaceLookup::live()
+            ? new \App\Services\Recommendation\Area\FallbackPlaceLookup(
+                \App\Services\Recommendation\Area\AmazonPlaceLookup::fromConfig(),
+                new \App\Services\Recommendation\Area\SeededPlaceLookup()
+            )
+            : new \App\Services\Recommendation\Area\SeededPlaceLookup());
+
+        $this->app->bind(\App\Services\Recommendation\Area\AreaProfiler::class, fn ($app) => new \App\Services\Recommendation\Area\AreaProfiler(
+            $app->make(\App\Services\Recommendation\Area\PlaceLookup::class),
+            \App\Services\Recommendation\Area\IncomeTable::groups(),
+            config('ife.recommendation.area'),
+        ));
     }
 
     /**

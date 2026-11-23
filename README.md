@@ -26,9 +26,11 @@ php artisan serve
 
 Two ways to call a model:
 
-- `App\Services\Ai\ClaudeClient` — Claude on Amazon Bedrock through the
-  Anthropic PHP SDK. Used by the daily digest, recommendation explanations and
-  the outlet assistant; settings are in `config/ife.php` (`bedrock.*`).
+- `App\Services\Ai\ClaudeClient` — Claude through the Anthropic PHP SDK,
+  with a Claude Console key in `ANTHROPIC_API_KEY` (or Claude on Amazon
+  Bedrock with `CLAUDE_PROVIDER=bedrock`). Used by the daily digest and the
+  outlet assistant; settings are in `config/ife.php` (`claude.*`). Without a
+  key, both write from plain templates.
 - The Laravel AI SDK — agents, tools, structured output, embeddings and more
   across providers. Set the provider's key in `.env` (`ANTHROPIC_API_KEY`,
   `OPENAI_API_KEY`, …; the Bedrock provider reads the same `AWS_*` variables as

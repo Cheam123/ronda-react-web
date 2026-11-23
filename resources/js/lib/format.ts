@@ -55,6 +55,19 @@ export function pluralize(count: number, singular: string, plural = `${singular}
     return `${count} ${count === 1 ? singular : plural}`;
 }
 
+/** "400 m" under a kilometre (to the nearest 10 m), "1.2 km" from there. */
+export function formatDistance(metres: number): string {
+    if (metres < 1000) return `${Math.round(metres / 10) * 10} m`;
+    const km = Math.round(metres / 100) / 10;
+    return `${Number.isInteger(km) ? km : km.toFixed(1)} km`;
+}
+
+/** "a, b and c" */
+export function listWords(words: string[]): string {
+    if (words.length <= 1) return words.join('');
+    return `${words.slice(0, -1).join(', ')} and ${words[words.length - 1]}`;
+}
+
 /** The text of an HTML fragment, for one-line previews of rich text. */
 export function plainText(html: string | null | undefined): string {
     if (!html) return '';

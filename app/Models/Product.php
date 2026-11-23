@@ -7,8 +7,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * An item in the product catalogue. Admins maintain it; order lines and
- * product recommendations point at it. Inactive products stay on old orders
- * but are no longer offered or recommended.
+ * drink recipes point at it. Inactive products stay on old orders but are
+ * no longer offered.
  */
 class Product extends Model
 {
@@ -20,13 +20,17 @@ class Product extends Model
         'category',
         'unit',
         'unit_price',
+        'is_halal',
+        'base_monthly_qty',
         'description',
         'is_active',
     ];
 
     protected $casts = [
-        'unit_price' => 'float',
-        'is_active'  => 'boolean',
+        'unit_price'       => 'float',
+        'is_halal'         => 'boolean',
+        'base_monthly_qty' => 'float',
+        'is_active'        => 'boolean',
     ];
 
     /** Products with no confirmed order this many days are flagged for review. */

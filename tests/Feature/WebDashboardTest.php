@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\DailyDigest;
-use App\Models\OutletRecommendation;
 use App\Models\User;
 use App\Services\AdminDashboardService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -81,21 +80,6 @@ class WebDashboardTest extends TestCase
         DailyDigest::create(['digest_date' => $today->toDateString(), 'content' => 'Summary: today.', 'source' => 'template']);
 
         $this->assertNotContains('digest', $this->missedJobs($today->copy()->setTime(10, 0)));
-    }
-
-    public function test_suggested_orders_older_than_a_day_are_a_missed_job(): void
-    {
-        if (OutletRecommendation::doesntExist()) {
-            $this->markTestSkipped('No suggested orders in this database.');
-        }
-
-        $now = Carbon::now();
-
-        OutletRecommendation::query()->update(['computed_at' => $now->copy()->subDays(3)]);
-        $this->assertContains('recommendations', $this->missedJobs($now));
-
-        OutletRecommendation::query()->update(['computed_at' => $now->copy()->subHours(2)]);
-        $this->assertNotContains('recommendations', $this->missedJobs($now));
     }
 
     /** @return string[] */

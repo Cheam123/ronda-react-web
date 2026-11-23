@@ -68,6 +68,9 @@ Route::group(['prefix' => 'v1'], function () {
     # Product Catalogue Group
     Route::prefix('product')->group(__DIR__ . '/api/product.php');
 
+    # Drinks (recipes made from catalogue products)
+    Route::prefix('recipe')->group(__DIR__ . '/api/recipe.php');
+
     # IFE Area Group
     Route::prefix('area')->group(__DIR__ . '/api/area.php');
 });

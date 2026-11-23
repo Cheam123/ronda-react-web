@@ -96,9 +96,9 @@ export default function MorningRoundUp({ digest, status, className }: MorningRou
                         {digest && !stale && (
                             <p className="dash-roundup__source">
                                 {digest.date_label} &middot;{' '}
-                                {digest.source === 'bedrock'
-                                    ? 'Written by Claude (Amazon Bedrock)'
-                                    : 'Template summary (Bedrock not configured or unavailable)'}
+                                {digest.source === 'claude'
+                                    ? 'Written by Claude'
+                                    : 'Template summary (Claude not configured or unavailable)'}
                             </p>
                         )}
                     </div>

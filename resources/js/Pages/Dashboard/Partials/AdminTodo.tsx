@@ -42,16 +42,6 @@ function todoItems(summary: AdminSummary, can: (...abilities: Ability[]) => bool
                     : `It is due at ${job.schedule} each day, at the top of the managers’ dashboard.`,
                 action: 'regenerate',
             });
-        } else {
-            items.push({
-                key: 'recommendations',
-                icon: 'mdi-lightbulb-outline',
-                tone: 'critical',
-                title: job.last_label
-                    ? `Suggested orders haven’t refreshed since ${job.last_label}`
-                    : 'Suggested orders haven’t been worked out yet',
-                detail: `They refresh at ${job.schedule} each night. If the Morning Round-Up is missing too, the server’s scheduler has probably stopped.`,
-            });
         }
     }
 
@@ -83,7 +73,7 @@ function todoItems(summary: AdminSummary, can: (...abilities: Ability[]) => bool
             icon: 'mdi-package-variant-closed',
             tone: 'brand',
             title: `${pluralize(stale.length, 'product')} not ordered in 90 days`,
-            detail: `${listNames(stale.slice(0, 2), stale.length)}. Still offered to reps and recommended to outlets.`,
+            detail: `${listNames(stale.slice(0, 2), stale.length)}. Still offered to reps.`,
             action: { label: 'Review', href: route('product.index', { stale: 1, active: 'all' }) },
         });
     }

@@ -18,7 +18,7 @@ use Throwable;
  */
 class OutletAssistantController extends Controller
 {
-    private const UNAVAILABLE = 'Ask Ronda needs Claude on Amazon Bedrock, which is not set up yet. An admin can turn it on.';
+    private const UNAVAILABLE = 'Ask Ronda needs Claude, which is not set up yet. An admin can turn it on.';
     private const FAILED      = 'Ronda could not answer just now. Please try again.';
 
     public function __construct(private OutletAssistantService $assistant)
@@ -103,18 +103,6 @@ class OutletAssistantController extends Controller
             $data['topic'],
             $data['note'] ?? null
         ));
-    }
-
-    /** "How to pitch" tips for every suggested product at once. */
-    public function pitches(Request $request, $id)
-    {
-        $lead = $this->outlet($request, $id);
-        if (!$lead) {
-            return $this->response_failed('We could not find this outlet.');
-        }
-        set_time_limit(120);
-
-        return $this->response_success($this->assistant->pitches($lead));
     }
 
     /** The outlet, if the caller may open it. */

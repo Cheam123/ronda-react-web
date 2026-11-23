@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Jobs\RefreshOutletRecommendations;
 use App\Models\Leads;
 use App\Models\Order;
 use App\Models\OrderLine;
@@ -22,7 +21,8 @@ class OrderService
     public const MAX_QUANTITY = 100000;
 
     /**
-     * @param array  $lines     list of ['product_id' => int, 'quantity' => number]
+     * @param array  $lines     list of ['product_id' => int, 'quantity' => number, 'suggested' => ?bool]
+     *                          suggested: the line was pre-filled from a suggestion
      * @param string $orderDate Y-m-d, default today; may not be in the future
      * @throws ValidationException keyed "lines", "lines.N.product_id", "lines.N.quantity", "order_date"
      */
@@ -43,6 +43,7 @@ class OrderService
         $productIds = array_filter(array_map(fn ($line) => (int) ($line['product_id'] ?? 0), array_values($lines)));
         $products   = Product::active()->whereIn('id', $productIds)->get()->keyBy('id');
         $quantities = [];
+        $suggested  = [];
 
         foreach (array_values($lines) as $index => $line) {
             $productId = (int) ($line['product_id'] ?? 0);
@@ -59,6 +60,10 @@ class OrderService
 
             // The same product twice is one line with the quantities added.
             $quantities[$productId] = ($quantities[$productId] ?? 0) + round((float) $quantity, 2);
+
+            if (filter_var($line['suggested'] ?? false, FILTER_VALIDATE_BOOLEAN)) {
+                $suggested[$productId] = true;
+            }
         }
 
         if (empty($quantities) && empty($errors)) {
@@ -69,7 +74,7 @@ class OrderService
             throw ValidationException::withMessages($errors);
         }
 
-        $order = DB::transaction(function () use ($lead, $user, $date, $remark, $quantities, $products) {
+        $order = DB::transaction(function () use ($lead, $user, $date, $remark, $quantities, $products, $suggested) {
             $order = Order::create([
                 'lead_id'      => $lead->id,
                 'order_date'   => $date->toDateString(),
@@ -91,14 +96,13 @@ class OrderService
                     'quantity'   => $quantity,
                     'unit_price' => $price,
                     'line_total' => $lineTotal,
+                    'suggested'  => isset($suggested[$productId]),
                 ]);
             }
 
             $order->order_no     = sprintf('ORD-%06d', $order->id);
             $order->total_amount = round($total, 2);
             $order->save();
-
-            RefreshOutletRecommendations::dispatch([$lead->id]);
 
             return $order;
         });
@@ -111,7 +115,6 @@ class OrderService
     {
         if (!$order->isCancelled()) {
             $order->update(['status' => Order::STATUS_CANCELLED]);
-            RefreshOutletRecommendations::dispatch([$order->lead_id]);
         }
 
         return $order;

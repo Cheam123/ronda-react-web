@@ -8,7 +8,7 @@ import type { Product } from '@/types/catalogue';
 export interface OrderLine {
     product_id: string;
     quantity: string;
-    /** Started from the outlet's suggested orders; not posted. */
+    /** Started from a suggestion. Choosing another product clears it. */
     suggested?: boolean;
 }
 

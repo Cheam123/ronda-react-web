@@ -14,6 +14,7 @@ class DocumentUpload extends Model
     protected $fillable = [
         'task_id',
         'lead_id',
+        'menu_scan_id',
         'task_comment_id',
         'filename',
         'original_name',

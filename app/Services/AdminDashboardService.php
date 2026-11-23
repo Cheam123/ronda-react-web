@@ -9,7 +9,6 @@ use App\Models\IFEReport;
 use App\Models\Leads;
 use App\Models\Order;
 use App\Models\OrderLine;
-use App\Models\OutletRecommendation;
 use App\Models\Product;
 use App\Models\TaskHistory;
 use App\Models\User;
@@ -31,11 +30,7 @@ class AdminDashboardService
     public const SLOW_APPROVAL_HOURS = 48;
 
     /** When the jobs run (App\Console\Kernel::schedule()). */
-    public const DIGEST_SCHEDULE          = '7:00 am';
-    public const RECOMMENDATIONS_SCHEDULE = '2:45 am';
-
-    /** Suggested orders older than this mean the nightly refresh was missed. */
-    public const RECOMMENDATIONS_STALE_HOURS = 26;
+    public const DIGEST_SCHEDULE = '7:00 am';
 
     /** Recent activity shows this many events. */
     public const ACTIVITY_LIMIT = 5;
@@ -270,8 +265,7 @@ class AdminDashboardService
     }
 
     /**
-     * Scheduled jobs that should have run by now and haven't. When both are
-     * listed, the server's scheduler has most likely stopped.
+     * Scheduled jobs that should have run by now and haven't.
      */
     private function missedJobs(Carbon $now): array
     {
@@ -286,16 +280,6 @@ class AdminDashboardService
             ];
         }
 
-        // Each run writes a row for every outlet, so outlets without rows means it has never run.
-        $lastRun = OutletRecommendation::max('computed_at');
-        $lastRun = $lastRun ? Carbon::parse($lastRun) : null;
-        if ($lastRun ? $lastRun->lt($now->copy()->subHours(self::RECOMMENDATIONS_STALE_HOURS)) : Leads::exists()) {
-            $missed[] = [
-                'job'      => 'recommendations',
-                'schedule' => self::RECOMMENDATIONS_SCHEDULE,
-                'last_run' => optional($lastRun)->toIso8601String(),
-            ];
-        }
 
         return $missed;
     }

@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\Leads;
+use App\Models\Recipe;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -48,6 +49,17 @@ class LeadRequest extends FormRequest
             'size_band'     => 'nullable|in:' . implode(',', array_keys(Leads::SIZE_BANDS)),
             'seats'         => 'nullable|integer|min:0|max:5000',
             'segment'       => 'nullable|in:' . implode(',', array_keys(Leads::SEGMENTS)),
+            'is_halal'      => 'nullable|boolean',
+            // What the outlet needs: who mostly buys there, the kinds of
+            // drink that sell best, what they want to improve, and what a
+            // usual drink costs there.
+            'main_customers'       => 'nullable|array',
+            'main_customers.*'     => 'string|in:' . implode(',', array_keys(config('ife.recommendation.customer_groups', []))),
+            'best_selling_kinds'   => 'nullable|array',
+            'best_selling_kinds.*' => 'string|in:' . implode(',', array_keys(Recipe::CATEGORIES)),
+            'improvement_goals'    => 'nullable|array',
+            'improvement_goals.*'  => 'string|in:' . implode(',', array_keys(Leads::GOALS)),
+            'typical_drink_price'  => 'nullable|numeric|min:1|max:100',
             'gps'           => 'nullable',
         ];
     }
@@ -70,6 +82,10 @@ class LeadRequest extends FormRequest
             'ifearea'       => 'IFE area',
             'size_band'     => 'size',
             'gps'           => 'location',
+            'main_customers.*'      => 'main customer',
+            'best_selling_kinds.*'  => 'best-selling drink',
+            'improvement_goals.*'   => 'goal',
+            'typical_drink_price'   => 'typical drink price',
         ];
     }
 }

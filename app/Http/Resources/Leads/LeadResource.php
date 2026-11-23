@@ -33,6 +33,12 @@ class LeadResource extends JsonResource
             'size_band'         => $this->size_band,
             'seats'             => $this->seats,
             'segment'           => $this->segment,
+            'is_halal'          => $this->is_halal,
+            'main_customers'    => $this->main_customers ?? [],
+            'best_selling_kinds'  => $this->best_selling_kinds ?? [],
+            'improvement_goals'   => $this->improvement_goals ?? [],
+            'typical_drink_price' => $this->typical_drink_price,
+            'area'              => $this->areaProfile(),
             'gps'               => $stamp ? json_encode($stamp) : '',
             'remark'            => $this->remark,
             // For the outlet page's header and details.

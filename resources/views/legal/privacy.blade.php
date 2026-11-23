@@ -101,7 +101,7 @@
         <li><strong>Your employer</strong> — managers and administrators at your organisation can see your profile, your work records, your uploads and the Location Stamps on your forms and outlets. This is the purpose of the system.</li>
         <li><strong>Google (Firebase Cloud Messaging)</strong> — to deliver push notifications.</li>
         <li><strong>Amazon Web Services</strong> — photos and documents are stored in Amazon S3 in the Asia Pacific (Singapore) region.</li>
-        <li><strong>Amazon Web Services (Amazon Bedrock)</strong> — only if your employer has turned on Ronda's AI features. To write the Morning Round-Up for managers, Ronda sends a summary of the team's work: staff names, task titles, outlet names, and counts of tasks, visits, forms and orders. To explain Suggested Orders, it sends the outlet's type, size and segment and product figures. AWS states that Amazon Bedrock does not use this data to train AI models.</li>
+        <li><strong>Amazon Web Services (Amazon Bedrock)</strong> — only if your employer has turned on Ronda's AI features. To write the Morning Round-Up for managers, Ronda sends a summary of the team's work: staff names, task titles, outlet names, and counts of tasks, visits, forms and orders. AWS states that Amazon Bedrock does not use this data to train AI models.</li>
         <li><strong>Telegram</strong> — only if your employer has enabled Telegram notifications for your account.</li>
         <li><strong>Authorities</strong> — where we are legally required to disclose data.</li>
     </ul>

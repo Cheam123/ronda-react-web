@@ -9,7 +9,6 @@ use App\Models\DailyDigest;
 use App\Services\AdminDashboardService;
 use App\Services\DailyDigestService;
 use App\Services\DashboardService;
-use App\Services\Recommendation\RecommendationService;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -59,8 +58,6 @@ class HomeController extends Controller
             'isTeam'       => $isTeam,
             'showViewTabs' => $isAdmin,
             'summary'      => DashboardSummaryResource::make($summary)->resolve(),
-            // A rep's outlets with the most to gain from their suggested orders.
-            'suggestions'  => $isTeam ? null : app(RecommendationService::class)->topForUser($user),
             'digest'       => $digest ? DailyDigestResource::make($digest)->resolve() : null,
             'digestStatus' => session('digest_status'),
             'risk'         => [
@@ -79,9 +76,9 @@ class HomeController extends Controller
 
         $digest = $digests->generate();
 
-        $message = $digest->source === 'bedrock'
+        $message = $digest->source === 'claude'
             ? 'Morning Round-Up rewritten by Claude.'
-            : 'Morning Round-Up rewritten from the template' . ($digest->error ? ' (Bedrock error: ' . $digest->error . ')' : ' (Bedrock not configured)') . '.';
+            : 'Morning Round-Up rewritten from the template' . ($digest->error ? ' (Claude error: ' . $digest->error . ')' : ' (Claude not configured)') . '.';
 
         // Admins regenerate from the team view (/index?view=team); keep them there.
         return redirect()->to(Auth::guard('web')->user()->isAdmin() ? '/index?view=team' : '/index')

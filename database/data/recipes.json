@@ -1,0 +1,1546 @@
+{
+    "_note": "Drinks an outlet could make from the catalogue in products.json. everyday marks a drink most outlets already serve: it is suggested only when a menu shows the outlet lacks it. Written for the FYP by the project author, not taken from a real supplier. Products are matched by name. aliases are other names a menu may use for the drink. category is one of Recipe::CATEGORIES. customer_groups use the kinds in config('ife.recommendation.customer_groups'); outlet_types use the labels in Helper::getBusinessCategoryListing(). quantity is per serve in the product's own unit, for cost per serve; amount is how a person reads it.",
+    "_pack_sizes": {
+        "bottle": "750 ml for syrups, sauces, honey and cordials",
+        "Cocktail Bitters": "200 ml bottle",
+        "Pandan Essence": "60 ml bottle",
+        "Condensed Milk Tin": "500 g tin",
+        "pack": "500 g for matcha, loose tea and tea mixes",
+        "Teh Tarik Premix": "30 sachets a pack",
+        "English Breakfast Teabags": "100 teabags a box",
+        "Office Drip Coffee Sachets": "50 sachets a box",
+        "crate": "24 bottles"
+    },
+    "drinks": [
+        {
+            "slug": "iced-vanilla-latte",
+            "name": "Iced Vanilla Latte",
+            "aliases": [
+                "Vanilla Latte"
+            ],
+            "category": "flavoured_coffee",
+            "serve": "iced",
+            "description": "Espresso and cold milk with a pump of vanilla. An easy first flavoured drink.",
+            "customer_groups": [
+                "university",
+                "retail",
+                "office"
+            ],
+            "outlet_types": [
+                "Cafe",
+                "Kiosk"
+            ],
+            "price_tier": "mid_range",
+            "ingredients": [
+                {
+                    "product": "House Espresso Blend",
+                    "amount": "18 g",
+                    "quantity": 0.018
+                },
+                {
+                    "product": "Full Cream Milk",
+                    "amount": "200 ml",
+                    "quantity": 0.2
+                },
+                {
+                    "product": "Vanilla Syrup",
+                    "amount": "15 ml",
+                    "quantity": 0.02
+                }
+            ]
+        },
+        {
+            "slug": "iced-caramel-macchiato",
+            "name": "Iced Caramel Macchiato",
+            "aliases": [
+                "Caramel Macchiato",
+                "Caramel Latte"
+            ],
+            "category": "flavoured_coffee",
+            "serve": "iced",
+            "description": "Vanilla milk over ice, espresso poured on top, finished with caramel.",
+            "customer_groups": [
+                "university",
+                "retail"
+            ],
+            "outlet_types": [
+                "Cafe",
+                "Kiosk"
+            ],
+            "price_tier": "mid_range",
+            "ingredients": [
+                {
+                    "product": "House Espresso Blend",
+                    "amount": "18 g",
+                    "quantity": 0.018
+                },
+                {
+                    "product": "Full Cream Milk",
+                    "amount": "200 ml",
+                    "quantity": 0.2
+                },
+                {
+                    "product": "Vanilla Syrup",
+                    "amount": "10 ml",
+                    "quantity": 0.0133
+                },
+                {
+                    "product": "Caramel Syrup",
+                    "amount": "10 ml",
+                    "quantity": 0.0133
+                }
+            ]
+        },
+        {
+            "slug": "hazelnut-latte",
+            "name": "Hazelnut Latte",
+            "aliases": [
+                "Hazelnut Coffee"
+            ],
+            "category": "flavoured_coffee",
+            "serve": "hot",
+            "description": "A warm, nutty latte for the morning crowd.",
+            "customer_groups": [
+                "office",
+                "residential"
+            ],
+            "outlet_types": [
+                "Cafe",
+                "Hotel"
+            ],
+            "price_tier": "mid_range",
+            "ingredients": [
+                {
+                    "product": "House Espresso Blend",
+                    "amount": "18 g",
+                    "quantity": 0.018
+                },
+                {
+                    "product": "Full Cream Milk",
+                    "amount": "200 ml",
+                    "quantity": 0.2
+                },
+                {
+                    "product": "Hazelnut Syrup",
+                    "amount": "15 ml",
+                    "quantity": 0.02
+                }
+            ]
+        },
+        {
+            "slug": "mocha",
+            "name": "Mocha",
+            "aliases": [
+                "Mochaccino"
+            ],
+            "category": "flavoured_coffee",
+            "serve": "either",
+            "description": "Espresso, chocolate and milk, topped with cream. Works hot or iced.",
+            "customer_groups": [
+                "university",
+                "retail"
+            ],
+            "outlet_types": [
+                "Cafe",
+                "Kiosk"
+            ],
+            "price_tier": "mid_range",
+            "ingredients": [
+                {
+                    "product": "House Espresso Blend",
+                    "amount": "18 g",
+                    "quantity": 0.018
+                },
+                {
+                    "product": "Full Cream Milk",
+                    "amount": "180 ml",
+                    "quantity": 0.18
+                },
+                {
+                    "product": "Chocolate Sauce",
+                    "amount": "20 ml",
+                    "quantity": 0.0267
+                },
+                {
+                    "product": "Whipping Cream",
+                    "amount": "20 ml",
+                    "quantity": 0.02
+                }
+            ]
+        },
+        {
+            "slug": "spanish-latte",
+            "name": "Spanish Latte",
+            "aliases": [
+                "Spanish Coffee"
+            ],
+            "category": "flavoured_coffee",
+            "serve": "iced",
+            "description": "Espresso and milk sweetened with condensed milk. A local cafe favourite.",
+            "customer_groups": [
+                "university",
+                "office",
+                "retail"
+            ],
+            "outlet_types": [
+                "Cafe",
+                "Kiosk"
+            ],
+            "price_tier": "mid_range",
+            "ingredients": [
+                {
+                    "product": "House Espresso Blend",
+                    "amount": "18 g",
+                    "quantity": 0.018
+                },
+                {
+                    "product": "Full Cream Milk",
+                    "amount": "180 ml",
+                    "quantity": 0.18
+                },
+                {
+                    "product": "Condensed Milk Tin",
+                    "amount": "20 g",
+                    "quantity": 0.04
+                }
+            ]
+        },
+        {
+            "slug": "gula-melaka-latte",
+            "name": "Gula Melaka Latte",
+            "aliases": [
+                "Palm Sugar Latte",
+                "Gula Melaka Coffee",
+                "Kopi Gula Melaka"
+            ],
+            "category": "flavoured_coffee",
+            "serve": "iced",
+            "description": "Iced latte sweetened with palm sugar syrup. A local flavour visitors look for.",
+            "customer_groups": [
+                "tourist",
+                "residential",
+                "university"
+            ],
+            "outlet_types": [
+                "Cafe"
+            ],
+            "price_tier": "mid_range",
+            "ingredients": [
+                {
+                    "product": "House Espresso Blend",
+                    "amount": "18 g",
+                    "quantity": 0.018
+                },
+                {
+                    "product": "Full Cream Milk",
+                    "amount": "200 ml",
+                    "quantity": 0.2
+                },
+                {
+                    "product": "Gula Melaka Syrup",
+                    "amount": "20 ml",
+                    "quantity": 0.0267
+                }
+            ]
+        },
+        {
+            "slug": "pandan-coconut-latte",
+            "name": "Pandan Coconut Latte",
+            "aliases": [
+                "Pandan Latte"
+            ],
+            "category": "flavoured_coffee",
+            "serve": "iced",
+            "description": "Iced latte with coconut cream and a touch of pandan.",
+            "customer_groups": [
+                "tourist",
+                "residential"
+            ],
+            "outlet_types": [
+                "Cafe"
+            ],
+            "price_tier": "mid_range",
+            "ingredients": [
+                {
+                    "product": "House Espresso Blend",
+                    "amount": "18 g",
+                    "quantity": 0.018
+                },
+                {
+                    "product": "Full Cream Milk",
+                    "amount": "150 ml",
+                    "quantity": 0.15
+                },
+                {
+                    "product": "Coconut Cream",
+                    "amount": "30 ml",
+                    "quantity": 0.03
+                },
+                {
+                    "product": "Pandan Essence",
+                    "amount": "2 ml",
+                    "quantity": 0.0333
+                }
+            ]
+        },
+        {
+            "slug": "cheese-foam-latte",
+            "name": "Cheese Foam Latte",
+            "aliases": [
+                "Cheese Latte",
+                "Cheese Foam Coffee"
+            ],
+            "category": "flavoured_coffee",
+            "serve": "iced",
+            "description": "Iced latte under a salty-sweet cream cheese foam.",
+            "customer_groups": [
+                "university",
+                "retail"
+            ],
+            "outlet_types": [
+                "Cafe"
+            ],
+            "price_tier": "mid_range",
+            "ingredients": [
+                {
+                    "product": "House Espresso Blend",
+                    "amount": "18 g",
+                    "quantity": 0.018
+                },
+                {
+                    "product": "Full Cream Milk",
+                    "amount": "180 ml",
+                    "quantity": 0.18
+                },
+                {
+                    "product": "Cream Cheese",
+                    "amount": "20 g",
+                    "quantity": 0.02
+                },
+                {
+                    "product": "Whipping Cream",
+                    "amount": "30 ml",
+                    "quantity": 0.03
+                }
+            ]
+        },
+        {
+            "slug": "oat-flat-white",
+            "name": "Oat Flat White",
+            "aliases": [
+                "Oat Latte",
+                "Oat Milk Latte"
+            ],
+            "category": "coffee",
+            "serve": "hot",
+            "description": "A flat white made with barista oat milk, for customers who skip dairy.",
+            "customer_groups": [
+                "residential",
+                "office"
+            ],
+            "outlet_types": [
+                "Cafe"
+            ],
+            "price_tier": "premium",
+            "ingredients": [
+                {
+                    "product": "House Espresso Blend",
+                    "amount": "18 g",
+                    "quantity": 0.018
+                },
+                {
+                    "product": "Oat Milk Barista Edition",
+                    "amount": "150 ml",
+                    "quantity": 0.15
+                }
+            ]
+        },
+        {
+            "slug": "ethiopia-pour-over",
+            "name": "Ethiopia Pour-over",
+            "aliases": [
+                "Pour Over",
+                "Hand Brew",
+                "Filter Coffee",
+                "Drip Coffee",
+                "V60"
+            ],
+            "category": "coffee",
+            "serve": "hot",
+            "description": "Single origin coffee brewed by hand, for customers who care about the bean.",
+            "customer_groups": [
+                "residential",
+                "tourist"
+            ],
+            "outlet_types": [
+                "Cafe",
+                "Hotel"
+            ],
+            "price_tier": "premium",
+            "ingredients": [
+                {
+                    "product": "Single Origin Ethiopia",
+                    "amount": "15 g",
+                    "quantity": 0.015
+                }
+            ]
+        },
+        {
+            "slug": "cold-brew-oat-latte",
+            "name": "Cold Brew Oat Latte",
+            "aliases": [
+                "Cold Brew"
+            ],
+            "category": "coffee",
+            "serve": "iced",
+            "description": "Slow-steeped cold brew with oat milk and a little honey.",
+            "customer_groups": [
+                "office",
+                "residential",
+                "retail"
+            ],
+            "outlet_types": [
+                "Cafe"
+            ],
+            "price_tier": "premium",
+            "ingredients": [
+                {
+                    "product": "Cold Brew Coarse Grind",
+                    "amount": "25 g",
+                    "quantity": 0.025
+                },
+                {
+                    "product": "Oat Milk Barista Edition",
+                    "amount": "120 ml",
+                    "quantity": 0.12
+                },
+                {
+                    "product": "Honey Pure",
+                    "amount": "10 ml",
+                    "quantity": 0.0133
+                }
+            ]
+        },
+        {
+            "slug": "espresso-tonic",
+            "name": "Espresso Tonic",
+            "aliases": [
+                "Coffee Tonic"
+            ],
+            "category": "sparkling",
+            "serve": "iced",
+            "description": "A shot of espresso over tonic and ice. Bright and refreshing.",
+            "customer_groups": [
+                "office",
+                "retail",
+                "tourist"
+            ],
+            "outlet_types": [
+                "Cafe",
+                "Bar/Pub/Bistro"
+            ],
+            "price_tier": "premium",
+            "ingredients": [
+                {
+                    "product": "House Espresso Blend",
+                    "amount": "18 g",
+                    "quantity": 0.018
+                },
+                {
+                    "product": "Tonic Water Premium",
+                    "amount": "1 bottle",
+                    "quantity": 0.0417
+                }
+            ]
+        },
+        {
+            "slug": "decaf-latte",
+            "name": "Decaf Latte",
+            "aliases": [
+                "Decaf"
+            ],
+            "category": "coffee",
+            "serve": "hot",
+            "description": "A latte for the evening or for guests avoiding caffeine.",
+            "customer_groups": [
+                "residential",
+                "tourist"
+            ],
+            "outlet_types": [
+                "Cafe",
+                "Hotel"
+            ],
+            "price_tier": "mid_range",
+            "ingredients": [
+                {
+                    "product": "Decaf Blend",
+                    "amount": "18 g",
+                    "quantity": 0.018
+                },
+                {
+                    "product": "Full Cream Milk",
+                    "amount": "200 ml",
+                    "quantity": 0.2
+                }
+            ]
+        },
+        {
+            "slug": "kopi-o",
+            "name": "Kopi O",
+            "aliases": [
+                "Kopi Hitam"
+            ],
+            "category": "kopitiam",
+            "serve": "hot",
+            "description": "Traditional black coffee from a local roast.",
+            "customer_groups": [
+                "industrial",
+                "transit",
+                "residential"
+            ],
+            "outlet_types": [
+                "Kiosk",
+                "Restaurant",
+                "Bakery"
+            ],
+            "price_tier": "budget",
+            "ingredients": [
+                {
+                    "product": "Kopi O Traditional Roast",
+                    "amount": "15 g",
+                    "quantity": 0.015
+                }
+            ]
+        },
+        {
+            "slug": "kopi-susu",
+            "name": "Kopi Susu",
+            "aliases": [
+                "Kopi"
+            ],
+            "category": "kopitiam",
+            "serve": "hot",
+            "description": "Local coffee sweetened with condensed milk.",
+            "customer_groups": [
+                "industrial",
+                "transit",
+                "residential"
+            ],
+            "outlet_types": [
+                "Kiosk",
+                "Restaurant",
+                "Bakery"
+            ],
+            "price_tier": "budget",
+            "ingredients": [
+                {
+                    "product": "Kopi O Traditional Roast",
+                    "amount": "15 g",
+                    "quantity": 0.015
+                },
+                {
+                    "product": "Condensed Milk Tin",
+                    "amount": "25 g",
+                    "quantity": 0.05
+                }
+            ]
+        },
+        {
+            "slug": "office-pantry-white-coffee",
+            "name": "Office Pantry White Coffee",
+            "aliases": [
+                "White Coffee"
+            ],
+            "category": "coffee",
+            "serve": "hot",
+            "description": "Drip coffee sachets with a splash of milk, for an office pantry.",
+            "customer_groups": [
+                "office"
+            ],
+            "outlet_types": [
+                "Office"
+            ],
+            "price_tier": "mid_range",
+            "ingredients": [
+                {
+                    "product": "Office Drip Coffee Sachets",
+                    "amount": "1 sachet",
+                    "quantity": 0.02
+                },
+                {
+                    "product": "Low Fat Milk",
+                    "amount": "30 ml",
+                    "quantity": 0.03
+                }
+            ]
+        },
+        {
+            "slug": "matcha-latte",
+            "name": "Matcha Latte",
+            "aliases": [
+                "Matcha",
+                "Green Tea Latte"
+            ],
+            "category": "matcha",
+            "serve": "iced",
+            "description": "Whisked matcha over cold milk.",
+            "customer_groups": [
+                "university",
+                "retail",
+                "residential",
+                "recreation"
+            ],
+            "outlet_types": [
+                "Cafe"
+            ],
+            "price_tier": "mid_range",
+            "ingredients": [
+                {
+                    "product": "Matcha Powder",
+                    "amount": "4 g",
+                    "quantity": 0.008
+                },
+                {
+                    "product": "Full Cream Milk",
+                    "amount": "200 ml",
+                    "quantity": 0.2
+                }
+            ]
+        },
+        {
+            "slug": "strawberry-matcha-latte",
+            "name": "Strawberry Matcha Latte",
+            "aliases": [
+                "Strawberry Matcha"
+            ],
+            "category": "matcha",
+            "serve": "iced",
+            "description": "Strawberry milk layered under matcha. Popular on social media.",
+            "customer_groups": [
+                "university",
+                "retail"
+            ],
+            "outlet_types": [
+                "Cafe"
+            ],
+            "price_tier": "mid_range",
+            "ingredients": [
+                {
+                    "product": "Matcha Powder",
+                    "amount": "4 g",
+                    "quantity": 0.008
+                },
+                {
+                    "product": "Full Cream Milk",
+                    "amount": "180 ml",
+                    "quantity": 0.18
+                },
+                {
+                    "product": "Strawberry Syrup",
+                    "amount": "20 ml",
+                    "quantity": 0.0267
+                }
+            ]
+        },
+        {
+            "slug": "chai-latte",
+            "name": "Chai Latte",
+            "aliases": [
+                "Chai",
+                "Masala Tea"
+            ],
+            "category": "tea",
+            "serve": "hot",
+            "description": "Spiced tea concentrate with steamed milk.",
+            "customer_groups": [
+                "office",
+                "tourist"
+            ],
+            "outlet_types": [
+                "Cafe",
+                "Hotel"
+            ],
+            "price_tier": "mid_range",
+            "ingredients": [
+                {
+                    "product": "Chai Concentrate",
+                    "amount": "60 ml",
+                    "quantity": 0.06
+                },
+                {
+                    "product": "Full Cream Milk",
+                    "amount": "150 ml",
+                    "quantity": 0.15
+                }
+            ]
+        },
+        {
+            "slug": "london-fog",
+            "name": "London Fog",
+            "aliases": [
+                "Earl Grey Latte",
+                "Earl Grey Milk Tea"
+            ],
+            "category": "tea",
+            "serve": "hot",
+            "description": "Earl Grey with steamed milk and vanilla.",
+            "customer_groups": [
+                "tourist",
+                "office",
+                "residential"
+            ],
+            "outlet_types": [
+                "Cafe",
+                "Hotel"
+            ],
+            "price_tier": "premium",
+            "ingredients": [
+                {
+                    "product": "Earl Grey Loose Leaf",
+                    "amount": "3 g",
+                    "quantity": 0.006
+                },
+                {
+                    "product": "Full Cream Milk",
+                    "amount": "100 ml",
+                    "quantity": 0.1
+                },
+                {
+                    "product": "Vanilla Syrup",
+                    "amount": "10 ml",
+                    "quantity": 0.0133
+                }
+            ]
+        },
+        {
+            "slug": "hotel-tea-service",
+            "name": "Hotel Tea Service",
+            "aliases": [
+                "English Breakfast",
+                "Breakfast Tea",
+                "Pot of Tea"
+            ],
+            "category": "tea",
+            "serve": "hot",
+            "description": "English breakfast tea with milk, for breakfast service and meeting rooms.",
+            "customer_groups": [
+                "tourist",
+                "office"
+            ],
+            "outlet_types": [
+                "Hotel",
+                "Office",
+                "Restaurant"
+            ],
+            "price_tier": "mid_range",
+            "ingredients": [
+                {
+                    "product": "English Breakfast Teabags",
+                    "amount": "1 teabag",
+                    "quantity": 0.01
+                },
+                {
+                    "product": "Full Cream Milk",
+                    "amount": "30 ml",
+                    "quantity": 0.03
+                }
+            ]
+        },
+        {
+            "slug": "teh-tarik",
+            "name": "Teh Tarik",
+            "aliases": [
+                "Teh",
+                "Teh Susu",
+                "Pulled Tea"
+            ],
+            "category": "kopitiam",
+            "serve": "hot",
+            "description": "Pulled milk tea from a premix.",
+            "customer_groups": [
+                "industrial",
+                "transit",
+                "residential"
+            ],
+            "outlet_types": [
+                "Kiosk",
+                "Restaurant"
+            ],
+            "price_tier": "budget",
+            "ingredients": [
+                {
+                    "product": "Teh Tarik Premix",
+                    "amount": "1 sachet",
+                    "quantity": 0.0333
+                }
+            ]
+        },
+        {
+            "slug": "teh-o-ais-limau",
+            "name": "Teh O Ais Limau",
+            "aliases": [
+                "Teh Limau",
+                "Lime Tea",
+                "Lemon Tea"
+            ],
+            "category": "kopitiam",
+            "serve": "iced",
+            "description": "Iced black tea with lime.",
+            "customer_groups": [
+                "residential",
+                "industrial",
+                "university",
+                "recreation"
+            ],
+            "outlet_types": [
+                "Restaurant",
+                "Kiosk"
+            ],
+            "price_tier": "budget",
+            "ingredients": [
+                {
+                    "product": "English Breakfast Teabags",
+                    "amount": "1 teabag",
+                    "quantity": 0.01
+                },
+                {
+                    "product": "Lime Juice Cordial",
+                    "amount": "20 ml",
+                    "quantity": 0.0267
+                }
+            ]
+        },
+        {
+            "slug": "thai-milk-tea",
+            "name": "Thai Milk Tea",
+            "aliases": [
+                "Thai Tea",
+                "Cha Yen"
+            ],
+            "category": "tea",
+            "serve": "iced",
+            "description": "Orange Thai tea with condensed milk over ice.",
+            "customer_groups": [
+                "university",
+                "retail",
+                "transit"
+            ],
+            "outlet_types": [
+                "Kiosk",
+                "Cafe"
+            ],
+            "price_tier": "budget",
+            "ingredients": [
+                {
+                    "product": "Thai Tea Mix",
+                    "amount": "15 g",
+                    "quantity": 0.03
+                },
+                {
+                    "product": "Condensed Milk Tin",
+                    "amount": "20 g",
+                    "quantity": 0.04
+                },
+                {
+                    "product": "Full Cream Milk",
+                    "amount": "50 ml",
+                    "quantity": 0.05
+                }
+            ]
+        },
+        {
+            "slug": "milo-dinosaur",
+            "name": "Milo Dinosaur",
+            "aliases": [
+                "Milo"
+            ],
+            "category": "kopitiam",
+            "serve": "iced",
+            "description": "Iced Milo with a heap of Milo powder on top.",
+            "customer_groups": [
+                "university",
+                "residential",
+                "industrial"
+            ],
+            "outlet_types": [
+                "Kiosk",
+                "Restaurant"
+            ],
+            "price_tier": "budget",
+            "ingredients": [
+                {
+                    "product": "Milo Malt Powder",
+                    "amount": "40 g",
+                    "quantity": 0.04
+                },
+                {
+                    "product": "Condensed Milk Tin",
+                    "amount": "15 g",
+                    "quantity": 0.03
+                }
+            ]
+        },
+        {
+            "slug": "iced-chocolate",
+            "name": "Iced Chocolate",
+            "aliases": [
+                "Chocolate",
+                "Chocolate Milk"
+            ],
+            "category": "chocolate",
+            "serve": "iced",
+            "description": "Chocolate milk over ice with a little cream. Good for families.",
+            "customer_groups": [
+                "residential",
+                "university"
+            ],
+            "outlet_types": [
+                "Cafe",
+                "Bakery",
+                "Kiosk"
+            ],
+            "price_tier": "mid_range",
+            "ingredients": [
+                {
+                    "product": "Chocolate Powder",
+                    "amount": "25 g",
+                    "quantity": 0.025
+                },
+                {
+                    "product": "Full Cream Milk",
+                    "amount": "200 ml",
+                    "quantity": 0.2
+                },
+                {
+                    "product": "Whipping Cream",
+                    "amount": "20 ml",
+                    "quantity": 0.02
+                }
+            ]
+        },
+        {
+            "slug": "brown-sugar-boba-milk",
+            "name": "Brown Sugar Boba Milk",
+            "aliases": [
+                "Brown Sugar Milk",
+                "Boba Milk",
+                "Bubble Tea",
+                "Pearl Milk Tea",
+                "Brown Sugar Boba"
+            ],
+            "category": "chocolate",
+            "serve": "iced",
+            "description": "Brown sugar syrup and tapioca pearls in cold milk.",
+            "customer_groups": [
+                "university",
+                "retail"
+            ],
+            "outlet_types": [
+                "Kiosk",
+                "Cafe"
+            ],
+            "price_tier": "budget",
+            "ingredients": [
+                {
+                    "product": "Brown Sugar Syrup",
+                    "amount": "30 ml",
+                    "quantity": 0.04
+                },
+                {
+                    "product": "Tapioca Pearls",
+                    "amount": "60 g",
+                    "quantity": 0.06
+                },
+                {
+                    "product": "Full Cream Milk",
+                    "amount": "200 ml",
+                    "quantity": 0.2
+                }
+            ]
+        },
+        {
+            "slug": "bandung",
+            "name": "Bandung",
+            "aliases": [
+                "Rose Milk"
+            ],
+            "category": "kopitiam",
+            "serve": "iced",
+            "description": "Rose syrup with condensed milk and milk. A local classic.",
+            "customer_groups": [
+                "residential",
+                "industrial",
+                "transit"
+            ],
+            "outlet_types": [
+                "Restaurant",
+                "Kiosk"
+            ],
+            "price_tier": "budget",
+            "ingredients": [
+                {
+                    "product": "Rose Syrup",
+                    "amount": "30 ml",
+                    "quantity": 0.04
+                },
+                {
+                    "product": "Condensed Milk Tin",
+                    "amount": "20 g",
+                    "quantity": 0.04
+                },
+                {
+                    "product": "Full Cream Milk",
+                    "amount": "100 ml",
+                    "quantity": 0.1
+                }
+            ]
+        },
+        {
+            "slug": "soya-gula-melaka",
+            "name": "Soya Gula Melaka",
+            "aliases": [
+                "Soya",
+                "Soya Bean",
+                "Soya Milk",
+                "Soy Milk"
+            ],
+            "category": "kopitiam",
+            "serve": "iced",
+            "description": "Cold soy milk sweetened with palm sugar syrup.",
+            "customer_groups": [
+                "residential",
+                "transit",
+                "university"
+            ],
+            "outlet_types": [
+                "Kiosk",
+                "Restaurant"
+            ],
+            "price_tier": "budget",
+            "ingredients": [
+                {
+                    "product": "Soy Milk",
+                    "amount": "250 ml",
+                    "quantity": 0.25
+                },
+                {
+                    "product": "Gula Melaka Syrup",
+                    "amount": "15 ml",
+                    "quantity": 0.02
+                }
+            ]
+        },
+        {
+            "slug": "iced-peach-green-tea",
+            "name": "Iced Peach Green Tea",
+            "aliases": [
+                "Peach Tea"
+            ],
+            "category": "fruit_tea",
+            "serve": "iced",
+            "description": "Jasmine green tea with peach syrup over ice.",
+            "customer_groups": [
+                "university",
+                "retail",
+                "recreation"
+            ],
+            "outlet_types": [
+                "Cafe",
+                "Kiosk"
+            ],
+            "price_tier": "mid_range",
+            "ingredients": [
+                {
+                    "product": "Jasmine Green Tea Leaves",
+                    "amount": "3 g",
+                    "quantity": 0.006
+                },
+                {
+                    "product": "Peach Syrup",
+                    "amount": "20 ml",
+                    "quantity": 0.0267
+                }
+            ]
+        },
+        {
+            "slug": "lychee-jasmine-tea",
+            "name": "Lychee Jasmine Tea",
+            "aliases": [
+                "Lychee Tea"
+            ],
+            "category": "fruit_tea",
+            "serve": "iced",
+            "description": "Jasmine green tea with lychee syrup over ice.",
+            "customer_groups": [
+                "university",
+                "retail",
+                "tourist",
+                "recreation"
+            ],
+            "outlet_types": [
+                "Cafe",
+                "Kiosk",
+                "Restaurant"
+            ],
+            "price_tier": "mid_range",
+            "ingredients": [
+                {
+                    "product": "Jasmine Green Tea Leaves",
+                    "amount": "3 g",
+                    "quantity": 0.006
+                },
+                {
+                    "product": "Lychee Syrup",
+                    "amount": "20 ml",
+                    "quantity": 0.0267
+                }
+            ]
+        },
+        {
+            "slug": "strawberry-peach-tea",
+            "name": "Strawberry Peach Tea",
+            "aliases": [
+                "Strawberry Tea"
+            ],
+            "category": "fruit_tea",
+            "serve": "iced",
+            "description": "Green tea with strawberry and peach. A fruit tea for younger customers.",
+            "customer_groups": [
+                "university",
+                "retail",
+                "recreation"
+            ],
+            "outlet_types": [
+                "Cafe",
+                "Kiosk"
+            ],
+            "price_tier": "mid_range",
+            "ingredients": [
+                {
+                    "product": "Jasmine Green Tea Leaves",
+                    "amount": "3 g",
+                    "quantity": 0.006
+                },
+                {
+                    "product": "Strawberry Syrup",
+                    "amount": "15 ml",
+                    "quantity": 0.02
+                },
+                {
+                    "product": "Peach Syrup",
+                    "amount": "15 ml",
+                    "quantity": 0.02
+                }
+            ]
+        },
+        {
+            "slug": "ginger-lime-mule",
+            "name": "Ginger Lime Mule (alcohol-free)",
+            "aliases": [
+                "Virgin Mule",
+                "Ginger Mule"
+            ],
+            "category": "sparkling",
+            "serve": "iced",
+            "description": "Ginger beer and lime over ice. A mocktail that suits any menu.",
+            "customer_groups": [
+                "tourist",
+                "retail",
+                "recreation"
+            ],
+            "outlet_types": [
+                "Bar/Pub/Bistro",
+                "Restaurant",
+                "Hotel"
+            ],
+            "price_tier": "mid_range",
+            "ingredients": [
+                {
+                    "product": "Ginger Beer Mixer",
+                    "amount": "1 bottle",
+                    "quantity": 0.0417
+                },
+                {
+                    "product": "Lime Juice Cordial",
+                    "amount": "20 ml",
+                    "quantity": 0.0267
+                }
+            ]
+        },
+        {
+            "slug": "honey-lime-sparkler",
+            "name": "Honey Lime Sparkler",
+            "aliases": [
+                "Honey Lime",
+                "Lime Soda"
+            ],
+            "category": "sparkling",
+            "serve": "iced",
+            "description": "Sparkling water with lime and honey.",
+            "customer_groups": [
+                "tourist",
+                "office",
+                "recreation"
+            ],
+            "outlet_types": [
+                "Hotel",
+                "Restaurant",
+                "Cafe"
+            ],
+            "price_tier": "premium",
+            "ingredients": [
+                {
+                    "product": "Sparkling Water Glass",
+                    "amount": "1 bottle",
+                    "quantity": 0.0417
+                },
+                {
+                    "product": "Lime Juice Cordial",
+                    "amount": "20 ml",
+                    "quantity": 0.0267
+                },
+                {
+                    "product": "Honey Pure",
+                    "amount": "15 ml",
+                    "quantity": 0.02
+                }
+            ]
+        },
+        {
+            "slug": "tonic-and-bitters",
+            "name": "Tonic and Bitters",
+            "aliases": [
+                "Bitters Tonic"
+            ],
+            "category": "sparkling",
+            "serve": "iced",
+            "description": "Premium tonic with a dash of bitters. Bars only, as the bitters aren't halal.",
+            "customer_groups": [
+                "tourist"
+            ],
+            "outlet_types": [
+                "Bar/Pub/Bistro"
+            ],
+            "price_tier": "premium",
+            "ingredients": [
+                {
+                    "product": "Tonic Water Premium",
+                    "amount": "1 bottle",
+                    "quantity": 0.0417
+                },
+                {
+                    "product": "Cocktail Bitters",
+                    "amount": "2 ml",
+                    "quantity": 0.01
+                }
+            ]
+        },
+        {
+            "slug": "rum-caramel-latte",
+            "name": "Rum Caramel Latte",
+            "aliases": [
+                "Rum Latte"
+            ],
+            "category": "flavoured_coffee",
+            "serve": "iced",
+            "description": "Iced latte with rum flavour and caramel syrups. Not halal.",
+            "customer_groups": [
+                "tourist",
+                "retail"
+            ],
+            "outlet_types": [
+                "Bar/Pub/Bistro",
+                "Cafe"
+            ],
+            "price_tier": "premium",
+            "ingredients": [
+                {
+                    "product": "House Espresso Blend",
+                    "amount": "18 g",
+                    "quantity": 0.018
+                },
+                {
+                    "product": "Full Cream Milk",
+                    "amount": "180 ml",
+                    "quantity": 0.18
+                },
+                {
+                    "product": "Rum Flavour Syrup",
+                    "amount": "15 ml",
+                    "quantity": 0.02
+                },
+                {
+                    "product": "Caramel Syrup",
+                    "amount": "10 ml",
+                    "quantity": 0.0133
+                }
+            ]
+        },
+        {
+            "slug": "americano",
+            "everyday": true,
+            "name": "Americano",
+            "aliases": [
+                "Long Black",
+                "Black Coffee"
+            ],
+            "category": "coffee",
+            "serve": "either",
+            "description": "Espresso topped up with hot water, or poured over ice.",
+            "customer_groups": [
+                "office",
+                "residential",
+                "university",
+                "retail",
+                "tourist",
+                "transit"
+            ],
+            "outlet_types": [
+                "Cafe",
+                "Kiosk",
+                "Hotel",
+                "Restaurant",
+                "Bakery"
+            ],
+            "price_tier": "mid_range",
+            "ingredients": [
+                {
+                    "product": "House Espresso Blend",
+                    "amount": "18 g",
+                    "quantity": 0.018
+                }
+            ]
+        },
+        {
+            "slug": "espresso",
+            "everyday": true,
+            "name": "Espresso",
+            "aliases": [
+                "Doppio",
+                "Ristretto"
+            ],
+            "category": "coffee",
+            "serve": "hot",
+            "description": "A single or double shot, served on its own.",
+            "customer_groups": [
+                "office",
+                "residential",
+                "tourist"
+            ],
+            "outlet_types": [
+                "Cafe",
+                "Hotel",
+                "Restaurant",
+                "Bar/Pub/Bistro"
+            ],
+            "price_tier": "mid_range",
+            "ingredients": [
+                {
+                    "product": "House Espresso Blend",
+                    "amount": "18 g",
+                    "quantity": 0.018
+                }
+            ]
+        },
+        {
+            "slug": "latte",
+            "everyday": true,
+            "name": "Latte",
+            "aliases": [],
+            "category": "coffee",
+            "serve": "either",
+            "description": "Espresso with steamed milk. The base most flavoured coffees start from.",
+            "customer_groups": [
+                "office",
+                "residential",
+                "university",
+                "retail",
+                "tourist",
+                "transit"
+            ],
+            "outlet_types": [
+                "Cafe",
+                "Kiosk",
+                "Hotel",
+                "Restaurant",
+                "Bakery"
+            ],
+            "price_tier": "mid_range",
+            "ingredients": [
+                {
+                    "product": "House Espresso Blend",
+                    "amount": "18 g",
+                    "quantity": 0.018
+                },
+                {
+                    "product": "Full Cream Milk",
+                    "amount": "200 ml",
+                    "quantity": 0.2
+                }
+            ]
+        },
+        {
+            "slug": "cappuccino",
+            "everyday": true,
+            "name": "Cappuccino",
+            "aliases": [],
+            "category": "coffee",
+            "serve": "either",
+            "description": "Espresso with steamed milk and a thick layer of foam.",
+            "customer_groups": [
+                "office",
+                "residential",
+                "university",
+                "retail",
+                "tourist",
+                "transit"
+            ],
+            "outlet_types": [
+                "Cafe",
+                "Kiosk",
+                "Hotel",
+                "Restaurant",
+                "Bakery"
+            ],
+            "price_tier": "mid_range",
+            "ingredients": [
+                {
+                    "product": "House Espresso Blend",
+                    "amount": "18 g",
+                    "quantity": 0.018
+                },
+                {
+                    "product": "Full Cream Milk",
+                    "amount": "150 ml",
+                    "quantity": 0.15
+                }
+            ]
+        },
+        {
+            "slug": "flat-white",
+            "everyday": true,
+            "name": "Flat White",
+            "aliases": [],
+            "category": "coffee",
+            "serve": "hot",
+            "description": "Espresso with a little steamed milk and a thin layer of foam.",
+            "customer_groups": [
+                "office",
+                "residential",
+                "retail",
+                "tourist"
+            ],
+            "outlet_types": [
+                "Cafe",
+                "Hotel",
+                "Bakery"
+            ],
+            "price_tier": "mid_range",
+            "ingredients": [
+                {
+                    "product": "House Espresso Blend",
+                    "amount": "18 g",
+                    "quantity": 0.018
+                },
+                {
+                    "product": "Full Cream Milk",
+                    "amount": "130 ml",
+                    "quantity": 0.13
+                }
+            ]
+        },
+        {
+            "slug": "piccolo",
+            "everyday": true,
+            "name": "Piccolo",
+            "aliases": [
+                "Cortado"
+            ],
+            "category": "coffee",
+            "serve": "hot",
+            "description": "A small, strong milk coffee in a short glass.",
+            "customer_groups": [
+                "office",
+                "residential",
+                "retail"
+            ],
+            "outlet_types": [
+                "Cafe"
+            ],
+            "price_tier": "mid_range",
+            "ingredients": [
+                {
+                    "product": "House Espresso Blend",
+                    "amount": "18 g",
+                    "quantity": 0.018
+                },
+                {
+                    "product": "Full Cream Milk",
+                    "amount": "60 ml",
+                    "quantity": 0.06
+                }
+            ]
+        },
+        {
+            "slug": "macchiato",
+            "everyday": true,
+            "name": "Macchiato",
+            "aliases": [],
+            "category": "coffee",
+            "serve": "hot",
+            "description": "Espresso marked with a spoon of milk foam.",
+            "customer_groups": [
+                "office",
+                "residential",
+                "tourist"
+            ],
+            "outlet_types": [
+                "Cafe",
+                "Hotel"
+            ],
+            "price_tier": "mid_range",
+            "ingredients": [
+                {
+                    "product": "House Espresso Blend",
+                    "amount": "18 g",
+                    "quantity": 0.018
+                },
+                {
+                    "product": "Full Cream Milk",
+                    "amount": "20 ml",
+                    "quantity": 0.02
+                }
+            ]
+        },
+        {
+            "slug": "teh-o",
+            "everyday": true,
+            "name": "Teh O",
+            "aliases": [
+                "Black Tea"
+            ],
+            "category": "kopitiam",
+            "serve": "either",
+            "description": "Black tea without milk, hot or over ice.",
+            "customer_groups": [
+                "industrial",
+                "transit",
+                "residential",
+                "office"
+            ],
+            "outlet_types": [
+                "Kiosk",
+                "Restaurant",
+                "Bakery"
+            ],
+            "price_tier": "budget",
+            "ingredients": [
+                {
+                    "product": "English Breakfast Teabags",
+                    "amount": "1 teabag",
+                    "quantity": 0.01
+                }
+            ]
+        }
+    ]
+}

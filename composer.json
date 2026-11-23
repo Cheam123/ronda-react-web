@@ -10,6 +10,7 @@
     "require": {
         "php": "^8.3",
         "anthropic-ai/sdk": "^0.51.0",
+        "aws/aws-sdk-php": "^3.402",
         "babenkoivan/telegram-notifications": "^1.1",
         "barryvdh/laravel-dompdf": "^3.1",
         "dompdf/dompdf": "*",

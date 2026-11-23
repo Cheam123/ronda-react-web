@@ -7,18 +7,16 @@ use App\Models\IFEReport;
 use App\Models\Leads;
 use App\Models\Order;
 use App\Models\OrderLine;
-use App\Models\OutletRecommendation;
 use App\Models\Product;
 use App\Models\Tasks;
-use App\Services\Recommendation\RecommendationService;
 use App\Services\TaskRisk;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 /**
  * What the rep assistant knows about one outlet: its profile, its recent
- * visits and orders, its open tasks, its suggested orders and the product
- * catalogue. Built fresh for every call, so answers follow the records.
+ * visits and orders, its open tasks and the product catalogue. Built fresh
+ * for every call, so answers follow the records.
  *
  * Contact details (mobile numbers, email addresses, the street address) are
  * left out on purpose: Claude never needs them to help with a visit. The
@@ -36,9 +34,6 @@ class OutletContext
     /** Catalogue descriptions are trimmed to this many characters. */
     private const DESCRIPTION_LIMIT = 300;
 
-    public function __construct(private RecommendationService $recommendations)
-    {
-    }
 
     public function facts(Leads $lead, ?Carbon $now = null): array
     {
@@ -58,9 +53,7 @@ class OutletContext
             ->take(self::ORDERS)
             ->get();
 
-        $recommendation = $this->recommendations->forLead($lead, false);
-        $suggestedIds   = array_column($recommendation['items'] ?? [], 'product_id');
-        $orderedIds     = $orders->flatMap(fn (Order $order) => $order->lines->pluck('product_id'))->all();
+        $orderedIds = $orders->flatMap(fn (Order $order) => $order->lines->pluck('product_id'))->all();
 
         return [
             'today'            => $now->format(self::TODAY_FORMAT),
@@ -71,8 +64,7 @@ class OutletContext
             'orders'           => $orders->map(fn (Order $order) => $this->order($order))->values()->all(),
             'order_summary'    => $this->orderSummary($lead, $now),
             'open_tasks'       => $this->openTasks($lead, $now),
-            'suggested_orders' => $this->suggestions($recommendation),
-            'catalogue'        => $this->catalogue(array_unique(array_merge($suggestedIds, $orderedIds))),
+            'catalogue'        => $this->catalogue(array_unique($orderedIds)),
         ];
     }
 
@@ -90,7 +82,6 @@ class OutletContext
             $latest(IFEReport::where('lead_id', $lead->id)),
             $latest(Order::where('lead_id', $lead->id)),
             $latest(Tasks::where('lead_id', $lead->id)),
-            OutletRecommendation::where('lead_id', $lead->id)->value('items_hash'),
         ]));
     }
 
@@ -184,30 +175,7 @@ class OutletContext
             ->all();
     }
 
-    private function suggestions(array $recommendation): array
-    {
-        if (($recommendation['status'] ?? null) !== 'ready') {
-            return ['status' => 'not enough data yet', 'items' => []];
-        }
-
-        return [
-            'status'                  => 'ready',
-            'similar_outlets'         => $recommendation['similar_outlets'],
-            'estimated_monthly_value' => $recommendation['estimated_monthly_value'],
-            'items'                   => collect($recommendation['items'])->map(fn ($item) => [
-                'product'                => $item['name'],
-                'sku'                    => $item['sku'],
-                'kind'                   => $item['status'] === 'gap' ? 'not ordered yet' : 'ordered less than similar outlets',
-                'similar_outlets_buying' => $item['buyers'] . ' of ' . $item['neighbors_used'],
-                'suggested_monthly'      => $item['recommended_qty'] . ' ' . $item['unit'],
-                'currently_monthly'      => $item['current_qty'] . ' ' . $item['unit'],
-                'extra_monthly_value'    => $item['est_monthly_value'],
-            ])->values()->all(),
-            'why'                     => $recommendation['explanation']['why'] ?? null,
-        ];
-    }
-
-    /** Every active product; descriptions only for the ones this outlet buys or is offered. */
+    /** Every active product; descriptions only for the ones this outlet buys. */
     private function catalogue(array $describe): array
     {
         return Product::active()

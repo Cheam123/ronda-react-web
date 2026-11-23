@@ -79,7 +79,7 @@ export default function ProductsIndex({ products, categories, stats, filters }: 
                 <PageHeader
                     crumbs={[{ label: 'Home', href: '/index' }, { label: 'Admin' }, { label: 'Products' }]}
                     title="Products"
-                    lede="The catalogue reps order from and the recommender suggests. A product that is on past orders is deactivated, never deleted, so order history keeps its lines."
+                    lede="The catalogue reps order from. A product that is on past orders is deactivated, never deleted, so order history keeps its lines."
                     actions={
                         <Link href={route('product.create')} className="rd-btn rd-btn--primary rd-btn--lg">
                             <i className="mdi mdi-plus" aria-hidden="true" />
@@ -288,11 +288,7 @@ export default function ProductsIndex({ products, categories, stats, filters }: 
                     </div>
                 </section>
 
-                <RetireDialog
-                    product={retiring}
-                    recommendedCount={retiring?.recommended_count ?? 0}
-                    onClose={() => setRetiring(null)}
-                />
+                <RetireDialog product={retiring} onClose={() => setRetiring(null)} />
             </SurfacePage>
         </AppLayout>
     );

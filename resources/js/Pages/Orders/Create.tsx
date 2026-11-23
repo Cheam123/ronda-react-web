@@ -28,7 +28,7 @@ interface CreateOrderProps {
 }
 
 /**
- * Starting lines from the outlet's Suggested orders tab: ?suggested=12:6,40:2.5
+ * Starting lines from a suggestion: ?suggested=12:6,40:2.5
  * (product id and quantity). Products no longer in the catalogue are skipped.
  */
 function suggestedLines(url: string, products: Product[]): OrderLine[] {
@@ -106,10 +106,14 @@ export default function CreateOrder({ lead, products, today }: CreateOrderProps)
 
     const submit = (event: FormEvent) => {
         event.preventDefault();
-        // "suggested" only marks the row on screen.
+        // "suggested" stays on the saved line, so orders can be traced back to a suggestion.
         transform((current) => ({
             ...current,
-            lines: current.lines.map(({ product_id, quantity }) => ({ product_id, quantity })),
+            lines: current.lines.map(({ product_id, quantity, suggested }) => ({
+                product_id,
+                quantity,
+                suggested: Boolean(suggested),
+            })),
         }));
         post(route('lead.orders.store', lead.id));
     };

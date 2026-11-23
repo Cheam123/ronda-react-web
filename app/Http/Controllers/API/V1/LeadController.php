@@ -19,15 +19,16 @@ use App\Http\Requests\LeadRequest;
 use App\Helpers\Helper;
 use App\Models\Tasks;
 use App\Models\Leads;
+use App\Models\Recipe;
 use App\Models\States;
 use App\Models\Cities;
 use App\Models\User;
 use App\Models\IfeArea;
 use App\Models\DocumentUpload;
 use App\Repositories\S3ClientRepo;
-use App\Jobs\RefreshOutletRecommendations;
-use App\Services\Recommendation\RecommendationService;
+use App\Jobs\ProfileOutletArea;
 use App\Services\Ai\OutletAssistantService;
+use App\Services\Menu\MenuScanService;
 use App\Http\Resources\DocumentResource;
 use App\Http\Resources\Leads\LeadListResource;
 use App\Http\Resources\Leads\LeadResource;
@@ -183,15 +184,8 @@ class LeadController extends Controller
                                 ->visibleTo($user)
                                 ->findOrFail($id);
 
-        // Suggested orders for everyone who can open the outlet (a rep: their own).
-        $recommendation = null;
-        try {
-            $recommendation = app(RecommendationService::class)->forLead($customerDetail);
-        } catch (Throwable $e) {
-            Log::warning('Lead view: recommendations unavailable', ['lead_id' => $id, 'error' => $e->getMessage()]);
-        }
-
         $assistant = app(OutletAssistantService::class);
+        $menus     = app(MenuScanService::class);
 
         if ($customerDetail->state_id) {
             $states = States::where('id',$customerDetail->state_id)->get();
@@ -215,7 +209,13 @@ class LeadController extends Controller
             'tasks'          => TaskSummaryResource::collection($customerDetail->tasks)->resolve(),
             'visits'         => VisitResource::collection($customerDetail->visits)->resolve(),
             'orders'         => OrderResource::collection($customerDetail->orders)->resolve(),
-            'recommendation' => $recommendation,
+            // The newest confirmed menu scan, and the drinks a row can be named as.
+            'menu'           => $menus->forLead($customerDetail),
+            'menuDrinks'     => $menus->drinkOptions(),
+            // Whether menu photos can be uploaded here: Amazon Textract is set up.
+            'menuPhotos'     => \App\Services\Menu\TextractPhotoReader::enabled(),
+            // Drink ideas as they stand now, with or without a menu.
+            'drinkIdeas'     => $menus->ideasFor($customerDetail),
             'brief'          => $assistant->briefPayload($customerDetail),
             'assistant'      => ['available' => $assistant->isAvailable()],
         ]);
@@ -286,6 +286,8 @@ class LeadController extends Controller
             }
 
             DB::commit();
+
+            ProfileOutletArea::dispatchAfterResponse($lead_detail->id);
 
             $runJobFirebase = (new FirebaseNotification($lead_detail->id, 'lead', '0'));
             dispatch($runJobFirebase);
@@ -378,7 +380,7 @@ class LeadController extends Controller
             $lead_detail->save();
             DB::commit();
 
-            $this->refreshRecommendationsIfProfileChanged($lead_detail);
+            $this->profileAreaIfMoved($lead_detail);
 
             alert()->success(trans('translation.success'), trans('translation.successfully_update'))->iconHtml('<i class="far fa-thumbs-up"></i>')->showConfirmButton()->focusConfirm(true);
             return redirect()->route('lead.index')->with('success', trans('translation.update_success'));
@@ -512,6 +514,9 @@ class LeadController extends Controller
             'sources'            => Options::fromMap(Helper::getLeadSourceListing()),
             'businessCategories' => Options::fromMap(Helper::getBusinessCategoryListing()),
             'sizeBands'          => Options::fromMap(Leads::SIZE_BANDS),
+            'customerGroups'     => Options::fromMap(config('ife.recommendation.customer_groups', [])),
+            'drinkKinds'         => Options::fromMap(Recipe::CATEGORIES),
+            'goals'              => Options::fromMap(Leads::GOALS),
             'segments'           => Options::fromMap(Leads::SEGMENTS),
         ];
     }
@@ -529,8 +534,7 @@ class LeadController extends Controller
     }
 
     /**
-     * Size band, seats, segment and the captured location. Refreshes the
-     * outlet's recommendations once saved if any of them changed.
+     * Size band, seats, segment, the outlet's needs and the captured location.
      *
      * @return string|null the location's validation error
      */
@@ -539,6 +543,12 @@ class LeadController extends Controller
         $lead->size_band = $validatedData['size_band'] ?? NULL;
         $lead->seats     = isset($validatedData['seats']) && $validatedData['seats'] !== '' ? (int) $validatedData['seats'] : NULL;
         $lead->segment   = $validatedData['segment'] ?? NULL;
+
+        if (array_key_exists('is_halal', $validatedData)) {
+            $lead->is_halal = $validatedData['is_halal'];
+        }
+
+        $lead->applyNeeds($validatedData);
 
         // The form always posts the field (prefilled with the saved stamp),
         // so an empty value really means "no location".
@@ -549,11 +559,11 @@ class LeadController extends Controller
         return null;
     }
 
-    /** After a save: the outlet's recommendations follow its profile. */
-    private function refreshRecommendationsIfProfileChanged(Leads $lead): void
+    /** After a save: a moved outlet gets its area worked out again. */
+    private function profileAreaIfMoved(Leads $lead): void
     {
-        if ($lead->wasChanged(['size_band', 'seats', 'segment', 'business_category', 'ife_area_id'])) {
-            RefreshOutletRecommendations::dispatch([$lead->id]);
+        if ($lead->wasChanged(['latitude', 'longitude', 'address', 'postcode', 'city_id', 'state_id'])) {
+            ProfileOutletArea::dispatchAfterResponse($lead->id);
         }
     }
 

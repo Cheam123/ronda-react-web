@@ -39,19 +39,24 @@ Route::group(['middleware' => ['api'], 'prefix' => 'mobile'], function () {
       Route::post('/leads/create', 'MobileApp\LeadController@addLead')->name('leads.create');
       Route::post('/leads/edit', 'MobileApp\LeadController@editLead')->name('leads.edit');
 
-    // Outlet screen: visit history, order history, recommendations
+    // Outlet screen: visit history, order history, answers on drink ideas
       Route::get('/leads/visits', 'MobileApp\LeadController@getLeadVisits')->name('leads.visits');
       Route::get('/leads/orders', 'MobileApp\LeadController@getLeadOrders')->name('leads.orders');
       Route::post('/leads/orders/create', 'MobileApp\LeadController@addLeadOrder')->name('leads.orders.create');
-      Route::get('/leads/recommendations', 'MobileApp\LeadController@getLeadRecommendations')->name('leads.recommendations');
+      Route::post('/leads/recommendations/feedback', 'MobileApp\LeadController@addRecommendationFeedback')->name('leads.recommendations.feedback');
 
-    // Ronda assistant on the outlet screen (Claude on Bedrock), as on the web.
+    // Menu scans: the phone reads the photos, the server matches them to drinks.
+      Route::get('/leads/menu', 'MobileApp\MenuScanController@show')->name('leads.menu');
+      Route::get('/leads/drink-ideas', 'MobileApp\MenuScanController@ideas')->name('leads.drinkIdeas');
+      Route::post('/leads/menu-scans', 'MobileApp\MenuScanController@store')->name('leads.menuScans.store');
+      Route::post('/leads/menu-scans/{id}/confirm', 'MobileApp\MenuScanController@confirm')->name('leads.menuScans.confirm');
+
+    // Ronda assistant on the outlet screen (Claude), as on the web.
       Route::get('/leads/{id}/assistant/brief', 'MobileApp\OutletAssistantController@showBrief')->name('leads.assistant.showBrief');
       Route::middleware('throttle:assistant')->group(function () {
         Route::post('/leads/{id}/assistant/brief', 'MobileApp\OutletAssistantController@brief')->name('leads.assistant.brief');
         Route::post('/leads/{id}/assistant/chat', 'MobileApp\OutletAssistantController@chat')->name('leads.assistant.chat');
         Route::post('/leads/{id}/assistant/follow-up', 'MobileApp\OutletAssistantController@followUp')->name('leads.assistant.followUp');
-        Route::post('/leads/{id}/assistant/pitches', 'MobileApp\OutletAssistantController@pitches')->name('leads.assistant.pitches');
       });
 
     // Product catalogue (read-only)

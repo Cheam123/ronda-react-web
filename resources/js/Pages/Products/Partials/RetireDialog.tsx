@@ -16,8 +16,6 @@ export type RetiringProduct = Required<Pick<Product, 'order_lines_count'>> &
 interface RetireDialogProps {
     /** The product to take out of the catalogue; null closes the dialog. */
     product: RetiringProduct | null;
-    /** Outlets it is recommended to right now. */
-    recommendedCount: number;
     onClose: () => void;
 }
 
@@ -26,7 +24,7 @@ interface RetireDialogProps {
  * (ProductController::delete decides the same way). Says what will change
  * before anything does.
  */
-export default function RetireDialog({ product, recommendedCount, onClose }: RetireDialogProps) {
+export default function RetireDialog({ product, onClose }: RetireDialogProps) {
     const { currency } = usePage<PageProps>().props.app;
     const [processing, setProcessing] = useState(false);
 
@@ -99,12 +97,6 @@ export default function RetireDialog({ product, recommendedCount, onClose }: Ret
                             <li>
                                 <i className="mdi mdi-close is-bad" aria-hidden="true" />
                                 Removed from the order form in the mobile app
-                            </li>
-                            <li>
-                                <i className="mdi mdi-close is-bad" aria-hidden="true" />
-                                {recommendedCount > 0
-                                    ? `No longer recommended. ${pluralize(recommendedCount, 'outlet loses', 'outlets lose')} it at the next refresh.`
-                                    : 'No longer recommended to outlets'}
                             </li>
                             <li>
                                 <i className="mdi mdi-check is-good" aria-hidden="true" />

@@ -32,7 +32,7 @@ class MobileOutletsTest extends TestCase
 
         Bus::fake();
         // Claude stays off: the assistant falls back to its templates.
-        config(['ife.bedrock.enabled' => false]);
+        config(['ife.claude.enabled' => false]);
 
         $this->rep      = $this->makeUser(User::TYPE_USER, 'Test Rep');
         $this->otherRep = $this->makeUser(User::TYPE_USER, 'Other Rep');
@@ -56,7 +56,7 @@ class MobileOutletsTest extends TestCase
         $this->assertSame(1, $first['open_tasks']);
         $this->assertSame(1, $first['overdue']);
         $this->assertSame('customer', $body['leads'][1]['kind']);
-        $this->assertSame(['all' => 2, 'customer' => 1, 'prospect' => 1, 'suggested' => 0], $body['counts']);
+        $this->assertSame(['all' => 2, 'customer' => 1, 'prospect' => 1], $body['counts']);
 
         $this->getJson('/api/mobile/leads?kind=customer&search=Cafe')
             ->assertOk()
@@ -75,7 +75,7 @@ class MobileOutletsTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.brief', null);
 
-        // Without Bedrock the brief is written from the template.
+        // Without Claude the brief is written from the template.
         $this->postJson("/api/mobile/leads/{$mine->id}/assistant/brief")
             ->assertOk()
             ->assertJsonPath('data.brief.source', 'template');

@@ -23,6 +23,11 @@ export function leadFormData(lead: Lead | null, today: string): LeadFormData {
         size_band: text(lead?.size_band),
         seats: text(lead?.seats),
         segment: text(lead?.segment),
+        is_halal: lead?.is_halal === null || lead?.is_halal === undefined ? '' : lead.is_halal ? '1' : '0',
+        main_customers: lead?.main_customers ?? [],
+        best_selling_kinds: lead?.best_selling_kinds ?? [],
+        improvement_goals: lead?.improvement_goals ?? [],
+        typical_drink_price: text(lead?.typical_drink_price),
         gps: lead?.gps ?? '',
         remark: text(lead?.remark),
     };

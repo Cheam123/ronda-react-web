@@ -23,12 +23,18 @@ Route::group(['middleware' => ['auth']], function () {
     Route::post('/{id}/orders', 'API\V1\OrderController@store')->name('lead.orders.store');
     Route::post('/orders/{order}/cancel', 'API\V1\OrderController@cancel')->name('lead.orders.cancel');
 
-    # Ronda assistant on the outlet page (Claude on Bedrock)
+    # A menu typed in on the outlet page, and the check of a scan
+    Route::post('/{id}/menu-scans', 'API\V1\MenuScanController@store')->name('lead.menuScans.store');
+    Route::post('/menu-scans/{scan}/confirm', 'API\V1\MenuScanController@confirm')->name('lead.menuScans.confirm');
+
+    # What the rep did with a drink idea
+    Route::post('/{id}/recommendations/feedback', 'API\V1\RecommendationFeedbackController@store')->name('lead.recommendations.feedback');
+
+    # Ronda assistant on the outlet page (Claude)
     Route::middleware('throttle:assistant')->group(function () {
         Route::post('/{id}/assistant/brief', 'API\V1\OutletAssistantController@brief')->name('lead.assistant.brief');
         Route::post('/{id}/assistant/chat', 'API\V1\OutletAssistantController@chat')->name('lead.assistant.chat');
         Route::post('/{id}/assistant/follow-up', 'API\V1\OutletAssistantController@followUp')->name('lead.assistant.followUp');
-        Route::post('/{id}/assistant/pitches', 'API\V1\OutletAssistantController@pitches')->name('lead.assistant.pitches');
     });
 
     Route::post('/files/store', 'API\V1\LeadController@fileStore')->name('lead.file.store');

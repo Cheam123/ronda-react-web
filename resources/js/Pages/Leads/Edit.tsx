@@ -64,7 +64,7 @@ export default function EditLead({ lead, documents, today, ...options }: EditLea
                         { label: 'Edit' },
                     ]}
                     title={`Edit ${title}`}
-                    lede="Changes to size, seats, segment or the location refresh this outlet’s suggested orders."
+                    lede="Moving the pin or changing the address updates what is known about the area."
                 />
 
                 <ErrorSummary />

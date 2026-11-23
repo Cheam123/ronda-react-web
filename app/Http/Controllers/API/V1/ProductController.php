@@ -2,13 +2,14 @@
 
 namespace App\Http\Controllers\API\V1;
 
+use App\Helpers\Helper;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Catalogue\ProductResource;
 use App\Models\Leads;
 use App\Models\Order;
 use App\Models\OrderLine;
-use App\Models\OutletRecommendation;
 use App\Models\Product;
+use App\Support\Options;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -67,8 +68,7 @@ class ProductController extends Controller
         $this->sortBy($query, $sort);
         $products = $query->paginate(50)->withQueryString();
 
-        $staleIds    = Product::stale()->pluck('id')->flip();
-        $recommended = $this->recommendationCounts();
+        $staleIds = Product::stale()->pluck('id')->flip();
 
         $categoryCounts = $byStatus(Product::query())
             ->selectRaw('category, COUNT(*) AS total')
@@ -80,11 +80,10 @@ class ProductController extends Controller
 
         return Inertia::render('Products/Index', [
             'products'   => $products->through(fn (Product $product) => ProductResource::make($product)->resolve() + [
-                'sold_qty'          => round((float) $product->sold_qty, 2),
-                'sold_value'        => round((float) $product->sold_value, 2),
-                'outlets'           => (int) $product->outlets,
-                'stale'             => $staleIds->has($product->id),
-                'recommended_count' => $recommended[$product->id] ?? 0,
+                'sold_qty'   => round((float) $product->sold_qty, 2),
+                'sold_value' => round((float) $product->sold_value, 2),
+                'outlets'    => (int) $product->outlets,
+                'stale'      => $staleIds->has($product->id),
             ]),
             'categories' => $categoryCounts,
             'stats'      => [
@@ -98,7 +97,7 @@ class ProductController extends Controller
         ]);
     }
 
-    /** One product: how it sells, who orders it, and where it is recommended. */
+    /** One product: how it sells and who orders it. */
     public function view($id)
     {
         if (!Auth::guard('web')->user()->can('manage_product')) {
@@ -124,8 +123,6 @@ class ProductController extends Controller
                 ->sum('order_lines.line_total')
             : null;
 
-        $recommended = $this->recommendedTo($product);
-
         return Inertia::render('Products/Show', [
             'product'     => ProductResource::make($product)->resolve() + [
                 'created_label' => optional($product->created_at)->format('j M Y'),
@@ -143,8 +140,6 @@ class ProductController extends Controller
             ],
             'monthly'     => $this->monthlySales($product, $now),
             'lines'       => $this->recentLines($product),
-            'recommended' => $recommended->take(5)->values(),
-            'recommendedCount' => $recommended->count(),
         ]);
     }
 
@@ -217,7 +212,7 @@ class ProductController extends Controller
         return redirect()->route('product.index');
     }
 
-    /** Offers an inactive product on orders and recommendations again. */
+    /** Offers an inactive product on orders again. */
     public function activate($id)
     {
         if (!Auth::guard('web')->user()->can('manage_product')) {
@@ -270,6 +265,8 @@ class ProductController extends Controller
             'unit'        => 'required|string|max:20',
             'unit_price'  => 'required|numeric|min:0|max:9999999',
             'description' => 'nullable|string|max:2000',
+            'is_halal'    => 'nullable|boolean',
+            'base_monthly_qty' => 'nullable|numeric|min:0|max:99999',
         ]);
 
         $data['sku']       = strtoupper(trim($data['sku']));
@@ -302,47 +299,6 @@ class ProductController extends Controller
             'recent' => $query->orderByDesc('created_at'),
             default  => $query->orderByRaw('category IS NULL')->orderBy('category')->orderBy('name'),
         };
-    }
-
-    /** product_id => how many outlets it is currently recommended to. */
-    private function recommendationCounts(): array
-    {
-        $counts = [];
-        foreach (OutletRecommendation::get(['items']) as $row) {
-            foreach ((array) $row->items as $item) {
-                if (isset($item['product_id'])) {
-                    $counts[$item['product_id']] = ($counts[$item['product_id']] ?? 0) + 1;
-                }
-            }
-        }
-
-        return $counts;
-    }
-
-    /** Outlets whose current recommendations include this product, biggest opportunity first. */
-    private function recommendedTo(Product $product)
-    {
-        return OutletRecommendation::with('lead:id,name,business_name,customer_id')->get()
-            ->map(function (OutletRecommendation $row) use ($product) {
-                $item = collect($row->items)->firstWhere('product_id', $product->id);
-                if (!$item || !$row->lead) {
-                    return null;
-                }
-
-                return [
-                    'lead_id'        => $row->lead_id,
-                    'outlet'         => $row->lead->business_name ?: $row->lead->name,
-                    'prospect'       => blank($row->lead->customer_id),
-                    'status'         => $item['status'] ?? 'gap',
-                    'buyers'         => (int) ($item['buyers'] ?? 0),
-                    'neighbors_used' => (int) ($item['neighbors_used'] ?? 0),
-                    'quantity'       => (float) ($item['recommended_qty'] ?? 0),
-                    'value'          => (float) ($item['est_monthly_value'] ?? 0),
-                ];
-            })
-            ->filter()
-            ->sortByDesc('value')
-            ->values();
     }
 
     /** Confirmed sales per calendar month, this month and the five before. */

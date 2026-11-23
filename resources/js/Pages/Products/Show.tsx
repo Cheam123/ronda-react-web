@@ -6,7 +6,7 @@ import PageHeader from '@/Components/surface/PageHeader';
 import SurfacePage from '@/Components/surface/SurfacePage';
 import AppLayout from '@/Layouts/AppLayout';
 import { BAR_STYLE, barOptions, chartColors } from '@/lib/chartTheme';
-import { compactNumber, formatMoney, formatNumber, formatQuantity, pluralize } from '@/lib/format';
+import { compactNumber, formatMoney, formatNumber, formatQuantity } from '@/lib/format';
 import { useTheme } from '@/lib/theme';
 import ChangeChip from '@/Components/surface/ChangeChip';
 import type { PageProps } from '@/types';
@@ -44,17 +44,6 @@ interface OrderLineRow {
     line_total: number;
 }
 
-interface Recommendation {
-    lead_id: number;
-    outlet: string;
-    prospect: boolean;
-    status: 'gap' | 'top_up';
-    buyers: number;
-    neighbors_used: number;
-    quantity: number;
-    value: number;
-}
-
 interface ProductShowProps {
     product: ProductPageData;
     stats: {
@@ -69,19 +58,10 @@ interface ProductShowProps {
     };
     monthly: MonthSales[];
     lines: OrderLineRow[];
-    recommended: Recommendation[];
-    recommendedCount: number;
 }
 
-/** One product: how it sells, who orders it, and where the recommender suggests it. */
-export default function ProductShow({
-    product,
-    stats,
-    monthly,
-    lines,
-    recommended,
-    recommendedCount,
-}: ProductShowProps) {
+/** One product: how it sells and who orders it. */
+export default function ProductShow({ product, stats, monthly, lines }: ProductShowProps) {
     const { currency } = usePage<PageProps>().props.app;
     const [retiring, setRetiring] = useState(false);
     const neverOrdered = product.order_lines_count === 0;
@@ -182,8 +162,8 @@ export default function ProductShow({
                 {stats.stale && (
                     <p className="rd-notice">
                         <i className="mdi mdi-alert" aria-hidden="true" />
-                        No outlet has ordered this in 90 days, but it is still offered to reps and recommended. Check
-                        the price, or deactivate it.
+                        No outlet has ordered this in 90 days, but it is still offered to reps. Check the price, or
+                        deactivate it.
                     </p>
                 )}
 
@@ -394,63 +374,12 @@ export default function ProductShow({
                                     />
                                     {product.is_active ? 'On' : 'Not on'} the order form in the mobile app
                                 </li>
-                                <li>
-                                    <i
-                                        className={`mdi ${product.is_active ? 'mdi-check is-good' : 'mdi-close is-bad'}`}
-                                        aria-hidden="true"
-                                    />
-                                    {product.is_active ? 'Included in' : 'Left out of'} outlet recommendations
-                                </li>
                             </ul>
-                        </section>
-
-                        <section className="rd-panel" aria-labelledby="recommended-title">
-                            <div>
-                                <h2 id="recommended-title" className="rd-panel__title">
-                                    Recommended to
-                                </h2>
-                                <p className="rd-panel__sub">
-                                    Outlets that don&apos;t buy it yet, or buy too little, while similar outlets do.
-                                </p>
-                            </div>
-                            {recommended.length === 0 ? (
-                                <p className="rd-muted">Not recommended to any outlet right now.</p>
-                            ) : (
-                                <ul className="rd-rows prod-recommended">
-                                    {recommended.map((item) => (
-                                        <li key={item.lead_id}>
-                                            <span className="prod-recommended__outlet">
-                                                <Link href={route('lead.view', item.lead_id)}>{item.outlet}</Link>
-                                                <small>
-                                                    {item.prospect ? 'Prospect' : 'Customer'} &middot;{' '}
-                                                    {item.status === 'top_up' ? 'buys too little' : 'not buying it'}{' '}
-                                                    &middot; {item.buyers} of {item.neighbors_used} similar outlets buy
-                                                    it
-                                                </small>
-                                            </span>
-                                            <span className="rd-num fw-semibold text-nowrap">
-                                                {currency} {formatNumber(item.value)}
-                                            </span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
-                            {recommended.length > 0 && (
-                                <span className="rd-panel__sub">
-                                    {recommendedCount > recommended.length &&
-                                        `Top ${recommended.length} of ${pluralize(recommendedCount, 'outlet')}. `}
-                                    Estimated extra spend per month if they order like their neighbours.
-                                </span>
-                            )}
                         </section>
                     </aside>
                 </div>
 
-                <RetireDialog
-                    product={retiring ? product : null}
-                    recommendedCount={recommendedCount}
-                    onClose={() => setRetiring(false)}
-                />
+                <RetireDialog product={retiring ? product : null} onClose={() => setRetiring(false)} />
             </SurfacePage>
         </AppLayout>
     );

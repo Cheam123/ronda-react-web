@@ -10,23 +10,27 @@ import SurfacePage from '@/Components/surface/SurfacePage';
 import { useAuth } from '@/hooks/useAuth';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import AppLayout from '@/Layouts/AppLayout';
+import { formatMoney, listWords } from '@/lib/format';
 import { formatPhone, phoneHref } from '@/lib/phone';
 import { areaHue, tagClass } from '@/lib/tags';
 import type { SelectOption } from '@/types';
 import type { DocumentFile } from '@/types/documents';
 import type {
+    DrinkIdeas,
     FollowUpTopic,
     Lead,
     LeadFormOptions,
     Order,
-    Recommendation,
+    OutletMenu,
     TaskSummary,
     Visit,
     VisitBrief as Brief,
 } from '@/types/leads';
 import AskRonda from './Partials/AskRonda';
 import FollowUpDialog from './Partials/FollowUpDialog';
-import { OrderHistory, SuggestedOrders, VisitHistory } from './Partials/OutletActivity';
+import AreaCard from './Partials/AreaCard';
+import MenuTab from './Partials/MenuTab';
+import { OrderHistory, VisitHistory } from './Partials/OutletActivity';
 import TaskHistories from './Partials/TaskHistories';
 import VisitBrief from './Partials/VisitBrief';
 
@@ -36,15 +40,22 @@ interface ShowLeadProps extends LeadFormOptions {
     tasks: TaskSummary[];
     visits: Visit[];
     orders: Order[];
-    recommendation: Recommendation | null;
+    /** The newest confirmed menu scan; null before the first scan. */
+    menu: OutletMenu | null;
+    /** Drinks a menu row can be named as. */
+    menuDrinks: SelectOption<number>[];
+    /** Whether menu photos can be uploaded: Amazon Textract is set up. */
+    menuPhotos: boolean;
+    /** Drink ideas as they stand now, with or without a menu. */
+    drinkIdeas: DrinkIdeas;
     brief: Brief | null;
-    /** Whether Claude on Bedrock is set up for the rep assistant. */
+    /** Whether Claude is set up for the rep assistant. */
     assistant: { available: boolean };
 }
 
-type Tab = 'tasks' | 'visits' | 'orders' | 'suggested';
+type Tab = 'tasks' | 'visits' | 'orders' | 'menu';
 
-const TABS: Tab[] = ['tasks', 'visits', 'orders', 'suggested'];
+const TABS: Tab[] = ['tasks', 'visits', 'orders', 'menu'];
 
 /** "28 Sep" from "28 Sep 2026" or "28 Sep 2026, 10:42 AM". */
 const dayMonth = (label: string) => label.split(', ')[0].split(' ').slice(0, 2).join(' ');
@@ -56,6 +67,11 @@ function labelOf(options: SelectOption[], value: string | number | null): string
     return value === null ? null : (options.find((option) => String(option.value) === String(value))?.label ?? null);
 }
 
+/** The labels of the options holding `values`, in the options' order. */
+function labelsOf(options: SelectOption[], values: string[] | undefined): string[] {
+    return options.filter((option) => values?.includes(String(option.value))).map((option) => option.label);
+}
+
 /** An outlet: who and where it is on the right, its tasks, visits and orders on the left. */
 export default function ShowLead({
     lead,
@@ -63,17 +79,20 @@ export default function ShowLead({
     tasks,
     visits,
     orders,
-    recommendation,
+    menu,
+    menuDrinks,
+    menuPhotos,
+    drinkIdeas,
     brief,
     assistant,
     ...options
 }: ShowLeadProps) {
     const { can } = useAuth();
     const { url } = usePage();
-    // ?tab=suggested opens a tab directly (the dashboard's Suggested orders links here).
+    // ?tab=menu opens a tab directly.
     const [tab, setTab] = useState<Tab>(() => {
         const wanted = new URLSearchParams(url.split('?')[1] ?? '').get('tab') as Tab | null;
-        return wanted && TABS.includes(wanted) && (wanted !== 'suggested' || recommendation) ? wanted : 'tasks';
+        return wanted && TABS.includes(wanted) ? wanted : 'tasks';
     });
     const [asking, setAsking] = useState(false);
     const [followingUp, setFollowingUp] = useState(false);
@@ -87,7 +106,6 @@ export default function ShowLead({
         ...(lastOrder
             ? [{ value: 'last_order' as const, label: `Last order · ${dayMonth(lastOrder.order_date)}` }]
             : []),
-        ...(recommendation?.items?.length ? [{ value: 'suggested' as const, label: 'Suggested products' }] : []),
     ];
     const area = options.ifeAreas.find((option) => option.value === lead.ife_area_id);
     const phone = phoneHref(lead.mobile);
@@ -96,9 +114,7 @@ export default function ShowLead({
         { key: 'tasks', label: 'Tasks', count: tasks.length },
         { key: 'visits', label: 'Visits', count: visits.length },
         { key: 'orders', label: 'Orders', count: orders.length },
-        ...(recommendation
-            ? [{ key: 'suggested' as Tab, label: 'Suggested orders', count: recommendation.items?.length ?? 0 }]
-            : []),
+        { key: 'menu', label: 'Drink ideas', count: drinkIdeas.ideas.length },
     ];
 
     const place = [lead.postcode, labelOf(options.cities, lead.city_id)].filter(Boolean).join(' ');
@@ -124,8 +140,17 @@ export default function ShowLead({
                 {tab === 'tasks' && <TaskHistories tasks={tasks} />}
                 {tab === 'visits' && <VisitHistory visits={visits} />}
                 {tab === 'orders' && <OrderHistory orders={orders} />}
-                {tab === 'suggested' && recommendation && (
-                    <SuggestedOrders recommendation={recommendation} leadId={lead.id} />
+                {tab === 'menu' && (
+                    // Keyed by the scan, so a newly saved menu starts the tab afresh.
+                    <MenuTab
+                        key={menu?.id ?? 'none'}
+                        ideas={drinkIdeas}
+                        menu={menu}
+                        drinks={menuDrinks}
+                        canReadPhotos={menuPhotos}
+                        leadId={lead.id}
+                        canOrder={can('record_order')}
+                    />
                 )}
             </div>
         </section>
@@ -188,9 +213,29 @@ export default function ShowLead({
                     <ProfileCell label="Size" value={labelOf(options.sizeBands, lead.size_band)} />
                     <ProfileCell label="Seats" value={lead.seats === null ? null : String(lead.seats)} />
                     <ProfileCell label="Segment" value={labelOf(options.segments, lead.segment)} />
+                    <ProfileCell
+                        label="Halal only"
+                        value={lead.is_halal === null ? null : lead.is_halal ? 'Yes' : 'No'}
+                    />
                 </div>
-                <p className="lead-profile__note">Suggested orders compare outlets on these and the location.</p>
             </Panel>
+
+            <Panel title="What the outlet needs">
+                <dl className="rd-facts">
+                    <Fact label="Main customers">
+                        {listWords(labelsOf(options.customerGroups, lead.main_customers))}
+                    </Fact>
+                    <Fact label="Best-selling drinks">
+                        {listWords(labelsOf(options.drinkKinds, lead.best_selling_kinds))}
+                    </Fact>
+                    <Fact label="Wants to">{listWords(labelsOf(options.goals, lead.improvement_goals))}</Fact>
+                    <Fact label="Typical drink price">
+                        {lead.typical_drink_price != null && `RM ${formatMoney(lead.typical_drink_price)}`}
+                    </Fact>
+                </dl>
+            </Panel>
+
+            <AreaCard area={lead.area} />
 
             {lead.remark && (
                 <Panel title="Remark">

@@ -1,13 +1,19 @@
 import Field from '@/Components/form/Field';
 import GpsStampField from '@/Components/form/GpsStampField';
-import SearchSelect from '@/Components/form/SearchSelect';
+import SearchSelect, { MultiSearchSelect } from '@/Components/form/SearchSelect';
 import TextArea from '@/Components/form/TextArea';
 import TextInput from '@/Components/form/TextInput';
 import { Choices } from '@/Components/surface/Choices';
 import { FormRow, FormSection } from '@/Components/surface/FormSection';
+import { MultiChoices } from '@/Components/surface/MultiChoices';
 import PhoneInput from '@/Components/surface/PhoneInput';
 import { digitsOnly } from '@/lib/input';
 import type { LeadFormOptions } from '@/types/leads';
+
+const HALAL_OPTIONS = [
+    { value: '1', label: 'Yes' },
+    { value: '0', label: 'No' },
+];
 
 /** The lead form's fields, named as LeadRequest expects them. */
 export interface LeadFormData {
@@ -27,6 +33,16 @@ export interface LeadFormData {
     size_band: string;
     seats: string;
     segment: string;
+    /** "1", "0", or "" for not stated. */
+    is_halal: string;
+    /** Customer group keys; empty for not stated. */
+    main_customers: string[];
+    /** Drink kind keys; empty for not stated. */
+    best_selling_kinds: string[];
+    /** Goal keys; empty for not stated. */
+    improvement_goals: string[];
+    /** RM amount as typed; "" for not stated. */
+    typical_drink_price: string;
     gps: string;
     remark: string;
 }
@@ -40,7 +56,7 @@ interface LeadFieldsProps {
     options: LeadFormOptions;
 }
 
-/** The lead form's sections: the outlet, its address, its profile and a remark. */
+/** The lead form's sections: the outlet, its address, its profile, what it needs and a remark. */
 export default function LeadFields({ data, setData, errors = {}, options }: LeadFieldsProps) {
     const cities = options.cities.filter((city) => String(city.state_id) === data.state_id);
     const area = options.ifeAreas.find((option) => String(option.value) === data.ifearea);
@@ -217,7 +233,7 @@ export default function LeadFields({ data, setData, errors = {}, options }: Lead
                 </FormRow>
             </FormSection>
 
-            <FormSection title="Outlet profile" intro="What suggested orders compare outlets on.">
+            <FormSection title="Outlet profile" intro="How big the outlet is and where it is.">
                 <Choices
                     legend="Size"
                     options={options.sizeBands}
@@ -247,6 +263,14 @@ export default function LeadFields({ data, setData, errors = {}, options }: Lead
                     error={errors.segment}
                     onChange={(value) => setData('segment', value)}
                 />
+                <Choices
+                    legend="Only stocks halal products?"
+                    options={HALAL_OPTIONS}
+                    value={data.is_halal}
+                    error={errors.is_halal}
+                    hint="Leave it empty if you don't know."
+                    onChange={(value) => setData('is_halal', value)}
+                />
                 {/* Manual only: editing at the office must not stamp the office. */}
                 <Field
                     label="Location"
@@ -254,6 +278,72 @@ export default function LeadFields({ data, setData, errors = {}, options }: Lead
                     hint="Stamp it while you are at the outlet. It never stamps by itself, so editing at the office is safe."
                 >
                     <GpsStampField value={data.gps} onChange={(value) => setData('gps', value)} />
+                </Field>
+            </FormSection>
+
+            <FormSection
+                title="What the outlet needs"
+                intro="What the owner tells you. Drink ideas use it. Leave anything you don't know empty."
+            >
+                <Field
+                    label="Main customers"
+                    htmlFor="main_customers"
+                    error={errors.main_customers}
+                    hint="Who mostly buys here. Pick as many as apply."
+                >
+                    <MultiSearchSelect
+                        id="main_customers"
+                        options={options.customerGroups}
+                        placeholder="Choose who mostly buys here…"
+                        searchable={false}
+                        value={data.main_customers}
+                        onChange={(value) => setData('main_customers', value)}
+                    />
+                </Field>
+                <MultiChoices
+                    legend="Their best-selling drinks"
+                    options={options.drinkKinds}
+                    value={data.best_selling_kinds}
+                    error={errors.best_selling_kinds}
+                    hint="The kinds of drink that sell most here."
+                    onChange={(value) => setData('best_selling_kinds', value)}
+                />
+                <MultiChoices
+                    legend="What they want to improve"
+                    options={options.goals}
+                    value={data.improvement_goals}
+                    error={errors.improvement_goals}
+                    hint="Pick everything the owner mentions."
+                    onChange={(value) => setData('improvement_goals', value)}
+                />
+                <Field
+                    label="Typical drink price"
+                    htmlFor="typical_drink_price"
+                    error={errors.typical_drink_price}
+                    hint="What a usual drink costs here."
+                >
+                    <div
+                        className={errors.typical_drink_price ? 'rd-affix is-invalid' : 'rd-affix'}
+                        style={{ width: 200 }}
+                    >
+                        <span className="rd-affix__start" aria-hidden="true">
+                            RM
+                        </span>
+                        <input
+                            id="typical_drink_price"
+                            type="number"
+                            inputMode="decimal"
+                            min={1}
+                            max={100}
+                            step={0.1}
+                            aria-invalid={errors.typical_drink_price ? true : undefined}
+                            aria-describedby={
+                                errors.typical_drink_price ? 'typical_drink_price-error' : 'typical_drink_price-hint'
+                            }
+                            value={data.typical_drink_price}
+                            onChange={(event) => setData('typical_drink_price', event.target.value)}
+                        />
+                    </div>
                 </Field>
             </FormSection>
 

@@ -20,6 +20,8 @@ class ProductResource extends JsonResource
             'category'          => $this->category,
             'unit'              => $this->unit,
             'unit_price'        => $this->unit_price,
+            'is_halal'          => $this->is_halal,
+            'base_monthly_qty'  => $this->base_monthly_qty,
             'description'       => $this->description,
             'is_active'         => (bool) $this->is_active,
             'order_lines_count' => $this->whenCounted('orderLines'),

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\MobileApp;
 
 use App\Helpers\Helper;
+use App\Http\Controllers\API\V1\RecommendationFeedbackController;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LeadRequest;
 use App\Models\DocumentUpload;
@@ -14,16 +15,17 @@ use App\Models\Leads;
 use App\Models\States;
 use App\Models\Cities;
 use App\Models\IFEReport;
-use App\Models\OutletRecommendation;
+use App\Models\Recipe;
+use App\Models\RecommendationFeedback;
 use App\Models\Tasks;
 use App\Services\TaskRisk;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use App\Jobs\FirebaseNotification;
-use App\Jobs\RefreshOutletRecommendations;
+use App\Jobs\ProfileOutletArea;
 use App\Services\OrderService;
-use App\Services\Recommendation\RecommendationService;
 use Log;
 use Throwable;
 
@@ -112,20 +114,17 @@ class LeadController extends Controller
         // The outlet's area (the manager's area filter).
         $query->when($request->input('area'), fn ($q, $area) => $q->where('ife_area_id', $area));
 
-        // Counts for the chips (All, Customers, Prospects, Suggestions), before
-        // the kind or suggestions filter narrows the list.
-        $suggestedIds = OutletRecommendation::where('estimated_monthly_value', '>', 0)->pluck('lead_id');
+        // Counts for the chips (All, Customers, Prospects), before the kind
+        // filter narrows the list.
         $counts = [
             'all'       => (clone $query)->count(),
             'customer'  => (clone $query)->whereNotNull('customer_id')->count(),
             'prospect'  => (clone $query)->whereNull('customer_id')->count(),
-            'suggested' => (clone $query)->whereIn('id', $suggestedIds)->count(),
         ];
 
-        // Customer (has a customer ID) or prospect, and outlets with suggestions.
+        // Customer (has a customer ID) or prospect.
         $query->when($request->input('kind') === 'customer', fn ($q) => $q->whereNotNull('customer_id'));
         $query->when($request->input('kind') === 'prospect', fn ($q) => $q->whereNull('customer_id'));
-        $query->when($request->boolean('suggested'), fn ($q) => $q->whereIn('id', $suggestedIds));
 
         // 4. EXECUTE THE QUERY AND PAGINATE
         $perPage = (int) $request->input('per_page', 10);
@@ -192,8 +191,6 @@ class LeadController extends Controller
                 'kind'                  => $lead->customer_id ? 'customer' : 'prospect',
                 'customer_id'           => $lead->customer_id,
                 'last_visit_at'         => $extras['visits'][$lead->id] ?? null,
-                'suggested_count'       => $extras['suggested'][$lead->id]['count'] ?? 0,
-                'suggested_value'       => $extras['suggested'][$lead->id]['value'] ?? 0,
             ] + ($work[$lead->id] ?? self::NO_WORK) + $this->outletProfile($lead);
         });
         $data['pagination']    = $pagination;
@@ -322,6 +319,10 @@ class LeadController extends Controller
             // Outlet profile pickers.
             'size_bands'        => collect(Leads::SIZE_BANDS)->map(fn ($label, $value) => ['value' => $value, 'label' => $label])->values()->all(),
             'segments'          => collect(Leads::SEGMENTS)->map(fn ($label, $value) => ['value' => $value, 'label' => $label])->values()->all(),
+            'customer_groups'   => collect(config('ife.recommendation.customer_groups', []))->map(fn ($label, $value) => ['value' => $value, 'label' => $label])->values()->all(),
+            // What the outlet needs.
+            'drink_kinds'       => collect(Recipe::CATEGORIES)->map(fn ($label, $value) => ['value' => $value, 'label' => $label])->values()->all(),
+            'goals'             => collect(Leads::GOALS)->map(fn ($label, $value) => ['value' => $value, 'label' => $label])->values()->all(),
         ];
 
         return $this->response_success($data, 'Filter options retrieved successfully.');
@@ -360,7 +361,9 @@ class LeadController extends Controller
                 'size_band'         => $validatedData['size_band'] ?? null,
                 'seats'             => $validatedData['seats'] ?? null,
                 'segment'           => $validatedData['segment'] ?? null,
+                'is_halal'          => $validatedData['is_halal'] ?? null,
             ]);
+            $lead->applyNeeds($validatedData);
 
             if ($request->has('gps') && ($error = $lead->applyLocationStamp($request->input('gps')))) {
                 DB::rollBack();
@@ -372,8 +375,10 @@ class LeadController extends Controller
             if ($request->hasFile('file')) {
                 $this->upload($request, $lead->id);
             }
-    
+
             DB::commit();
+
+            ProfileOutletArea::dispatchAfterResponse($lead->id);
 
             $runJobFirebase = (new FirebaseNotification($lead->id, 'lead', '0'));
             dispatch($runJobFirebase);
@@ -428,6 +433,14 @@ class LeadController extends Controller
                 'segment'           => $validatedData['segment'] ?? null,
             ]);
 
+            // Absent (an app version without the switch): keep the saved answer.
+            if (array_key_exists('is_halal', $validatedData)) {
+                $lead->is_halal = $validatedData['is_halal'];
+            }
+
+            // A need an older app version doesn't send keeps its saved answer.
+            $lead->applyNeeds($validatedData);
+
             // Absent: keep the saved location. Present (even empty): replace it.
             if ($request->has('gps') && ($error = $lead->applyLocationStamp($request->input('gps')))) {
                 DB::rollBack();
@@ -460,8 +473,9 @@ class LeadController extends Controller
 
             DB::commit();
 
-            if ($lead->wasChanged(['size_band', 'seats', 'segment', 'business_category'])) {
-                RefreshOutletRecommendations::dispatch([$lead->id]);
+            // A moved outlet gets its area worked out again.
+            if ($lead->wasChanged(['latitude', 'longitude', 'address', 'postcode', 'city_id', 'state_id'])) {
+                ProfileOutletArea::dispatchAfterResponse($lead->id);
             }
 
             return $this->response_success(['lead' => $lead], 'Lead updated successfully.');
@@ -559,23 +573,22 @@ class LeadController extends Controller
     }
 
     /**
-     * The outlet's "Recommended" tab: ranked products with suggested monthly
-     * quantity, the gap list, estimated monthly value, and the "Why these?"
-     * explanation with an opening line (written on first open, then cached).
+     * What the rep did with a drink idea.
+     * Body: lead_id, recipe_id, status (pitched | accepted | declined | cleared),
+     * optionally menu_scan_id, and optionally reason when declining.
      */
-    public function getLeadRecommendations(Request $request, RecommendationService $recommendations)
+    public function addRecommendationFeedback(Request $request)
     {
         $lead = $this->visibleLead($request);
         if (!$lead) {
             return $this->response_failed('We could not find this outlet.');
         }
 
-        try {
-            return $this->response_success($recommendations->forLead($lead), 'Recommendations retrieved successfully.');
-        } catch (Throwable $e) {
-            Log::error('Mobile recommendations failed', ['lead_id' => $lead->id, 'error' => $e->getMessage()]);
-            return $this->response_failed('Failed to retrieve recommendations.');
-        }
+        $data = $request->validate(RecommendationFeedbackController::rules());
+
+        RecommendationFeedback::record($lead, $request->user(), $data);
+
+        return $this->response_success(RecommendationFeedback::answersFor($lead), 'Saved.');
     }
 
     /** The lead named by lead_id (or leadID), if the caller may see it. */
@@ -627,7 +640,7 @@ class LeadController extends Controller
             ->all();
     }
 
-    /** Last visit and suggested products per outlet, for the list rows. */
+    /** Last visit per outlet, for the list rows. */
     private function listExtras($leadIds): array
     {
         $visits = IFEReport::whereIn('lead_id', $leadIds)
@@ -637,29 +650,28 @@ class LeadController extends Controller
             ->map(fn ($at) => $at ? Carbon::parse($at)->toDateTimeString() : null)
             ->all();
 
-        $suggested = OutletRecommendation::whereIn('lead_id', $leadIds)
-            ->where('estimated_monthly_value', '>', 0)
-            ->get(['lead_id', 'items', 'estimated_monthly_value'])
-            ->mapWithKeys(fn ($row) => [$row->lead_id => [
-                'count' => count($row->items ?? []),
-                'value' => (float) $row->estimated_monthly_value,
-            ]])
-            ->all();
-
-        return ['visits' => $visits, 'suggested' => $suggested];
+        return ['visits' => $visits];
     }
 
     /** Outlet profile fields shared by the list and detail responses. */
     private function outletProfile(Leads $lead): array
     {
         return [
-            'size_band'       => $lead->size_band,
-            'size_band_label' => Leads::sizeBandLabel($lead->size_band),
-            'seats'           => $lead->seats,
-            'segment'         => $lead->segment,
-            'segment_label'   => Leads::segmentLabel($lead->segment),
+            'size_band'           => $lead->size_band,
+            'size_band_label'     => Leads::sizeBandLabel($lead->size_band),
+            'seats'               => $lead->seats,
+            'segment'             => $lead->segment,
+            'segment_label'       => Leads::segmentLabel($lead->segment),
+            'is_halal'            => $lead->is_halal,
+            'main_customers'      => $lead->main_customers ?? [],
+            'best_selling_kinds'  => $lead->best_selling_kinds ?? [],
+            'improvement_goals'   => $lead->improvement_goals ?? [],
+            'typical_drink_price' => $lead->typical_drink_price,
+            // The same needs with readable names, for the details screen.
+            'needs'               => $lead->needsShown(),
+            'area'                => $lead->areaProfile(),
             // Same shape as a GPS Stamp answer; null when never captured.
-            'location'        => $lead->locationStamp(),
+            'location'            => $lead->locationStamp(),
         ];
     }
 

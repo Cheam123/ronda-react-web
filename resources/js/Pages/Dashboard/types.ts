@@ -84,21 +84,6 @@ export interface TeamMember {
     urgent: AttentionItem[];
 }
 
-/** RecommendationService::topForUser(): a rep's outlets with the most to gain. */
-export interface SuggestedOutlets {
-    outlets: {
-        lead_id: number;
-        name: string | null;
-        /** The first three suggested products, most backed first. */
-        products: string[];
-        product_count: number;
-        gap_count: number;
-        estimated_monthly_value: number;
-    }[];
-    /** How many of their outlets have suggestions at all. */
-    total: number;
-}
-
 export interface DailyDigest {
     date_label: string;
     /** False when the 7:00 am run was missed and this is an older one. */
@@ -157,7 +142,7 @@ export interface AdminSummary {
 }
 
 export interface MissedJob {
-    job: 'digest' | 'recommendations';
+    job: 'digest';
     /** "7:00 am" */
     schedule: string;
     last_run: string | null;

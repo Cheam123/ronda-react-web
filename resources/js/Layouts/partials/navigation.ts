@@ -84,7 +84,7 @@ export const NAVIGATION: NavGroup[] = [
     {
         label: 'Admin',
         icon: 'mdi mdi-tune-variant',
-        active: ['v1/users*', 'v1/product*', 'v1/area*'],
+        active: ['v1/users*', 'v1/product*', 'v1/recipe*', 'v1/area*'],
         abilities: ['manage_user', 'manage_product', 'manage_area'],
         children: [
             { label: 'Users', href: () => route('users.index'), active: ['v1/users*'], abilities: ['manage_user'] },
@@ -92,6 +92,12 @@ export const NAVIGATION: NavGroup[] = [
                 label: 'Products',
                 href: () => route('product.index'),
                 active: ['v1/product*'],
+                abilities: ['manage_product'],
+            },
+            {
+                label: 'Drinks',
+                href: () => route('recipe.index'),
+                active: ['v1/recipe*'],
                 abilities: ['manage_product'],
             },
             { label: 'IFE areas', href: () => route('area.index'), active: ['v1/area*'], abilities: ['manage_area'] },

@@ -1,0 +1,215 @@
+// The Menu tab on an outlet (Pages/Leads/Partials/MenuTab): the scanned menu,
+// what was found on it, and the drink ideas. The idea cards reuse .drink-card.
+
+.menu-tab {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 20px 24px 24px;
+
+    @media (max-width: 575.98px) {
+        padding: 16px;
+    }
+
+    &--empty {
+        align-items: center;
+        gap: 4px;
+        padding-bottom: 32px;
+
+        .lead-activity__empty {
+            max-width: 46ch;
+            padding-bottom: 16px;
+        }
+    }
+
+    > section {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    &__head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px 16px;
+
+        .lead-activity__note {
+            margin: 0;
+        }
+    }
+
+    &__title {
+        margin: 0;
+        color: $rd-ink;
+        font-size: 15px;
+        font-weight: 600;
+
+        .rd-muted {
+            margin-left: 4px;
+            font-weight: 400;
+        }
+    }
+
+    &__actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .lead-activity__note,
+    .rd-status {
+        margin: 0;
+    }
+}
+
+// Idea cards side by side while there is room, one a row on a phone.
+.menu-ideas {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 12px;
+}
+
+// Why a drink suits, as a short list (not chips: these are sentences).
+.menu-reasons {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    color: $rd-body;
+    font-size: 13px;
+    line-height: 1.4;
+
+    li {
+        display: flex;
+        gap: 6px;
+    }
+
+    .mdi {
+        color: $rd-muted;
+    }
+
+    // "2 more reasons": a plain text button under the list.
+    &__more {
+        align-self: flex-start;
+        margin-top: -4px;
+        padding: 2px 0;
+        border: 0;
+        background: none;
+        color: $rd-brand-ink;
+        font-size: 13px;
+        font-weight: 500;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+}
+
+// A menu row: the drink it was read as, then the row as it was read.
+.menu-rows {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border: 1px solid $rd-line;
+    border-radius: 12px;
+
+    > li {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 4px 16px;
+        min-height: 44px;
+        padding: 8px 14px;
+
+        & + li {
+            border-top: 1px solid $rd-line-soft;
+        }
+    }
+
+    label {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        margin: 0;
+        cursor: pointer;
+    }
+
+    &__drink {
+        color: $rd-ink;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    &__text {
+        color: $rd-muted;
+        font-size: 13px;
+        overflow-wrap: anywhere;
+    }
+
+    &__pick {
+        width: auto;
+        min-width: 220px;
+        max-width: 100%;
+    }
+}
+
+.menu-photos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+
+    img {
+        display: block;
+        width: 120px;
+        height: 120px;
+        border: 1px solid $rd-line;
+        border-radius: 12px;
+        object-fit: cover;
+    }
+
+    a:focus-visible {
+        display: block;
+        border-radius: 12px;
+        outline: 2px solid $rd-brand;
+        outline-offset: 2px;
+    }
+}
+
+// Ways to add a menu: photos (when Textract is set up) and typing.
+.menu-tab__add {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+// On a draft: every line the reader found, to compare with the photos.
+.menu-lines {
+    border: 1px solid $rd-line;
+    border-radius: 12px;
+    padding: 10px 14px;
+
+    summary {
+        cursor: pointer;
+        font-weight: 600;
+    }
+
+    ol {
+        margin: 10px 0 0;
+        padding-left: 2.2em;
+        max-height: 320px;
+        overflow-y: auto;
+        overflow-wrap: anywhere;
+    }
+
+    li + li {
+        margin-top: 2px;
+    }
+}

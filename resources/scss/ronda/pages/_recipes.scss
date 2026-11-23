@@ -1,0 +1,301 @@
+// Drinks (Pages/Recipes). The form reuses .prod-form.
+
+// The ingredient editor: product, amount as said, quantity in the unit, remove.
+.rcp-ingredients {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+    &__foot {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px 16px;
+        margin-top: 2px;
+    }
+}
+
+.rcp-ingredient {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 120px 150px 44px;
+    gap: 8px;
+    align-items: start;
+
+    &__product,
+    &__amount,
+    &__qty {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        min-width: 0;
+    }
+
+    &__remove {
+        width: 44px;
+        height: 44px;
+    }
+
+    @media (max-width: 767.98px) {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 44px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid $rd-line-soft;
+
+        &__product {
+            grid-column: 1 / -1;
+        }
+    }
+}
+
+// Label / value pairs in a side panel.
+.rcp-summary {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 8px 16px;
+    margin: 0;
+    font-size: 14px;
+
+    dt {
+        color: $rd-muted;
+        font-weight: 500;
+    }
+
+    dd {
+        margin: 0;
+        color: $rd-ink;
+        text-align: right;
+    }
+}
+
+.rcp-subhead {
+    margin: 4px 0 0;
+    color: $rd-ink-2;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.rcp-reasons {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 14px;
+
+    li {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+    }
+}
+
+.rcp-recipe {
+    margin-top: 4px;
+}
+
+.rcp-table__halal {
+    margin-left: 6px;
+}
+
+.drink-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px 16px;
+    border: 1px solid $rd-line;
+    border-radius: 12px;
+    background: $rd-panel;
+
+    &--preview {
+        background: $rd-inset;
+    }
+
+    &--declined {
+        background: $rd-row-alt;
+    }
+
+    &__head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 8px;
+    }
+
+    &__name {
+        color: $rd-ink;
+        font-size: 15px;
+        font-weight: 600;
+        line-height: 1.35;
+    }
+
+    &__meta {
+        color: $rd-muted;
+        font-size: 12px;
+    }
+
+    &__description {
+        margin: 0;
+        color: $rd-body;
+        font-size: 13px;
+        line-height: 1.45;
+    }
+
+    &__needs,
+    &__has {
+        margin: 0;
+        color: $rd-body;
+        font-size: 13px;
+        line-height: 1.45;
+
+        > span:first-child {
+            color: $rd-muted;
+            font-weight: 600;
+        }
+    }
+
+    &__foot {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        margin-top: auto;
+        padding-top: 4px;
+    }
+
+    // The outcome buttons share the card's width.
+    .lead-outcome {
+        width: 100%;
+        margin-left: 0;
+
+        .lead-outcome__btn {
+            flex: 1;
+            justify-content: center;
+        }
+    }
+}
+
+// The reason picker shown after Declined.
+.drink-reason {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+
+    &__label {
+        width: 100%;
+        color: $rd-muted;
+        font-size: 12px;
+        font-weight: 600;
+    }
+}
+
+// A smaller pill, for the optional decline reason.
+.rd-choice--sm {
+    height: 32px;
+    padding: 0 12px;
+    font-size: 12px;
+
+    @media (max-width: 767.98px) {
+        height: 44px;
+    }
+}
+
+// Area rules: how the area is scored, in the side panel.
+.area-steps {
+    margin: 8px 0 0;
+    padding-left: 18px;
+    color: $rd-body;
+    font-size: 13px;
+    line-height: 1.5;
+
+    li + li {
+        margin-top: 6px;
+    }
+}
+
+// "How the drink ideas behave" on the drinks list (Recipes/Partials/IdeasCheckPanel).
+.ideas-check {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+
+    &__head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 10px 16px;
+
+        .rd-panel__sub {
+            margin: 4px 0 0;
+        }
+    }
+
+    &__stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 12px;
+        margin: 0;
+
+        > div {
+            padding: 12px 14px;
+            border: 1px solid $rd-line;
+            border-radius: 10px;
+        }
+
+        dt {
+            color: $rd-muted;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        dd {
+            margin: 4px 0 0;
+            color: $rd-ink;
+            font-size: 20px;
+            font-weight: 600;
+
+            .rd-muted {
+                font-size: 13px;
+                font-weight: 400;
+            }
+        }
+    }
+
+    &__fit {
+        caption {
+            caption-side: top;
+            padding: 0 0 6px;
+            color: $rd-muted;
+            font-size: 12px;
+        }
+
+        th[scope='row'] {
+            font-weight: 500;
+        }
+    }
+
+    &__lists {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 16px 24px;
+    }
+
+    &__subtitle {
+        margin: 0 0 8px;
+        color: $rd-ink;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    &__answers {
+        margin: 0 0 8px;
+        color: $rd-body;
+        font-size: 13px;
+    }
+
+    &__note {
+        margin: 0;
+        color: $rd-muted;
+        font-size: 12px;
+    }
+}

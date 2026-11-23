@@ -3,41 +3,64 @@
 namespace App\Services\Ai;
 
 use Anthropic\Bedrock\MantleClient;
+use Anthropic\Client;
 use Anthropic\Core\Exceptions\AnthropicException;
 
 /**
- * Claude on Amazon Bedrock, through the official Anthropic PHP SDK's Bedrock
- * (Mantle) client. Used for the manager daily digest, the "Why these?"
- * explanation on product recommendations, and the rep assistant on the
- * outlet page (visit brief, Ask Ronda, follow-up drafts, pitch tips).
+ * Claude, through the official Anthropic PHP SDK. Used for the manager daily
+ * digest and the rep assistant on the outlet page (visit brief, Ask Ronda,
+ * follow-up drafts).
  *
- * Settings live in config/ife.php (bedrock.*). isConfigured() is false when
- * no Bedrock credentials are set; callers then use their template fallback
- * rather than calling out, so the app works without AWS.
+ * By default it calls the Claude API with a key from the Claude Console
+ * (ANTHROPIC_API_KEY). With CLAUDE_PROVIDER=bedrock it calls Claude on
+ * Amazon Bedrock instead. Settings live in config/ife.php (claude.*).
+ * isConfigured() is false when the chosen provider has no credentials;
+ * callers then use their template fallback rather than calling out, so the
+ * app works without AI.
  */
 class ClaudeClient
 {
+    /** The Claude API model when CLAUDE_MODEL is not set. */
+    private const DEFAULT_MODEL = 'claude-opus-5-5';
+
+    /** The Bedrock model when CLAUDE_MODEL is not set. */
+    private const DEFAULT_BEDROCK_MODEL = 'anthropic.claude-opus-5';
+
+    /**
+     * On the Claude API, a request Claude declines for policy reasons is
+     * retried once on the server's default fallback model, so a false
+     * positive doesn't leave the rep with nothing. Bedrock has no such
+     * option.
+     */
+    private const FALLBACK_BETA = 'server-side-fallback-2026-07-01';
+
     public function isConfigured(): bool
     {
-        $config = config('ife.bedrock', []);
+        $config = config('ife.claude', []);
 
         if (!($config['enabled'] ?? false)) {
             return false;
         }
 
-        return !empty($config['api_key']) || (!empty($config['key']) && !empty($config['secret']));
+        if ($this->onBedrock()) {
+            $bedrock = $config['bedrock'] ?? [];
+
+            return !empty($bedrock['api_key']) || (!empty($bedrock['key']) && !empty($bedrock['secret']));
+        }
+
+        return !empty($config['api_key']);
     }
 
     public function model(): string
     {
-        return (string) config('ife.bedrock.model', 'anthropic.claude-opus-5');
+        return (string) (config('ife.claude.model') ?: ($this->onBedrock() ? self::DEFAULT_BEDROCK_MODEL : self::DEFAULT_MODEL));
     }
 
     /**
      * One request, one text answer.
      *
      * @return array{text: string, input_tokens: int, output_tokens: int, cache_read_tokens: int, model: string}
-     * @throws \RuntimeException when Bedrock is not configured, the call fails,
+     * @throws \RuntimeException when Claude is not configured, the call fails,
      *                           Claude declines, or no text comes back
      */
     public function complete(string $system, string $prompt, ?string $effort = null): array
@@ -60,35 +83,32 @@ class ClaudeClient
     public function chat(array $system, array $messages, ?string $effort = null, bool $cache = false): array
     {
         if (!$this->isConfigured()) {
-            throw new \RuntimeException('Bedrock is not configured.');
+            throw new \RuntimeException('Claude is not configured.');
         }
-
-        $config = config('ife.bedrock');
-        $apiKey = $config['api_key'] ?: null;
 
         $blocks = array_map(fn (string $text) => ['type' => 'text', 'text' => $text], array_values($system));
         if ($cache && $blocks) {
             $blocks[count($blocks) - 1]['cacheControl'] = ['type' => 'ephemeral'];
         }
 
-        try {
-            $client = new MantleClient(
-                apiKey             : $apiKey,
-                awsAccessKey       : $apiKey ? null : ($config['key'] ?: null),
-                awsSecretAccessKey : $apiKey ? null : ($config['secret'] ?: null),
-                awsSessionToken    : $apiKey ? null : ($config['session'] ?: null),
-                awsRegion          : $config['region'] ?: 'us-east-1',
-            );
+        $request = [
+            'maxTokens'    => (int) config('ife.claude.max_tokens', 16000),
+            'messages'     => $messages,
+            'model'        => $this->model(),
+            'outputConfig' => $effort ? ['effort' => $effort] : null,
+            'system'       => $blocks,
+        ];
 
-            $message = $client->messages->create(
-                maxTokens    : (int) ($config['max_tokens'] ?? 16000),
-                messages     : $messages,
-                model        : $this->model(),
-                outputConfig : $effort ? ['effort' => $effort] : null,
-                system       : $blocks,
-            );
+        try {
+            $message = $this->onBedrock()
+                ? $this->bedrockClient()->messages->create(...$request)
+                : (new Client(apiKey: (string) config('ife.claude.api_key')))->beta->messages->create(
+                    ...$request,
+                    fallbacks: 'default',
+                    betas: [self::FALLBACK_BETA],
+                );
         } catch (AnthropicException $e) {
-            throw new \RuntimeException('Bedrock call failed: ' . $e->getMessage(), 0, $e);
+            throw new \RuntimeException('Claude call failed: ' . $e->getMessage(), 0, $e);
         }
 
         if ($message->stopReason === 'refusal') {
@@ -111,7 +131,27 @@ class ClaudeClient
             'input_tokens'      => (int) $message->usage->inputTokens,
             'output_tokens'     => (int) $message->usage->outputTokens,
             'cache_read_tokens' => (int) ($message->usage->cacheReadInputTokens ?? 0),
-            'model'             => $this->model(),
+            // The model that answered: a fallback model when the first one declined.
+            'model'             => (string) ($message->model ?: $this->model()),
         ];
+    }
+
+    private function onBedrock(): bool
+    {
+        return config('ife.claude.provider') === 'bedrock';
+    }
+
+    private function bedrockClient(): MantleClient
+    {
+        $config = config('ife.claude.bedrock', []);
+        $apiKey = ($config['api_key'] ?? null) ?: null;
+
+        return new MantleClient(
+            apiKey             : $apiKey,
+            awsAccessKey       : $apiKey ? null : (($config['key'] ?? null) ?: null),
+            awsSecretAccessKey : $apiKey ? null : (($config['secret'] ?? null) ?: null),
+            awsSessionToken    : $apiKey ? null : (($config['session'] ?? null) ?: null),
+            awsRegion          : ($config['region'] ?? null) ?: 'us-east-1',
+        );
     }
 }

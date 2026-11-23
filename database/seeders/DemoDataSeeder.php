@@ -17,8 +17,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 /**
- * Demo data for trying the dashboard, the outlet screens and the
- * recommendation engine: a small product catalogue, a manager and three
+ * Demo data for trying the dashboard and the outlet screens: a small
+ * product catalogue, a manager and three
  * Field Reps, two dozen outlets with profiles, five months of orders, visits
  * and tasks in every risk state.
  *
@@ -55,7 +55,12 @@ class DemoDataSeeder extends Seeder
             $this->tasks($outlets, $manager);
         });
 
-        $this->command?->info('Demo data ready. Run "php artisan recommendation:refresh" and "php artisan digest:daily" next.');
+        // Drinks the demo catalogue can make, the area types they suit, and what the outlets need. Safe to re-run.
+        $this->call(RecipeSeeder::class);
+        $this->call(AreaRuleSeeder::class);
+        $this->call(OutletNeedsSeeder::class);
+
+        $this->command?->info('Demo data ready. Run "php artisan digest:daily" next.');
     }
 
     /** @return array<string, Product> sku => product */
@@ -194,8 +199,7 @@ class DemoDataSeeder extends Seeder
 
     /**
      * Five months of monthly orders for the customers. Each kind of outlet
-     * has a typical basket; a few items are randomly left out per outlet so
-     * the recommender has real gaps to find.
+     * has a typical basket; a few items are randomly left out per outlet.
      */
     private function orders(array $outlets, array $products): void
     {

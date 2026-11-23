@@ -12,6 +12,12 @@
             "runtimeExecutable": "php",
             "runtimeArgs": ["artisan", "serve", "--host=127.0.0.1", "--port=8000"],
             "port": 8000
+        },
+        {
+            "name": "laravel-viva",
+            "runtimeExecutable": "cmd",
+            "runtimeArgs": ["/c", "set DB_DATABASE=ronda_viva&& php artisan serve --host=127.0.0.1 --port=8001 --no-reload"],
+            "port": 8001
         }
     ]
 }

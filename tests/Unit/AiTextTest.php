@@ -7,28 +7,21 @@ use App\Services\Ai\OutletAssistantService;
 use App\Services\Ai\OutletContext;
 use App\Services\DailyDigestService;
 use App\Services\DashboardService;
-use App\Services\Recommendation\RecommendationService;
 use App\Services\TaskRisk;
 use PHPUnit\Framework\TestCase;
 
 use InvalidArgumentException;
 
 /**
- * The text around the AI features that must work without AI: parsing
- * Claude's recommendation explanation and pitch tips, the template fallbacks
- * for the explanation, the daily digest, the visit brief, follow-up messages
- * and pitch tips, and the checks on an Ask Ronda chat.
+ * The text around the AI features that must work without AI: the template
+ * fallbacks for the daily digest, the visit brief and follow-up messages, and
+ * the checks on an Ask Ronda chat.
  */
 class AiTextTest extends TestCase
 {
-    private function recommendations(): RecommendationService
-    {
-        return new RecommendationService(new ClaudeClient());
-    }
-
     private function assistant(): OutletAssistantService
     {
-        return new OutletAssistantService(new ClaudeClient(), new OutletContext($this->recommendations()));
+        return new OutletAssistantService(new ClaudeClient(), new OutletContext());
     }
 
     /** Outlet facts in OutletContext::facts() shape. */
@@ -57,51 +50,8 @@ class AiTextTest extends TestCase
                 ['reference' => 'T-20260924-0142', 'title' => 'Deliver oat milk trial pack', 'status' => 'In Progress', 'subscriber' => 'Aiman Rahman', 'appointment' => null, 'due' => '25 Sep 2026, 5:00 PM', 'risk' => 'overdue'],
                 ['reference' => 'T-20261010-0001', 'title' => 'Barista training', 'status' => 'New Task', 'subscriber' => 'Aiman Rahman', 'appointment' => null, 'due' => '10 Oct 2026, 5:00 PM', 'risk' => 'on track'],
             ],
-            'suggested_orders' => ['status' => 'ready', 'similar_outlets' => 8, 'estimated_monthly_value' => 269.0, 'items' => [
-                ['product' => 'Oat Milk Barista Edition', 'sku' => 'MILK-OAT-1L'],
-                ['product' => 'Hazelnut Syrup', 'sku' => 'SYR-HAZ-750'],
-            ], 'why' => null],
             'catalogue'        => [],
         ], $overrides);
-    }
-
-    public function test_explanation_reply_is_split_into_why_and_opening_line()
-    {
-        [$why, $line] = $this->recommendations()->parseExplanation(
-            "WHY:\nSimilar cafes order oat milk every month.\n\nOPENING LINE:\n\"Have you thought about oat milk for the weekend crowd?\""
-        );
-
-        $this->assertSame('Similar cafes order oat milk every month.', $why);
-        $this->assertSame('Have you thought about oat milk for the weekend crowd?', $line);
-    }
-
-    public function test_unstructured_reply_is_kept_as_the_explanation()
-    {
-        [$why, $line] = $this->recommendations()->parseExplanation('Similar outlets buy these.');
-
-        $this->assertSame('Similar outlets buy these.', $why);
-        $this->assertNull($line);
-    }
-
-    public function test_template_explanation_names_the_products_and_value()
-    {
-        [$why, $line] = $this->recommendations()->templateExplanation([
-            'outlet'                  => ['type' => 'Cafe', 'segment' => 'Premium', 'size_band' => 'Small', 'seats' => 24],
-            'similar_outlets'         => 5,
-            'currency'                => 'RM',
-            'gap_count'               => 2,
-            'estimated_monthly_value' => 520.5,
-            'recommended'             => [
-                ['product' => 'Oat Milk'],
-                ['product' => 'Caramel Syrup'],
-            ],
-        ]);
-
-        $this->assertStringContainsString('5 most similar outlets', $why);
-        $this->assertStringContainsString('Oat Milk and Caramel Syrup', $why);
-        $this->assertStringContainsString('has not ordered any of them recently', $why);
-        $this->assertStringContainsString('RM 520.50', $why);
-        $this->assertStringStartsWith('Other cafe outlets like yours have been doing well with Oat Milk.', $line);
     }
 
     public function test_template_digest_has_every_section()
@@ -144,7 +94,7 @@ class AiTextTest extends TestCase
         $this->assertStringContainsString('- The follow-up date (30 Sep 2026) has passed.', $text);
         $this->assertStringContainsString('- Task "Deliver oat milk trial pack" is overdue.', $text);
         $this->assertStringNotContainsString('Barista training', $text);
-        $this->assertStringContainsString('- Suggested orders: Oat Milk Barista Edition and Hazelnut Syrup.', $text);
+        $this->assertStringNotContainsString('Suggested orders', $text);
     }
 
     public function test_template_brief_for_a_new_prospect_says_so()
@@ -154,7 +104,6 @@ class AiTextTest extends TestCase
             'orders'           => [],
             'order_summary'    => ['confirmed_last_90_days' => 0, 'value_last_90_days' => 0.0, 'last_order_date' => null],
             'open_tasks'       => [],
-            'suggested_orders' => ['status' => 'not enough data yet', 'items' => []],
         ]));
 
         $this->assertStringContainsString('- No confirmed orders in the last 90 days.', $text);
@@ -178,41 +127,6 @@ class AiTextTest extends TestCase
         $this->assertStringContainsString('Terima kasih atas masa anda di Kopi Kita Bangsar pada 28 Sep 2026.', $malay);
         $this->assertStringContainsString("\n\nSampel tiba hari Khamis.\n\n", $malay);
         $this->assertStringEndsWith("Terima kasih,\nAiman", $malay);
-
-        $suggested = $this->assistant()->followUpTemplate($this->outletFacts(['person_in_charge' => null]), 'en', 'suggested', null, 'Aiman Rahman');
-        $this->assertStringStartsWith("Hi,\n\nOutlets like Kopi Kita Bangsar have been doing well with Oat Milk Barista Edition.", $suggested);
-    }
-
-    public function test_pitch_reply_is_read_by_sku()
-    {
-        $pitches = $this->assistant()->parsePitches(
-            "MILK-OAT-1L | 6 of 8 similar cafes order it. | \"Nobody asks for oat milk.\" | Start with one trial pack.\n"
-            . "- SYR-HAZ-750 | It goes with their lattes. | We have two syrups. | One bottle is enough to test it.\n"
-            . "UNKNOWN-SKU | Not on this outlet's list. | x | y\n"
-            . "Here are your tips:",
-            ['MILK-OAT-1L', 'SYR-HAZ-750', 'CLEAN-TAB']
-        );
-
-        $this->assertSame(['MILK-OAT-1L', 'SYR-HAZ-750'], array_keys($pitches));
-        $this->assertSame('6 of 8 similar cafes order it.', $pitches['MILK-OAT-1L']['pitch']);
-        $this->assertSame('Nobody asks for oat milk.', $pitches['MILK-OAT-1L']['objection']);
-        $this->assertSame('One bottle is enough to test it.', $pitches['SYR-HAZ-750']['reply']);
-        $this->assertSame([], $this->assistant()->parsePitches('Sorry, I cannot help with that.', ['MILK-OAT-1L']));
-    }
-
-    public function test_template_pitch_uses_the_numbers_and_the_description()
-    {
-        $pitches = $this->assistant()->pitchTemplate([
-            ['sku' => 'MILK-OAT-1L', 'status' => 'gap', 'buyers' => 6, 'neighbors_used' => 8, 'recommended_qty' => 10, 'current_qty' => 0, 'unit' => 'litre'],
-            ['sku' => 'CLEAN-TAB', 'status' => 'top_up', 'buyers' => 7, 'neighbors_used' => 8, 'recommended_qty' => 2, 'current_qty' => 1, 'unit' => 'tub'],
-        ], ['MILK-OAT-1L' => 'Barista oat milk that steams like dairy milk. Made in Sweden.']);
-
-        $this->assertSame(
-            '6 of the 8 most similar outlets order this, about 10 litre a month. This outlet has not ordered it recently. Barista oat milk that steams like dairy milk.',
-            $pitches['MILK-OAT-1L']['pitch']
-        );
-        $this->assertSame('7 of the 8 most similar outlets order this, about 2 tub a month. This outlet orders about 1 tub a month.', $pitches['CLEAN-TAB']['pitch']);
-        $this->assertNull($pitches['CLEAN-TAB']['objection']);
     }
 
     public function test_chat_history_is_checked()

@@ -7,7 +7,7 @@ use App\Models\Product;
 use Illuminate\Http\Request;
 
 /**
- * The active product catalogue, for order entry and recommendation details.
+ * The active product catalogue, for order entry.
  * Read-only: the catalogue is maintained on the web by Admins.
  */
 class ProductController extends Controller

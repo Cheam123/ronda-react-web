@@ -53,14 +53,6 @@ class MobileTasksTest extends TestCase
         $this->assertSame([$overdue->id], array_column($today['overdue'], 'id'));
         $this->assertSame([$atRisk->id], array_column($today['at_risk'], 'id'));
         $this->assertSame('overdue', $today['overdue'][0]['risk']);
-        $this->assertArrayHasKey('suggestions', $today);
-    }
-
-    public function test_managers_get_no_rep_suggestions_card(): void
-    {
-        Sanctum::actingAs($this->manager);
-
-        $this->assertNull($this->getJson('/api/mobile/home')->assertOk()->json('today.suggestions'));
     }
 
     public function test_task_list_focus_and_extra_fields(): void

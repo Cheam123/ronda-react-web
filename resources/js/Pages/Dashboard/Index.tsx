@@ -10,11 +10,10 @@ import FieldOutput from './Partials/FieldOutput';
 import MorningRoundUp from './Partials/MorningRoundUp';
 import MyWeek from './Partials/MyWeek';
 import NeedsAttention from './Partials/NeedsAttention';
-import SuggestedOutlets from './Partials/SuggestedOutlets';
 import TeamTable from './Partials/TeamTable';
 import TodayPanel from './Partials/TodayPanel';
 import TrendChart from './Partials/TrendChart';
-import type { DailyDigest, DashboardSummary, SuggestedOutlets as Suggestions, TeamMember } from './types';
+import type { DailyDigest, DashboardSummary, TeamMember } from './types';
 
 interface DashboardProps {
     /** Admins and Managers get the team view; a Field Rep sees their own work. */
@@ -22,8 +21,6 @@ interface DashboardProps {
     /** Admins can switch back to the organisation overview. */
     showViewTabs: boolean;
     summary: DashboardSummary;
-    /** A Field Rep's outlets with the most to gain from suggested orders; null on the team view. */
-    suggestions: Suggestions | null;
     digest: DailyDigest | null;
     digestStatus: string | null;
     risk: { hours: number; percent: number };
@@ -61,17 +58,9 @@ function teamHeadline(overdue: number, atRisk: number, team: TeamMember[]): stri
  * Managers (and admins on the Team operations tab): the Morning Round-Up, the
  * team's Needs attention list beside today's other counts, the team table,
  * then the 14-day chart and field output. A Field Rep: their Needs attention
- * list, with Suggested orders and their last 7 days beside it.
+ * list, with their last 7 days beside it.
  */
-export default function Dashboard({
-    isTeam,
-    showViewTabs,
-    summary,
-    suggestions,
-    digest,
-    digestStatus,
-    risk,
-}: DashboardProps) {
+export default function Dashboard({ isTeam, showViewTabs, summary, digest, digestStatus, risk }: DashboardProps) {
     const { currency } = usePage<PageProps>().props.app;
     const { user, can } = useAuth();
     const { tasks } = summary;
@@ -168,7 +157,6 @@ export default function Dashboard({
                             className="rd-span-8"
                         />
                         <div className="dash-side">
-                            {suggestions && <SuggestedOutlets suggestions={suggestions} currency={currency} />}
                             <MyWeek summary={summary} currency={currency} />
                         </div>
                     </div>

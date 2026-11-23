@@ -1,0 +1,45 @@
+{
+    "_note": "Starting area rules, from the ChatGPT area profile design the project author chose on 17 November 2026. They are hypotheses to guide matching, not measured customer preferences, and admins can change them on Admin > Drinks > Area rules. Keys are the area types in config('ife.recommendation.area.area_labels'); categories use Recipe::CATEGORIES keys and price_tiers Recipe::PRICE_TIERS keys. Empty means any.",
+    "rules": {
+        "university": {
+            "categories": ["fruit_tea", "matcha", "flavoured_coffee", "sparkling"],
+            "price_tiers": ["budget", "mid_range"],
+            "note": "Student activity: convenient drinks at accessible prices."
+        },
+        "residential": {
+            "categories": ["kopitiam", "tea", "coffee", "chocolate"],
+            "price_tiers": ["budget", "mid_range"],
+            "note": "Everyday drinks and family-friendly options."
+        },
+        "retail": {
+            "categories": [],
+            "price_tiers": ["mid_range"],
+            "note": "A broad mix of customers and varied drinks."
+        },
+        "office": {
+            "categories": ["coffee", "flavoured_coffee", "kopitiam"],
+            "price_tiers": ["mid_range", "premium"],
+            "note": "Coffee and quick takeaway drinks."
+        },
+        "tourist": {
+            "categories": ["kopitiam", "flavoured_coffee", "matcha", "fruit_tea"],
+            "price_tiers": ["mid_range", "premium"],
+            "note": "Visitors after local favourites and something new."
+        },
+        "transit": {
+            "categories": ["coffee", "kopitiam", "tea"],
+            "price_tiers": ["budget", "mid_range"],
+            "note": "Commuters wanting a quick drink on the way."
+        },
+        "industrial": {
+            "categories": ["kopitiam", "tea", "coffee", "chocolate"],
+            "price_tiers": ["budget"],
+            "note": "Workers on a budget, often on shifts."
+        },
+        "recreation": {
+            "categories": ["fruit_tea", "sparkling", "matcha"],
+            "price_tiers": ["mid_range"],
+            "note": "Gym-goers and park visitors wanting something cold and refreshing."
+        }
+    }
+}

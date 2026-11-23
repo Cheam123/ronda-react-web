@@ -11,9 +11,9 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * The Morning Round-Up (the manager daily brief): today's team figures
- * (from DashboardService) turned into a short briefing by Claude on Bedrock.
+ * (from DashboardService) turned into a short briefing by Claude.
  *
- * When Bedrock is not configured, or the call fails, the same figures are
+ * When Claude is not configured, or the call fails, the same figures are
  * written up by a plain template instead, so the dashboard always has one.
  * `source` on the row records which one wrote it.
  *
@@ -63,14 +63,14 @@ TXT;
                 $result  = $this->claude->complete(self::SYSTEM, $this->prompt($facts, $now));
                 $content = $result['text'];
                 $row     = [
-                    'source'        => 'bedrock',
+                    'source'        => 'claude',
                     'model'         => $result['model'],
                     'input_tokens'  => $result['input_tokens'],
                     'output_tokens' => $result['output_tokens'],
                     'error'         => null,
                 ];
             } catch (\Throwable $e) {
-                Log::warning('Daily digest: Bedrock failed, using the template', ['error' => $e->getMessage()]);
+                Log::warning('Daily digest: Claude failed, using the template', ['error' => $e->getMessage()]);
                 $row['error'] = mb_substr($e->getMessage(), 0, 1000);
             }
         }
@@ -117,7 +117,7 @@ TXT;
             . "\n\nWrite today's briefing.";
     }
 
-    /** Deterministic write-up of the same figures, used without Bedrock. */
+    /** Deterministic write-up of the same figures, used without Claude. */
     public function template(array $facts): string
     {
         $tasks    = $facts['tasks'];

@@ -1,0 +1,20 @@
+{
+    "_note": "Sample menus for trying \"php artisan menu:check\" with no folder. Written by the project author, with the kinds of misreads seen in the first phone trial (B for 3, a wrong letter or two, a description line). They are not real phone readings: real accuracy needs readings copied from the phone and their answer lists, in a folder given to the command.",
+    "menus": [
+        {
+            "name": "Cafe, typed with phone-style misreads",
+            "text": "COFFEE\nEspresso 7.00\nAmerlcano 9.00\nOappucoino 1B.00\nFlat Whlte 12.00\nIced Spanish Latte 14.00\nDirty Matcha 15.00\nchai tea, cinnamon, milk\nCroissant 6.50",
+            "answer": ["Espresso", "Americano", "Cappuccino", "Flat White", "Spanish Latte", "Matcha Latte"]
+        },
+        {
+            "name": "Kopitiam, two columns as the phone copies them",
+            "text": "Photo 1 (x,y,width,height | text)\n40,100,300,32 | MINUMAN\n40,160,300,32 | Kopi O\n620,163,90,30 | 2.50\n40,220,300,32 | Teh Tarik\n620,223,90,30 | 3.00\n40,280,300,32 | Teh O Ais Limau\n620,283,90,30 | 3.50\n40,340,300,32 | Milo Dinosaur\n620,343,90,30 | 6.00\n40,400,300,32 | Bandung\n620,403,90,30 | 3.80\n40,460,300,32 | Roti Bakar\n620,463,90,30 | 3.00",
+            "answer": ["Kopi O", "Teh Tarik", "Teh O Ais Limau", "Milo Dinosaur", "Bandung"]
+        },
+        {
+            "name": "Bubble tea shop with a description line",
+            "text": "Brown Sugar Boba 12.90\nThai Milk Tea 10.90\nPeach Tea 9.90\nLychee Tea 9.90\nfresh milk, brown sugar pearls\nStrawberry Matcha 13.90",
+            "answer": ["Brown Sugar Boba Milk", "Thai Milk Tea", "Iced Peach Green Tea", "Lychee Jasmine Tea", "Strawberry Matcha Latte"]
+        }
+    ]
+}

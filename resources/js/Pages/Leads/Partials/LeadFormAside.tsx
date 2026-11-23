@@ -1,4 +1,4 @@
-/** The notes beside the lead form: what makes a customer, what feeds suggested orders. */
+/** The note beside the lead form: what makes a customer. */
 export default function LeadFormAside({ customerId }: { customerId: string }) {
     const customer = customerId.trim() !== '';
 
@@ -32,15 +32,6 @@ export default function LeadFormAside({ customerId }: { customerId: string }) {
                         one open task at a time.
                     </li>
                 </ul>
-            </section>
-            <section className="rd-panel" aria-labelledby="suggestions-title">
-                <h2 id="suggestions-title" className="rd-panel__title">
-                    Suggested orders
-                </h2>
-                <p className="lead-note">
-                    Size, seats, segment and the location are what the suggestions compare. Change any of them and this
-                    outlet’s suggestions are worked out again.
-                </p>
             </section>
         </aside>
     );
