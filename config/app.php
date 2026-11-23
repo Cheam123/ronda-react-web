@@ -58,6 +58,14 @@ return [
     'asset_url' => env('ASSET_URL', null),
 
     /*
+    | Proxies whose X-Forwarded-For / -Proto headers are believed: REMOTE_ADDR
+    | behind CloudFront (only the caller is trusted, and the server's security
+    | group lets only CloudFront in), or a comma-separated list of addresses.
+    | Empty locally.
+    */
+    'trusted_proxies' => env('TRUSTED_PROXIES'),
+
+    /*
     |--------------------------------------------------------------------------
     | AWS S3 Path
     |--------------------------------------------------------------------------

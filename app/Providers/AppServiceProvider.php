@@ -43,7 +43,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        //
+        // Behind CloudFront the server is reached over plain HTTP, so links,
+        // redirects and asset URLs follow APP_URL's https instead.
+        if (str_starts_with((string) config('app.url'), 'https://')) {
+            \Illuminate\Support\Facades\URL::forceScheme('https');
+        }
+
         Paginator::useBootstrap();
 
         /**
