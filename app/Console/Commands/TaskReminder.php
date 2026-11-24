@@ -51,6 +51,13 @@ class TaskReminder extends Command
      */
     public function handle()
     {
+        // Reminders go out on Telegram, which is off for now (config telegram.enabled).
+        if (!config('telegram.enabled')) {
+            $this->info('The Telegram bot is switched off, so no reminders are sent.');
+
+            return 0;
+        }
+
         $this->info("Task Reminder: " . Carbon::now());
 
         $token = GeneralSetting::where('key', 'telegram_api')->first()->value;

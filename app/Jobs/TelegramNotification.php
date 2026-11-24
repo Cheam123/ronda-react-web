@@ -66,6 +66,11 @@ class TelegramNotification implements ShouldQueue
     
     public function handle()
     {
+        // The Telegram bot is off for now (config telegram.enabled): nothing is sent.
+        if (!config('telegram.enabled')) {
+            return;
+        }
+
         $token  = GeneralSetting::where('key', 'telegram_api')->first()->value;
         $botAPI = "https://api.telegram.org/bot" . $token;
 

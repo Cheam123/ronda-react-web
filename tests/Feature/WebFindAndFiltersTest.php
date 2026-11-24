@@ -113,6 +113,9 @@ class WebFindAndFiltersTest extends TestCase
 
     public function test_only_people_who_manage_users_see_telegram_chat_ids(): void
     {
+        // The page exists only while the Telegram bot is switched on.
+        config(['telegram.enabled' => true]);
+
         $this->actingAs($this->rep)
             ->get(route('setting.telegram_message'))
             ->assertOk()

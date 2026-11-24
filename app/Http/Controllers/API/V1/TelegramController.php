@@ -26,6 +26,16 @@ use Inertia\Inertia;
 
 class TelegramController extends Controller
 {
+    public function __construct()
+    {
+        // The Telegram bot is off for now (config telegram.enabled): its pages and webhook don't exist.
+        $this->middleware(function ($request, $next) {
+            abort_unless(config('telegram.enabled'), 404);
+
+            return $next($request);
+        });
+    }
+
     public function callback(Request $request)
     {
         // WebHook   : https://xabaras.medium.com/setting-your-telegram-bot-webhook-the-easy-way-c7577b2d6f72

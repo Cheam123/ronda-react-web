@@ -38,6 +38,12 @@ class ResetTelegramPendingUpdateCount extends Command
      */
     public function handle()
     {
+        if (!config('telegram.enabled')) {
+            $this->info('The Telegram bot is switched off.');
+
+            return 0;
+        }
+
         $botToken = GeneralSetting::where('key', 'telegram_api')->first()->value;
         $webhook  = GeneralSetting::where('key', 'telegram_api_webhook_url')->first()->value;
         
