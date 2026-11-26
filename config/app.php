@@ -183,8 +183,7 @@ return [
         /*
          * Package Service Providers...
          */
-        EloquentFilter\ServiceProvider::class,
-        
+
         /*
          * Application Service Providers...
          */
@@ -196,13 +195,10 @@ return [
         App\Providers\RouteServiceProvider::class,
 
         Kyslik\ColumnSortable\ColumnSortableServiceProvider::class,
-        OwenIt\Auditing\AuditingServiceProvider::class,
         RealRashid\SweetAlert\SweetAlertServiceProvider::class,
-        Jenssegers\Agent\AgentServiceProvider::class,
         TelegramNotifications\TelegramServiceProvider::class,
         Ixudra\Curl\CurlServiceProvider::class,
         Maatwebsite\Excel\ExcelServiceProvider::class,
-        Barryvdh\DomPDF\ServiceProvider::class,
     ],
 
     /*
@@ -255,8 +251,6 @@ return [
         'Validator' => Illuminate\Support\Facades\Validator::class,
         'View' => Illuminate\Support\Facades\View::class,
         'Alert' => RealRashid\SweetAlert\Facades\Alert::class,
-        'Agent' => Jenssegers\Agent\Facades\Agent::class,
-        'PDF' => Barryvdh\DomPDF\Facade::class,
         'Curl' => Ixudra\Curl\Facades\Curl::class,
         'Excel' => Maatwebsite\Excel\Facades\Excel::class,
     ],

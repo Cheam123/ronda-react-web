@@ -42,7 +42,6 @@ use App\Repositories\S3ClientRepo;
 use App\Support\Options;
 use Inertia\Inertia;
 
-use Barryvdh\DomPDF\Facade\Pdf;
 use Elegant\Sanitizer\Sanitizer;
 use App\Services\TaskRisk;
 use Carbon\Carbon;
@@ -2281,25 +2280,6 @@ class TaskController extends Controller
             $documentUpload->mime_type       = $file->getMimeType();
             $documentUpload->save();
         }        
-    }
-
-    public function print_report(Request $request)
-    {
-        $task = Tasks::where('id',$request->id)->first();
-
-        $task = $task->load([
-            'lead',
-            'users',
-            'comments'
-        ]);
-
-        $pdf = Pdf::loadView('pdf.task.index', [
-            'data' => $task,
-        ]);
-        $pdf->setPaper('a4');
-        $pdf->setOptions(['isFontSubsettingEnabled'=>true]);
-
-        return $pdf->download("{$task->task_reference}.pdf");
     }
 
     public function export_single_task(Request $request)

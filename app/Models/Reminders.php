@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Traits\Paginatable;
-use EloquentFilter\Filterable;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

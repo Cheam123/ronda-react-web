@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\FCMController;
-use App\Http\Controllers\FirebaseController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -18,9 +17,6 @@ Route::group(['middleware' => ['api'], 'prefix' => 'mobile'], function () {
        Public on purpose: nobody asking for a reset can present a token. */
     Route::post('/password/forgot', 'Auth\ForgotPasswordController@mobileSendResetLink')->name('password.forgot');
     Route::post('/password/reset', 'Auth\ResetPasswordController@mobileReset')->name('password.reset');
-
-    // Error Logging
-    Route::post('/error/log', 'MobileApp\ErrorController@store')->name('error.log');
 
     Route::middleware('auth:sanctum')->group(function () {
     //Home
@@ -84,9 +80,6 @@ Route::group(['middleware' => ['api'], 'prefix' => 'mobile'], function () {
       Route::post('/tasks/markAsRejected', 'MobileApp\TaskController@marked_as_rejected')->name('tasks.markAsRejected');
       Route::post('/tasks/markAsCompleted', 'MobileApp\TaskController@marked_as_completed')->name('tasks.markAsCompleted');
 
-    // Notifications
-     Route::get('/notifications', 'NotificationController@sendPushNotification')->name('notifications.send');
-
      // IFE
      Route::get('/ife/list', 'MobileApp\IFEController@getIFEList')->name('ife.list');
      Route::get('/ife/fields', 'MobileApp\IFEController@getIFEFields')->name('ife.fields');
@@ -110,7 +103,6 @@ Route::group(['middleware' => ['api'], 'prefix' => 'mobile'], function () {
 
       // FCM Token Management
       Route::post('updateFCMToken', [FCMController::class, 'updateDeviceToken']);
-      Route::post('sendNotification', [FCMController::class, 'sendFcmNotification']);
 
     /* Forms — the mobile app covers three areas only: Start, My Records and
        My Tasks. Building/administering forms is web-only.

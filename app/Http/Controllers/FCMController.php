@@ -4,14 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
-use Google\Client as GoogleClient;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Http;
-use Kreait\Firebase\Factory;
-
-use Kreait\Firebase\Messaging\CloudMessage;
-
-use Kreait\Firebase\Messaging\Notification;
 
 class FCMController extends Controller
 {

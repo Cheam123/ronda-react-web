@@ -9,9 +9,6 @@ export interface LeadListItem {
     mobile: string | null;
     email: string | null;
     location: string;
-    upline_name: string;
-    presales_name: string;
-    closing_sales_name: string;
     ife_area: string | null;
     ife_area_id: number | null;
     created_by: string | null;

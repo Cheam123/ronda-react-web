@@ -3,13 +3,12 @@
 namespace App\Models;
 
 use App\Traits\Paginatable;
-use EloquentFilter\Filterable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class TaskHistory extends Model
 {
-    use HasFactory, Paginatable, Filterable;
+    use HasFactory, Paginatable;
 
     protected $perPage = 50;
     protected $table = 'task_history';

@@ -8,7 +8,6 @@ use App\Models\Cities;
 use App\Models\States;
 use App\Models\Tasks;
 
-use App\Models\Sales\User as Db2User;
 use App\Services\FormSchemaService;
 use App\Services\Recommendation\Area\AreaProfiler;
 
@@ -106,12 +105,6 @@ class Leads extends Model
         'remark',
         'created_at',
         'updated_at',
-    ];
-
-    protected $appends = [
-        'upline_name',
-        'presales_name',
-        'closing_sales_name',
     ];
 
     /**
@@ -228,69 +221,6 @@ class Leads extends Model
         }
 
         return !empty($this->nearby_counts) ? app(AreaProfiler::class)->details($this->nearby_counts) : null;
-    }
-
-    public function getUplineNameAttribute()
-    {
-        $customer = new Db2User();
-        $customer->setConnection('mysql2');
-        $customer = $customer->where('id',$this->customer_id)->first();
-
-        if (!$customer) {
-            return '';
-        } else {
-            $upline = new db2User();
-            $upline->setConnection('mysql2');
-            $upline = $upline->where('id',$customer->stockist_reference)->first();
-
-            if (!$upline) {
-                return '';
-            } else {
-                return ucwords(strtolower($upline->name));
-            }
-        }
-    }
-
-    public function getPresalesNameAttribute()
-    {
-        $customer = new db2User();
-        $customer->setConnection('mysql2');
-        $customer = $customer->where('id',$this->customer_id)->first();
-
-        if (!$customer) {
-            return '';
-        } else {
-            $pre_sales = new db2User();
-            $pre_sales->setConnection('mysql2');
-            $pre_sales = $pre_sales->where('id',$customer->pre_sales)->first();
-
-            if (!$pre_sales) {
-                return '';
-            } else {
-                return ucwords(strtolower($pre_sales->name));
-            }
-        }
-    }
-
-    public function getClosingSalesNameAttribute()
-    {
-        $customer = new db2User();
-        $customer->setConnection('mysql2');
-        $customer = $customer->where('id',$this->customer_id)->first();
-
-        if (!$customer) {
-            return '';
-        } else {
-            $closing_support = new db2User();
-            $closing_support->setConnection('mysql2');
-            $closing_support = $closing_support->where('id',$customer->closing_support)->first();
-
-            if (!$closing_support) {
-                return '';
-            } else {
-                return ucwords(strtolower($closing_support->name));
-            }
-        }
     }
 
     public function city()

@@ -26,16 +26,11 @@ Route::group(['middleware' => ['auth']], function () {
     Route::post('/manage/rejected', 'API\V1\TaskController@marked_as_rejected')->name('tasks.rejected');
     Route::post('/manage/onhold', 'API\V1\TaskController@marked_as_onhold')->name('tasks.onhold');
 
-    Route::post('/files/store', 'API\V1\TaskController@fileStore')->name('tasks.file.store');
-    Route::get('/files/download', 'API\V1\TaskController@download')->name('tasks.file.download');
-    Route::get('/files/remove', 'API\V1\TaskController@deleteDocument')->name('tasks.file.delete');
-
     Route::post('/chat/store', 'API\V1\TaskController@chat_store')->name('chat.store');
     Route::post('/chat/update', 'API\V1\TaskController@chat_update')->name('chat.update');
     Route::post('/chat/delete', 'API\V1\TaskController@chat_delete')->name('chat.delete');
 
     Route::post('/chat/markedasread', 'API\V1\TaskController@chat_marked_as_read')->name('chat.markedasread');
 
-    Route::get('/print-report', 'API\V1\TaskController@print_report')->name('tasks.print_report');
     Route::get('/export-single-task', 'API\V1\TaskController@export_single_task')->name('tasks.export_single_task');
 });

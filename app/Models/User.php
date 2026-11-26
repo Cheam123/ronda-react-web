@@ -14,7 +14,6 @@ use App\Events\UserCreated;
 use App\Traits\Paginatable;
 use Laravel\Sanctum\HasApiTokens;
 use Kyslik\ColumnSortable\Sortable;
-use EloquentFilter\Filterable;
 use Carbon\Carbon;
 
 

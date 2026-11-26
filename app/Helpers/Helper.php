@@ -6,7 +6,6 @@ use App\Models\Tasks;
 use App\Models\User;
 use App\Models\States;
 use App\Models\Cities;
-use App\Models\GeneralSetting;
 use App\Models\Leads;
 use App\Models\IfeArea;
 use Carbon\Carbon;
@@ -15,30 +14,6 @@ use Illuminate\Support\Facades\Auth;
 
 class Helper
 {
-    public static function getFreeDiskSpace()
-    {
-        $disk_free  = disk_free_space("/");
-        $disk_total = disk_total_space("/");
-        $disk_free  = self::convertSize($disk_free);
-        $disk_total = self::convertSize($disk_total);
-
-        $str = $disk_free . ' / ' . $disk_total;
-
-        return $str;
-    }
-
-    public static function convertSize($bytes)
-    {
-        $sizes = array( 'B', 'KB', 'MB', 'GB', 'TB' );
-        for( $i = 0; $bytes >= 1024 && $i < ( count( $sizes ) -1 ); $bytes /= 1024, $i++ );
-                return( round( $bytes, 2 ) . " " . $sizes[$i] );
-    }
-    
-    public static function setActive($path, $class_name = "mm-active")
-    {
-        return request()->is($path) ? $class_name : "";
-    }
-
     public static function getBusinessCategoryListing()
     {
         return [
@@ -346,21 +321,6 @@ class Helper
         }
     }
 
-    public static function ratingClosingMonth($y)
-    {
-        $year  = $y + 1;
-        $month = 2; // Default to February
-
-        $rating_closing_month = GeneralSetting::where('key', 'rating_closing_month')->first();
-        if (isset($rating_closing_month->value)) {
-            $month = $rating_closing_month->value;
-        }
-
-        $date = Carbon::createFromDate($year, $month, 1)->format('Y-m-d');
-
-        return Carbon::parse($date)->endOfMonth()->format('Y-m-d 00:00:00');
-    }
-
     public static function reformat_mobile($mobile)
     {
         if (empty($mobile)) {
@@ -534,79 +494,6 @@ class Helper
         $data['after']  = $AFTER;
 
         return $data;
-    }
-
-    public static function getFormatDisplay($k)
-    {
-        switch ($k) {
-            case 'lead_assignee':
-                return 'Subscriber';
-                break;
-
-            case 'kiv_date':
-                return 'KIV Date';
-                break;
-
-            case 'reject_date':
-                return 'Rejected Date';
-                break;
-
-            case 'complete_date':
-                return 'Completed Date';
-                break;
-
-            case 'verify_date':
-                return 'Verified Date';
-                break;
-
-            case 'onhold_date':
-                return 'On Hold Date';
-                break;
-
-            case 'done_date':
-                return 'Done Date';
-                break;
-                
-            case 'inprogress_date':
-                return 'In Progress Date';
-                break;
-
-            case 'creation_date':
-                return 'Creation Date';
-                break;
-
-            case 'start_date':
-                return 'Task Start Date';
-                break;
-
-            case 'start_time':
-                return 'Task Start Time';
-                break;
-                
-            case 'due_date':
-                return 'Task Due Date';
-                break;
-
-            case 'due_time':
-                return 'Task Due Time';
-                break;
-
-            case 'remark':
-                return 'Remark';
-                break;
-
-            case 'task_reference':
-                return 'Task Reference';
-                break;
-
-            case 'appointment_date':
-                return 'Appointment Date';
-                break;
-
-            case 'status':
-                return 'Status';
-                break;
-        }
     }
 
     public static function formatForDropdown($collection, string $valueColumn, string $labelColumn): array
@@ -813,153 +700,6 @@ class Helper
                                 <div style="font-weight: 500; line-height: 1.5; padding-left: 8pt;">' . htmlspecialchars($ifeReport->email ?? 'N/A') . '</div>
                             </div>
                         </div>
-                    </div>';
-
-        $html .= '  <!-- Follow-up Schedule -->
-                    <div style="border: 1px solid #E5E5EA; margin-bottom: 10px; border-radius: 12px; overflow: hidden;">
-                        <div style="background-color: #F2F2F7; padding: 14px; border-bottom: 1px solid #E5E5EA;">
-                            <strong style="color: #1C1C1E; font-size: 12px;">📅 Follow-up Schedule</strong>
-                        </div>
-                        <div style="padding: 10px;">
-                            <div style="padding-bottom: 12px;">
-                                <div style="font-weight: 500; line-height: 1.5; padding-left: 8pt;">' . date('M j, Y', strtotime($ifeReport->next_followup_date)) . '</div>
-                            </div>
-                            <div style="padding-bottom: 12px;">
-                                <div style="font-weight: 600; font-size: 11px; line-height: 1.5;"><u><span style="color:#c0392b;">Plannig:</span></u></div>
-                                <div style="font-weight: 500; line-height: 1.5; padding-left: 8pt;">' . htmlspecialchars($ifeReport->next_followup_plan ?? 'N/A') . '</div>
-                            </div>
-                        </div>
-                    </div>';
-
-        $html .= '</div>';
-
-        return $html;
-    }
-
-    public static function generateIfeReportHTMLforComment($ifeReport, $includeFiles = true, $includeTaskInfo = true)
-    {
-        $html  = '<div style="padding: 1px; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 12px; color: #333; line-height: 1;">';
-
-        $html .= '  <!-- Report Summary Section -->
-                    <div style="border: 1px solid #E5E5EA; margin-bottom: 10px; border-radius: 12px; overflow: hidden;">
-                        <div style="background-color: #F2F2F7; padding: 14px; border-bottom: 1px solid #E5E5EA;">
-                            <strong style="color: #1C1C1E; font-size: 12px;">📊 Report Summary</strong>
-                        </div>
-                        <div style="padding: 10px;">
-                            <div style="padding-bottom: 12px;">
-                                <div style="font-weight: 600; font-size: 11px; line-height: 1.5;"><u><span style="color:#c0392b;">Created On:</span></u></div>
-                                <div style="font-weight: 500; line-height: 1.5; padding-left: 8pt;">' . $ifeReport->created_at->format('M j, Y g:i A') . '</div>
-                            </div>
-                        </div>
-                    </div>';
-
-        // $html .= '  <!-- Company Information -->
-        //             <div style="border: 1px solid #E5E5EA; margin-bottom: 10px; border-radius: 12px; overflow: hidden;">
-        //                 <div style="background-color: #F2F2F7; padding: 14px; border-bottom: 1px solid #E5E5EA;">
-        //                     <strong style="color: #1C1C1E; font-size: 12px;">🏢 Company Information</strong>
-        //                 </div>
-        //                 <div style="padding: 10px;">
-        //                     <div style="padding-bottom: 12px;">
-        //                         <div style="font-weight: 600; font-size: 11px; line-height: 1.5;"><u><span style="color:#c0392b;">Company Name:</span></u></div>
-        //                         <div style="font-weight: 500; line-height: 1.5; padding-left: 8pt;">' . ($ifeReport->company_name ?: '<em style="color: #8E8E93;">Not specified</em>') . '</div>
-        //                     </div>
-        //                     <div style="padding-bottom: 12px;">
-        //                         <div style="font-weight: 600; font-size: 11px; line-height: 1.5;"><u><span style="color:#c0392b;">Nature of Business:</span></u></div>
-        //                         <div style="font-weight: 500; line-height: 1.5; padding-left: 8pt;">' . htmlspecialchars($ifeReport->nature_of_business ?? 'N/A') . '</div>
-        //                     </div>
-        //                     <div style="padding-bottom: 12px;">
-        //                         <div style="font-weight: 600; font-size: 11px; line-height: 1.5;"><u><span style="color:#c0392b;">Status:</span></u></div>
-        //                         <div style="font-weight: 500; line-height: 1.5; padding-left: 8pt;">' . htmlspecialchars($ifeReport->status ?? 'N/A') . '</div>
-        //                     </div>
-        //                     <div style="padding-bottom: 12px;">
-        //                         <div style="font-weight: 600; font-size: 11px; line-height: 1.5;"><u><span style="color:#c0392b;">Cafe/Outlet/Shop Name:</span></u></div>
-        //                         <div style="font-weight: 500; line-height: 1.5; padding-left: 8pt;">' . htmlspecialchars($ifeReport->shop_name ?? 'N/A') . '</div>
-        //                     </div>
-        //                 </div>
-        //             </div>';
-
-        $html .= '  <!-- Location & Area Section -->
-                    <div style="border: 1px solid #E5E5EA; margin-bottom: 10px; border-radius: 12px; overflow: hidden;">
-                        <div style="background-color: #F2F2F7; padding: 14px; border-bottom: 1px solid #E5E5EA;">
-                            <strong style="color: #1C1C1E; font-size: 12px;">📍 Location & Area</strong>
-                        </div>
-                        <div style="padding: 10px;">
-                            <div style="padding-bottom: 12px;">
-                                <div style="font-weight: 600; font-size: 11px; line-height: 1.5;"><u><span style="color:#c0392b;">IFE Area:</span></u></div>
-                                <div style="font-weight: 500; line-height: 1.5; padding-left: 8pt;">' . htmlspecialchars(IfeArea::find($ifeReport->ife_area)->area ?? null) . '</div>
-                            </div>
-                            <div style="padding-bottom: 12px;">
-                                <div style="font-weight: 600; font-size: 11px; line-height: 1.5;"><u><span style="color:#c0392b;">Location:</span></u></div>
-                                <div style="font-weight: 500; line-height: 1.5; padding-left: 8pt;">' . htmlspecialchars($ifeReport->location) . '</div>
-                            </div>
-                        </div>
-                    </div>';
-
-        $html .= '  <!-- Technical Details Section -->
-                    <div style="border: 1px solid #E5E5EA; margin-bottom: 10px; border-radius: 12px; overflow: hidden;">
-                        <div style="background-color: #F2F2F7; padding: 14px; border-bottom: 1px solid #E5E5EA;">
-                            <strong style="color: #1C1C1E; font-size: 12px;">🔧 Technical Details</strong>
-                        </div>
-                        <div style="padding: 10px;">
-                            <div style="padding-bottom: 12px;">
-                                <div style="font-weight: 600; font-size: 11px; line-height: 1.5;"><u><span style="color:#c0392b;">Problem:</span></u></div>
-                                <div style="color: #1C1C1E; font-weight: 500; line-height: 1.6; padding-left: 8pt;">' . nl2br(htmlspecialchars($ifeReport->problem_description ?? 'N/A')) . '</div>
-                            </div>';
-
-        if ($ifeReport->support_required) {
-        $html .= '          <div style="padding-bottom: 12px;">
-                                <div style="font-weight: 600; font-size: 11px; line-height: 1.5;"><u><span style="color:#c0392b;">Require Support:</span></u></div>
-                                <div style="font-weight: 500; line-height: 1.5; padding-left: 8pt;">' . htmlspecialchars($ifeReport->support_required ?? 'N/A') . '</div>
-                            </div>';
-        }
-
-        if ($ifeReport->support_description) {
-        $html .= '          <div style="padding-bottom: 12px;">
-                                <div style="font-weight: 600; font-size: 11px; line-height: 1.5;"><u><span style="color:#c0392b;">Support Detail:</span></u></div>
-                                <div style="font-weight: 500; line-height: 1.5; padding-left: 8pt;">' . nl2br(htmlspecialchars($ifeReport->support_description ?? 'N/A')) . '</div>
-                            </div>';
-        }
-
-        if ($ifeReport->personal_remarks) {
-        $html .= '          <div style="padding-bottom: 12px;">
-                                <div style="font-weight: 600; font-size: 11px; line-height: 1.5;"><u><span style="color:#c0392b;">Advise/Suggestion/Opportunity:</span></u></div>
-                                <div style="font-weight: 500; line-height: 1.5; padding-left: 8pt;">' . nl2br(htmlspecialchars($ifeReport->personal_remarks ?? 'N/A')) . '</div>
-                            </div>';
-        }
-
-        $html .= '      </div>
-                    </div>';
-
-        $html .= '  <!-- Contact Information -->
-                    <div style="border: 1px solid #E5E5EA; margin-bottom: 10px; border-radius: 12px; overflow: hidden;">
-                        <div style="background-color: #F2F2F7; padding: 14px; border-bottom: 1px solid #E5E5EA;">
-                            <strong style="color: #1C1C1E; font-size: 12px;">👤 Contact Information</strong>
-                        </div>
-                        <div style="padding: 10px;">
-                            <div style="padding-bottom: 12px;">
-                                <div style="font-weight: 600; font-size: 11px; line-height: 1.5;"><u><span style="color:#c0392b;">PIC Name:</span></u></div>
-                                <div style="font-weight: 500; line-height: 1.5; padding-left: 8pt;">' . htmlspecialchars($ifeReport->pic_name ?? 'N/A') . '</div>
-                            </div>
-                            <div style="padding-bottom: 12px;">
-                                <div style="font-weight: 600; font-size: 11px; line-height: 1.5;"><u><span style="color:#c0392b;">Mobile No:</span></u></div>
-                                <div style="font-weight: 500; line-height: 1.5; padding-left: 8pt;">' . htmlspecialchars($ifeReport->mobile_number ?? 'N/A') . '</div>
-                            </div>';
-
-        if ($ifeReport->other_mobile_numbers) {
-        $html .= '          <div style="padding-bottom: 12px;">
-                                <div style="font-weight: 600; font-size: 11px; line-height: 1.5;"><u><span style="color:#c0392b;">Other Contact No:</span></u></div>
-                                <div style="font-weight: 500; line-height: 1.5; padding-left: 8pt;">' . htmlspecialchars($ifeReport->other_mobile_numbers ?? 'N/A') . '</div>
-                            </div>';
-        }
-
-        if ($ifeReport->email) {
-        $html .= '          <div style="padding-bottom: 12px;">
-                                <div style="font-weight: 600; font-size: 11px; line-height: 1.5;"><u><span style="color:#c0392b;">Email:</span></u></div>
-                                <div style="font-weight: 500; line-height: 1.5; padding-left: 8pt;">' . htmlspecialchars($ifeReport->email ?? 'N/A') . '</div>
-                            </div>';
-        }
-
-        $html .= '      </div>
                     </div>';
 
         $html .= '  <!-- Follow-up Schedule -->

@@ -63,26 +63,6 @@ return [
             ]) : [],
         ],
 
-        'mysql2' => [
-            'driver' => 'mysql',
-            'url' => env('DATABASE_URL'),
-            'host' => env('DB2_HOST', '127.0.0.1'),
-            'port' => env('DB2_PORT', '3306'),
-            'database' => env('DB2_DATABASE', 'forge'),
-            'username' => env('DB2_USERNAME', 'forge'),
-            'password' => env('DB2_PASSWORD', ''),
-            'unix_socket' => env('DB2_SOCKET', ''),
-            'charset' => 'utf8mb4',
-            'collation' => 'utf8mb4_unicode_ci',
-            'prefix' => '',
-            'prefix_indexes' => true,
-            'strict' => true,
-            'engine' => null,
-            'options' => extension_loaded('pdo_mysql') ? array_filter([
-                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
-            ]) : [],
-        ],
-
         'pgsql' => [
             'driver' => 'pgsql',
             'url' => env('DATABASE_URL'),
@@ -139,7 +119,9 @@ return [
 
     'redis' => [
 
-        'client' => env('REDIS_CLIENT', 'predis'),
+        // Ronda uses no Redis (file cache and sessions, sync queue). phpredis
+        // is Laravel's own default; predis is no longer installed.
+        'client' => env('REDIS_CLIENT', 'phpredis'),
 
         'options' => [
             'cluster' => env('REDIS_CLUSTER', 'redis'),

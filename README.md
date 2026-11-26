@@ -80,7 +80,6 @@ from `app/Http/Middleware/HandleInertiaRequests.php`.
 - `resources/views/legal/*` — public privacy, terms and account-deletion
   pages. Kept server-rendered so crawlers (the Play Console) get the text
   without running JavaScript; styled by `resources/scss/legal.scss`.
-- `resources/views/pdf/*` — PDF exports rendered by DomPDF.
 - `resources/views/errors/*` — Laravel's fallback error pages, used in debug
   mode and for statuses `Pages/Errors/Status` does not cover (see
   `app/Exceptions/Handler.php`).

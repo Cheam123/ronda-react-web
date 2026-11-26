@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\MobileApp;
 
 use App\Helpers\Helper;
-use App\Helpers\IFEHTMLGenerator;
 use App\Http\Controllers\Controller;
 
 use App\Models\IfeArea;
