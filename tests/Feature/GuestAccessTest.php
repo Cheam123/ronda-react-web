@@ -21,7 +21,13 @@ class GuestAccessTest extends TestCase
     public function test_guests_are_sent_to_the_login_page(): void
     {
         $this->get('/')->assertRedirect(route('login'));
-        $this->get('/v1/task/manage/index')->assertRedirect(route('login'));
+        $this->get('/task/manage/index')->assertRedirect(route('login'));
+    }
+
+    public function test_old_v1_links_go_to_the_same_page_without_it(): void
+    {
+        $this->get('/v1/lead/view/7?tab=menu')->assertStatus(308)->assertRedirect('/lead/view/7?tab=menu');
+        $this->post('/v1/lead/update')->assertStatus(308)->assertRedirect('/lead/update');
     }
 
     public function test_the_login_page_renders_the_react_page(): void

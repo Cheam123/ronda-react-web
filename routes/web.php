@@ -34,32 +34,38 @@ Route::post('/index/digest', [App\Http\Controllers\HomeController::class, 'regen
     ->middleware('throttle:6,1')
     ->name('dashboard.digest');
 
-Route::group(['prefix' => 'v1'], function () {
+# Quick find in the top bar (SearchController checks who may see what).
+Route::get('/search', 'API\V1\SearchController')->middleware('throttle:60,1')->name('search');
 
-    # Quick find in the top bar (SearchController checks who may see what).
-    Route::get('/search', 'API\V1\SearchController')->middleware('throttle:60,1')->name('search');
+# User Group
+Route::prefix('users')->group(__DIR__ . '/api/users.php');
 
-    # User Group
-    Route::prefix('users')->group(__DIR__ . '/api/users.php');
+# Task Group
+Route::prefix('task')->group(__DIR__ . '/api/task.php');
 
-    # Task Group
-    Route::prefix('task')->group(__DIR__ . '/api/task.php');
+# Lead Group
+Route::prefix('lead')->group(__DIR__ . '/api/leads.php');
 
-    # Lead Group
-    Route::prefix('lead')->group(__DIR__ . '/api/leads.php');
+# IFE Report Group
+Route::prefix('ifereport')->group(__DIR__ . '/api/ifereport.php');
 
-    # IFE Report Group
-    Route::prefix('ifereport')->group(__DIR__ . '/api/ifereport.php');
+# Form Group
+Route::prefix('form')->group(__DIR__ . '/api/form.php');
 
-    # Form Group
-    Route::prefix('form')->group(__DIR__ . '/api/form.php');
+# Product Catalogue Group
+Route::prefix('product')->group(__DIR__ . '/api/product.php');
 
-    # Product Catalogue Group
-    Route::prefix('product')->group(__DIR__ . '/api/product.php');
+# Drinks (recipes made from catalogue products)
+Route::prefix('recipe')->group(__DIR__ . '/api/recipe.php');
 
-    # Drinks (recipes made from catalogue products)
-    Route::prefix('recipe')->group(__DIR__ . '/api/recipe.php');
+# IFE Area Group
+Route::prefix('area')->group(__DIR__ . '/api/area.php');
 
-    # IFE Area Group
-    Route::prefix('area')->group(__DIR__ . '/api/area.php');
-});
+# The pages used to live under /v1. Old links (bookmarks, emails, a page left
+# open during a deploy) go to the same address without it, keeping the method
+# and the query string (308 keeps a POST a POST).
+Route::any('/v1/{path}', function (\Illuminate\Http\Request $request, string $path) {
+    $query = $request->getQueryString();
+
+    return redirect('/' . $path . ($query ? '?' . $query : ''), 308);
+})->where('path', '.*');
