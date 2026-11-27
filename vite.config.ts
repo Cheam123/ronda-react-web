@@ -29,6 +29,14 @@ export default defineConfig({
                     /node_modules\/(react|react-dom|scheduler|use-sync-external-store|clsx)\//.test(id)
                         ? 'vendor'
                         : undefined,
+                // MapLibre's map worker ships as .mjs, which Nginx serves as
+                // application/octet-stream, and browsers refuse to start a
+                // module worker of that type (a blank map). A .js name is
+                // served as JavaScript everywhere.
+                assetFileNames: (asset) =>
+                    (asset.names?.[0] ?? '').endsWith('.mjs')
+                        ? 'assets/[name]-[hash].js'
+                        : 'assets/[name]-[hash][extname]',
             },
         },
     },
