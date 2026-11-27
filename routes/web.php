@@ -28,6 +28,18 @@ Route::post('/account-deletion', [App\Http\Controllers\LegalController::class, '
     ->middleware('throttle:5,60')
     ->name('legal.accountDeletion.submit');
 
+# The outlet map as a bare page, for the phone app's map picker (a WebView).
+# Public on purpose: it only draws a map, with the map key that is locked to
+# this site; searching goes through the signed-in places routes below.
+Route::get('/map-frame', fn () => view('map-frame', ['map' => App\Services\Maps\PlaceSearch::mapConfig()]))->name('map.frame');
+
+# The outlet map picker's search: Amazon Location through the server's key.
+Route::middleware(['auth', 'throttle:60,1'])->prefix('places')->group(function () {
+    Route::get('/suggest', [App\Http\Controllers\PlaceController::class, 'suggest'])->name('places.suggest');
+    Route::get('/place', [App\Http\Controllers\PlaceController::class, 'show'])->name('places.show');
+    Route::get('/reverse', [App\Http\Controllers\PlaceController::class, 'reverse'])->name('places.reverse');
+});
+
 Route::get('/', [App\Http\Controllers\HomeController::class, 'root']);
 Route::get('/index', [App\Http\Controllers\HomeController::class, 'index']);
 Route::post('/index/digest', [App\Http\Controllers\HomeController::class, 'regenerateDigest'])

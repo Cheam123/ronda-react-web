@@ -1,5 +1,5 @@
 import Field from '@/Components/form/Field';
-import GpsStampField from '@/Components/form/GpsStampField';
+import MapPickerField, { type MapPlace } from '@/Components/form/MapPickerField';
 import SearchSelect, { MultiSearchSelect } from '@/Components/form/SearchSelect';
 import TextArea from '@/Components/form/TextArea';
 import TextInput from '@/Components/form/TextInput';
@@ -60,6 +60,20 @@ interface LeadFieldsProps {
 export default function LeadFields({ data, setData, errors = {}, options }: LeadFieldsProps) {
     const cities = options.cities.filter((city) => String(city.state_id) === data.state_id);
     const area = options.ifeAreas.find((option) => String(option.value) === data.ifearea);
+
+    /** The address found at the map pin: fills what is empty, or everything when the rep asks. */
+    const applyPlace = (place: MapPlace, replace: boolean) => {
+        const fills = (current: string) => replace || current.trim() === '';
+        if (place.address && fills(data.address)) setData('address', place.address.slice(0, 500));
+        const postcode = (place.postcode ?? '').replace(/\D/g, '').slice(0, 5);
+        if (postcode && fills(data.postcode)) setData('postcode', postcode);
+        if (place.state_id && fills(data.state_id)) {
+            setData('state_id', String(place.state_id));
+            setData('city_id', place.city_id ? String(place.city_id) : '');
+        } else if (place.city_id && data.state_id === String(place.state_id) && fills(data.city_id)) {
+            setData('city_id', String(place.city_id));
+        }
+    };
 
     return (
         <>
@@ -172,6 +186,14 @@ export default function LeadFields({ data, setData, errors = {}, options }: Lead
             </FormSection>
 
             <FormSection title="Address" intro="Where the outlet is. The IFE area decides who covers it.">
+                {/* Never moves by itself: editing at the office keeps the saved pin. */}
+                <Field
+                    label="On the map"
+                    error={errors.gps}
+                    hint="Search for the outlet, click the map or drag the pin. Empty address fields below fill in from the pin."
+                >
+                    <MapPickerField value={data.gps} onChange={(value) => setData('gps', value)} onPlace={applyPlace} />
+                </Field>
                 <Field label="Street address" htmlFor="address" error={errors.address}>
                     <TextArea
                         id="address"
@@ -233,7 +255,7 @@ export default function LeadFields({ data, setData, errors = {}, options }: Lead
                 </FormRow>
             </FormSection>
 
-            <FormSection title="Outlet profile" intro="How big the outlet is and where it is.">
+            <FormSection title="Outlet profile" intro="How big the outlet is and who it serves.">
                 <Choices
                     legend="Size"
                     options={options.sizeBands}
@@ -271,14 +293,6 @@ export default function LeadFields({ data, setData, errors = {}, options }: Lead
                     hint="Leave it empty if you don't know."
                     onChange={(value) => setData('is_halal', value)}
                 />
-                {/* Manual only: editing at the office must not stamp the office. */}
-                <Field
-                    label="Location"
-                    error={errors.gps}
-                    hint="Stamp it while you are at the outlet. It never stamps by itself, so editing at the office is safe."
-                >
-                    <GpsStampField value={data.gps} onChange={(value) => setData('gps', value)} />
-                </Field>
             </FormSection>
 
             <FormSection

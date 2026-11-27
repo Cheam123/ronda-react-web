@@ -187,6 +187,29 @@ return [
     ],
 
     /*
+     | The outlet map picker (web and phone): Amazon Location Service.
+     | `map_key` loads the map tiles in the browser and the app's map page, so
+     | it is visible to users: an API key allowed only geo-maps:GetTile and
+     | locked to https://ronda.asia/* as a referrer. `places_key` stays on the
+     | server, for searching and for the address at a pin: allowed
+     | geo-places:Suggest, GetPlace and ReverseGeocode (the area lookup's key
+     | works once those are ticked, so it is the default). Without map_key the
+     | forms keep the plain Stamp location button.
+     */
+    'maps' => [
+        'region'     => env('AMAZON_LOCATION_REGION', env('AREA_AMAZON_REGION', 'ap-southeast-1')),
+        'map_key'    => env('AMAZON_MAP_KEY'),
+        'places_key' => env('AMAZON_PLACES_KEY', env('AREA_AMAZON_KEY')),
+        // Standard | Monochrome | Hybrid | Satellite
+        'style'      => env('AMAZON_MAP_STYLE', 'Standard'),
+        // Searches favour places near the map, and stay in Malaysia.
+        'country'    => 'MYS',
+        // [lng, lat] the map opens on before a pin is placed: Kuala Lumpur.
+        'center'     => [101.6869, 3.1390],
+        'timeout'    => (int) env('AMAZON_LOCATION_TIMEOUT', 10),
+    ],
+
+    /*
      | Claude (daily digest and the rep assistant on the outlet page). By
      | default it is called through the Claude API with a key from the Claude
      | Console (ANTHROPIC_API_KEY). Set CLAUDE_PROVIDER=bedrock to use Claude

@@ -484,6 +484,168 @@
     }
 }
 
+// MapPickerField: search, the map, and what the pin says
+.map-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    font-family: $rd-sans;
+
+    &__search {
+        position: relative;
+        display: flex;
+        align-items: center;
+
+        > .mdi-magnify {
+            position: absolute;
+            left: 12px;
+            color: $rd-muted;
+            font-size: 18px;
+            pointer-events: none;
+        }
+    }
+
+    &__input {
+        width: 100%;
+        min-height: 44px;
+        padding: 10px 40px 10px 38px;
+        border: 1px solid $rd-line;
+        border-radius: 10px;
+        background: $rd-panel;
+        color: $rd-ink;
+        font-size: 15px;
+
+        &:focus {
+            border-color: $rd-brand;
+            outline: 2px solid $rd-brand-soft;
+            outline-offset: 0;
+        }
+    }
+
+    &__spinner {
+        position: absolute;
+        right: 12px;
+        color: $rd-muted;
+    }
+
+    &__results {
+        position: absolute;
+        top: calc(100% + 4px);
+        right: 0;
+        left: 0;
+        z-index: 20;
+        max-height: 300px;
+        margin: 0;
+        padding: 4px;
+        overflow-y: auto;
+        border: 1px solid $rd-line;
+        border-radius: 10px;
+        background: $rd-raised;
+        box-shadow: 0 12px 28px rgb(0 0 0 / 14%);
+        list-style: none;
+    }
+
+    &__result {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        padding: 9px 10px;
+        border-radius: 8px;
+        cursor: pointer;
+
+        &:hover,
+        &.is-active {
+            background: $rd-brand-wash;
+        }
+    }
+
+    &__result-title {
+        color: $rd-ink;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    &__result-address,
+    &__empty {
+        color: $rd-muted;
+        font-size: 13px;
+    }
+
+    &__empty {
+        padding: 10px;
+    }
+
+    &__map {
+        width: 100%;
+        height: 340px;
+        overflow: hidden;
+        border: 1px solid $rd-line;
+        border-radius: 12px;
+        background: $rd-track;
+
+        @media (max-width: 575.98px) {
+            height: 280px;
+        }
+    }
+
+    &__bar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+    }
+
+    &__status {
+        display: flex;
+        flex: 1 1 220px;
+        flex-direction: column;
+        min-width: 0;
+    }
+
+    &__coords {
+        color: $rd-ink;
+        font-family: $rd-mono;
+        font-size: 13px;
+    }
+
+    &__meta {
+        color: $rd-muted;
+        font-size: 13px;
+
+        a {
+            font-weight: 600;
+            text-decoration: none;
+        }
+    }
+
+    &__found {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px 10px;
+        margin: 0;
+        padding: 10px 12px;
+        border-radius: 10px;
+        background: $rd-row-alt;
+        color: $rd-body;
+        font-size: 13px;
+    }
+
+    &__found-label {
+        color: $rd-muted;
+    }
+
+    &__note {
+        margin: 0;
+        color: $rd-muted;
+        font-size: 13px;
+
+        &.is-error {
+            color: $rd-critical;
+        }
+    }
+}
+
 // ErrorSummary
 .rd-errors {
     display: flex;

@@ -35,6 +35,13 @@ Route::group(['middleware' => ['api'], 'prefix' => 'mobile'], function () {
       Route::post('/leads/create', 'MobileApp\LeadController@addLead')->name('leads.create');
       Route::post('/leads/edit', 'MobileApp\LeadController@editLead')->name('leads.edit');
 
+    // The outlet map picker's search (Amazon Location through the server's key)
+      Route::middleware('throttle:60,1')->group(function () {
+        Route::get('/places/suggest', 'PlaceController@suggest')->name('mobile.places.suggest');
+        Route::get('/places/place', 'PlaceController@show')->name('mobile.places.show');
+        Route::get('/places/reverse', 'PlaceController@reverse')->name('mobile.places.reverse');
+      });
+
     // Outlet screen: visit history, order history, answers on drink ideas
       Route::get('/leads/visits', 'MobileApp\LeadController@getLeadVisits')->name('leads.visits');
       Route::get('/leads/orders', 'MobileApp\LeadController@getLeadOrders')->name('leads.orders');

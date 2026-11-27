@@ -56,10 +56,22 @@ export interface Flash {
     needsAssignee: NeedsAssignee | null;
 }
 
+/** The outlet map picker's settings (PlaceSearch::mapConfig()); null until the map key is set. */
+export interface MapConfig {
+    key: string;
+    region: string;
+    style: string;
+    /** [lng, lat] the map opens on without a pin. */
+    center: [number, number];
+    /** Whether the server can search places. */
+    search: boolean;
+}
+
 export interface SharedProps {
     app: {
         name: string;
         currency: string;
+        map: MapConfig | null;
     };
     csrfToken: string;
     auth: {

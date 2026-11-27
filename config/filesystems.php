@@ -50,6 +50,10 @@ return [
             'bucket' => env('AWS_BUCKET'),
             'url' => env('AWS_URL'),
             'endpoint' => env('AWS_ENDPOINT'),
+            // A write that fails (no credentials, no permission) throws, so the
+            // upload is rolled back and the person is told, instead of a saved
+            // record pointing at a file that never reached the bucket.
+            'throw' => true,
         ],
 
     ],

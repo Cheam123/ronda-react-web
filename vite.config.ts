@@ -7,7 +7,8 @@ export default defineConfig({
     plugins: [
         laravel({
             // legal.scss styles the public legal pages, which are plain Blade.
-            input: ['resources/js/app.tsx', 'resources/scss/legal.scss'],
+            // map-frame.ts is the bare map page inside the phone app's map picker.
+            input: ['resources/js/app.tsx', 'resources/scss/legal.scss', 'resources/js/map-frame.ts'],
             refresh: true,
         }),
         react(),

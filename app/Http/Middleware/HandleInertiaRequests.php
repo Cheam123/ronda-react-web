@@ -26,6 +26,8 @@ class HandleInertiaRequests extends Middleware
             'app'        => [
                 'name'     => config('app.name'),
                 'currency' => config('ife.currency', 'RM'),
+                // The outlet map picker (Amazon Location); null until the map key is set.
+                'map'      => \App\Services\Maps\PlaceSearch::mapConfig(),
             ],
             // Sent back as X-CSRF-TOKEN on every request (see bootstrap.ts).
             // The XSRF-TOKEN cookie cannot be used: EncryptCookies runs twice

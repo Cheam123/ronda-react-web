@@ -69,9 +69,9 @@
 
     <ul>
         <li><strong>Forms:</strong> some forms include a <strong>Location Stamp</strong> field. Depending on how your employer set up the form, your device reads its location when the form opens or when you tap <strong>Stamp location</strong>. The location is saved <strong>only when you submit the form</strong>. If you leave the form without submitting it, nothing is saved.</li>
-        <li><strong>Outlets:</strong> on an outlet's page you can tap <strong>Stamp location</strong> to save where the outlet is. This happens only when you tap the button.</li>
-        <li>Each stamp contains the latitude and longitude, the accuracy your device reports, and the time. It is saved with the form or outlet it belongs to, and your managers can see it in Ronda HQ.</li>
-        <li>The location always comes from your device. It cannot be typed in; it can only be replaced by taking a new stamp.</li>
+        <li><strong>Outlets:</strong> you can place an outlet's pin on a map, by searching for it or moving the pin by hand, or tap <strong>Use my location</strong> or <strong>Stamp location</strong> to use where your device is. Your device's location is read only when you tap one of those buttons.</li>
+        <li>Each stamp contains the latitude and longitude, the time, and for a stamp from your device the accuracy it reports. It is saved with the form or outlet it belongs to, and your managers can see it in Ronda HQ.</li>
+        <li>A form's Location Stamp always comes from your device. It cannot be typed in; it can only be replaced by taking a new stamp.</li>
         <li>Ronda asks for location access only while you are using it. You can withdraw the permission at any time in your device or browser settings. You will then not be able to submit forms that require a Location Stamp, but the rest of Ronda keeps working.</li>
     </ul>
 
@@ -91,6 +91,7 @@
         <li><strong>Your employer</strong> — managers and administrators at your organisation can see your profile, your work records, your uploads and the Location Stamps on your forms and outlets. This is the purpose of the system.</li>
         <li><strong>Google (Firebase Cloud Messaging)</strong> — to deliver push notifications.</li>
         <li><strong>Amazon Web Services</strong> — photos and documents are stored in Amazon S3 in the Asia Pacific (Singapore) region.</li>
+        <li><strong>Amazon Web Services (Amazon Location Service)</strong> — to draw maps, search for places, find the address at an outlet's pin, and see what is around an outlet. Ronda sends the words you search for and outlet positions, not your name. Your device loads the map images directly from Amazon.</li>
         <li><strong>Amazon Web Services (Amazon Bedrock)</strong> — only if your employer has turned on Ronda's AI features. To write the Morning Round-Up for managers, Ronda sends a summary of the team's work: staff names, task titles, outlet names, and counts of tasks, visits, forms and orders. AWS states that Amazon Bedrock does not use this data to train AI models.</li>
         <li><strong>Authorities</strong> — where we are legally required to disclose data.</li>
     </ul>

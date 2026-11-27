@@ -1900,7 +1900,7 @@ class TaskController extends Controller
                     $documentUpload->mime_type       = $file->getMimeType();
                     $documentUpload->save();
     
-                    $tz              = Config::get('app.timezonecommission_model');
+                    $tz              = Config::get('app.timezone');
                     $doc['name']     = Auth::guard('web')->user()->name;
                     $doc['time']     = Carbon::createFromTimestamp(strtotime($new->created_at))->timezone($tz)->format('h:i A');
                     $doc['chatid']   = $new->id;
@@ -1949,7 +1949,7 @@ class TaskController extends Controller
             $data = $new->toArray();
             $data['name'] = Auth::guard('web')->user()->name;
     
-            $tz             = Config::get('app.timezonecommission_model');
+            $tz             = Config::get('app.timezone');
             $data['time']   = Carbon::createFromTimestamp(strtotime($data['created_at']))->timezone($tz)->format('h:i A');
             $data['chatid'] = $new->id;
             $data['hasdoc'] = count($docList) > 0 ? 1 : 0;

@@ -323,6 +323,10 @@ class LeadController extends Controller
             // What the outlet needs.
             'drink_kinds'       => collect(Recipe::CATEGORIES)->map(fn ($label, $value) => ['value' => $value, 'label' => $label])->values()->all(),
             'goals'             => collect(Leads::GOALS)->map(fn ($label, $value) => ['value' => $value, 'label' => $label])->values()->all(),
+            // The outlet map picker: the map page to show, and whether searching works.
+            // Null and false until the map keys are set; the app then keeps Stamp location.
+            'map_frame'         => \App\Services\Maps\PlaceSearch::mapConfig() ? route('map.frame') : null,
+            'map_search'        => \App\Services\Maps\PlaceSearch::fromConfig()->configured(),
         ];
 
         return $this->response_success($data, 'Filter options retrieved successfully.');
