@@ -63,7 +63,8 @@ class WebDashboardTest extends TestCase
                 ->missing('summary.automations')
                 ->has('summary.users', fn (Assert $users) => $users
                     ->whereType('active', 'integer')
-                    ->whereType('unlinked', 'integer')
+                    ->whereType('reps', 'integer')
+                    ->missing('unlinked')
                     ->etc())
                 ->where('summary.activity', fn ($activity) => count($activity) <= AdminDashboardService::ACTIVITY_LIMIT)
                 ->has('summary.missed_jobs'));

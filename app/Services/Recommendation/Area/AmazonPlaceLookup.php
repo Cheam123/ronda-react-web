@@ -187,8 +187,6 @@ final class AmazonPlaceLookup implements PlaceLookup
 
         return [
             'name'     => 'Amazon Location Service',
-            'district' => null,
-            'state'    => null,
             'nearby'   => self::countPlaces($places),
             'places'   => $places,
             'radius'   => $this->radius,

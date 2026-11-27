@@ -13,7 +13,6 @@ use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 
-use App\Jobs\TelegramNotification;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LeadRequest;
 use App\Helpers\Helper;
@@ -262,7 +261,6 @@ class LeadController extends Controller
             $lead_detail->name              = isset($validatedData['name']) ? ($validatedData['name']) : NULL;
             $lead_detail->belong_to         = Auth::guard('web')->user()->id;
             $lead_detail->assign_to         = NULL;
-            $lead_detail->hq_checker        = Auth::guard('web')->user()->seesAllRecords() ? Auth::guard('web')->user()->id : NULL;
             $lead_detail->source            = isset($validatedData['leadsource']) ? $validatedData['leadsource'] : NULL;
             $lead_detail->business_category = isset($validatedData['businesscat']) ? $validatedData['businesscat'] : NULL;
             $lead_detail->mobile            = $validatedData['mobile'];
@@ -291,9 +289,6 @@ class LeadController extends Controller
 
             $runJobFirebase = (new FirebaseNotification($lead_detail->id, 'lead', '0'));
             dispatch($runJobFirebase);
-            // $runJob = (new TelegramNotification($lead_detail->id, 'lead', '0'));
-            // dispatch($runJob);
-            
         } catch (Throwable $e) {
 
             DB::rollBack();
@@ -562,7 +557,7 @@ class LeadController extends Controller
     /** After a save: a moved outlet gets its area worked out again. */
     private function profileAreaIfMoved(Leads $lead): void
     {
-        if ($lead->wasChanged(['latitude', 'longitude', 'address', 'postcode', 'city_id', 'state_id'])) {
+        if ($lead->wasChanged(['latitude', 'longitude'])) {
             ProfileOutletArea::dispatchAfterResponse($lead->id);
         }
     }

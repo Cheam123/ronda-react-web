@@ -48,7 +48,7 @@ class FormApprovalService
      * activating step, no $nextAssigneeIds given) — call inside a
      * transaction and catch it to return a needs_assignee payload.
      */
-    public function instantiate(FormSubmission $submission, Form $form, array $nextAssigneeIds = [], ?int $assignedBy = null): void
+    public function instantiate(FormSubmission $submission, Form $form, array $nextAssigneeIds = []): void
     {
         $schema     = $this->schema->normalize($form->form_elements);
         $definition = $this->process->normalize($form->process_definition);
@@ -65,7 +65,7 @@ class FormApprovalService
         $submission->status = 'pending';
         $submission->save();
 
-        $this->advance($submission, $nextAssigneeIds, $assignedBy ?? (int) $submission->submitted_by, null);
+        $this->advance($submission, $nextAssigneeIds, null);
         $this->bustTaskCaches($submission);
     }
 
@@ -75,12 +75,11 @@ class FormApprovalService
      * "what happens next" step shared by instantiate/approve/completeFill.
      *
      * @param array $nextAssigneeIds handler pick for a runtime-assignee step
-     * @param ?int  $assignedBy      user who made that pick (audit)
      * @param ?int  $wasCurrentId    current stage row id before the action —
      *                               a stage notification goes out only when
      *                               the current stage actually changed
      */
-    private function advance(FormSubmission $submission, array $nextAssigneeIds = [], ?int $assignedBy = null, ?int $wasCurrentId = null): void
+    private function advance(FormSubmission $submission, array $nextAssigneeIds = [], ?int $wasCurrentId = null): void
     {
         $submission->load('approvals');
         $snapshot = $submission->process_snapshot ?? [];
@@ -126,7 +125,6 @@ class FormApprovalService
                     'name'              => $step['name'],
                     'approval_mode'     => $step['approval_mode'] ?? 'any',
                     'approver_ids'      => $isBlocking ? ($step['approver_ids'] ?? []) : ($step['user_ids'] ?? []),
-                    'assigned_by'       => !empty($step['runtime_assigned']) ? $assignedBy : null,
                     'field_permissions' => $step['field_permissions'] ?? ['default' => 'read'],
                     'status'            => $isBlocking ? 'pending' : 'notified',
                     'actions'           => [],
@@ -329,7 +327,7 @@ class FormApprovalService
         try {
             DB::transaction(function () use ($stage, $stageData, $submission, $user, $nextAssigneeIds) {
                 $stage->update($stageData);
-                $this->advance($submission, $nextAssigneeIds, (int) $user->id, (int) $stage->id);
+                $this->advance($submission, $nextAssigneeIds, (int) $stage->id);
             });
         } catch (NeedsAssigneeException $e) {
             return [
@@ -496,7 +494,7 @@ class FormApprovalService
                     'acted_at' => now(),
                 ]);
 
-                $this->advance($submission, $nextAssigneeIds, (int) $user->id, (int) $stage->id);
+                $this->advance($submission, $nextAssigneeIds, (int) $stage->id);
             });
         } catch (NeedsAssigneeException $e) {
             // Whole action rolled back — the client re-submits the section

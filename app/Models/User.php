@@ -63,7 +63,6 @@ class User extends Authenticatable
         'name',
         'username',
         'type', // 0:Admin | 1:Manager | 2:User
-        'telegram_chat_id',
         'team',
         'email',
         'password',
@@ -93,8 +92,7 @@ class User extends Authenticatable
      * @var array
      */
     protected $casts = [
-        'email_verified_at' => 'datetime',
-        'type'              => 'integer',
+        'type' => 'integer',
     ];
 
     protected $appends = ['active_appointment','total_active_task'];
@@ -147,11 +145,6 @@ class User extends Authenticatable
         'created' => UserCreated::class,
     ];
 
-    public function routeNotificationForTelegram()
-    {
-        return $this->telegram_chat_id;
-    }
-
     public static function getUserTypeListing()
     {
         return [
@@ -195,11 +188,6 @@ class User extends Authenticatable
     public function abilities()
     {
         return collect(self::ABILITIES)->map(fn ($types) => in_array($this->type, $types, true))->all();
-    }
-
-    public function getMobileForPasswordReset()
-    {
-        return $this->mobile;
     }
 
     public function getEmailForPasswordReset()

@@ -5,7 +5,7 @@ namespace App\Services\Recommendation\Area;
 /**
  * Nearby places from database/data/seeded_places.json: the closest seeded
  * neighbourhood within MAX_KM of the pin. Further away it knows nothing, and
- * the outlet falls back to whatever district and income data can be found.
+ * the outlet has no area profile.
  */
 final class SeededPlaceLookup implements PlaceLookup
 {
@@ -45,10 +45,8 @@ final class SeededPlaceLookup implements PlaceLookup
         }
 
         return [
-            'name'     => $best['name'],
-            'district' => $best['district'],
-            'state'    => $best['state'],
-            'nearby'   => $best['nearby'],
+            'name'   => $best['name'],
+            'nearby' => $best['nearby'],
         ];
     }
 

@@ -13,8 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Hourly at-risk check (replaces the unscheduled notification:task-due-alert
- * and report:daily-summary, which sent the same overdue alert over Telegram).
+ * Hourly at-risk check.
  *
  * For every New / In Progress task it applies TaskRisk:
  *  - newly at risk -> stamp tasks.at_risk_at

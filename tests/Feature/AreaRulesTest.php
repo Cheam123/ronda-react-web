@@ -73,7 +73,6 @@ class AreaRulesTest extends TestCase
         $rule = AreaRule::where('kind', 'university')->first();
         $this->assertSame(['fruit_tea'], $rule->categories);
         $this->assertSame('Students on a budget.', $rule->note);
-        $this->assertSame($this->admin->id, $rule->updated_by);
         $this->assertSame(['categories' => ['fruit_tea'], 'tiers' => ['budget']], AreaRule::forRanking()['university']);
         $this->assertSame(['categories' => [], 'tiers' => []], AreaRule::forRanking()['office']);
     }

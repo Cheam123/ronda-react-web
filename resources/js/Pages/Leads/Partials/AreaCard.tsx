@@ -1,16 +1,12 @@
 import { formatDistance, pluralize } from '@/lib/format';
 import type { AreaProfile, AreaTypeShown } from '@/types/leads';
 
-const INCOME = 'Income is the DOSM 2022 district median.';
-
 function sourceNote(area: AreaProfile): string {
     switch (area.source) {
         case 'amazon':
-            return `Places within ${formatDistance(area.radius ?? 1000)} come from Amazon Location Service (GrabMaps data). Closer places count more. ${INCOME}`;
+            return `Places within ${formatDistance(area.radius ?? 1000)} come from Amazon Location Service (GrabMaps data). Closer places count more.`;
         case 'seeded':
-            return `Nearby places come from a seeded list for the Klang Valley, not a live lookup, so their distances aren't known and each counts the same. ${INCOME}`;
-        case 'district_only':
-            return `No nearby places are known for this pin, so only the district is used. ${INCOME}`;
+            return "Nearby places come from a seeded list for the Klang Valley, not a live lookup, so their distances aren't known and each counts the same.";
         default:
             return 'Nothing is known about this location yet. Stamping the location on site can help.';
     }
@@ -100,10 +96,6 @@ export default function AreaCard({ area }: { area: AreaProfile | null }) {
                                 NOT_KNOWN
                             )}
                         </dd>
-                        <dt>District</dt>
-                        <dd>{area.district ?? NOT_KNOWN}</dd>
-                        <dt>Income group</dt>
-                        <dd>{area.income_group ?? NOT_KNOWN}</dd>
                     </dl>
                     {places.length > 0 && (
                         <details className="area-places">

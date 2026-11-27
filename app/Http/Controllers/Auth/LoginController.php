@@ -78,13 +78,6 @@ class LoginController extends Controller
         }
 
         if(Auth::attempt(['email' => $request->email, 'password' => $request->password, 'status' => 1])) {
-            $user = User::where('email',$request->email)->first();
-            if (null === $user->email_verified_at) {
-                $user->email_verified_at = now();
-            }
-            $user->last_login_date = now();
-            $user->save();
-
             $this->session->put('lastActivityTime', time());
             return $this->authenticated();
             
@@ -132,14 +125,7 @@ class LoginController extends Controller
                     'status'    => 1
                 ])) {
                     $user = User::where('email', $request->input('email'))->first();
-                    
-                    // Update email verification and last login
-                    if (is_null($user->email_verified_at)) {
-                        $user->email_verified_at = now();
-                    }
-                    $user->last_login_date = now();
-                    $user->save();
-    
+
                     // Generate API token
                     $token = $user->createToken('MobileAuth')->plainTextToken;
     

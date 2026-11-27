@@ -9,7 +9,4 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('/view', 'API\V1\IFEReportController@view')->name('ifereport.view');
     Route::post('/delete', 'API\V1\IFEReportController@delete')->name('ifereport.delete');
     Route::post('/convert', 'API\V1\IFEReportController@convet_to_task')->name('ifereport.convert');
-    Route::post('/delete', 'API\V1\IFEReportController@delete')->name('ifereport.delete');
-    Route::post('/freeze', 'API\V1\IFEReportController@freeze')->name('ifereport.freeze');
-    Route::post('/unfreeze', 'API\V1\IFEReportController@unfreeze')->name('ifereport.unfreeze');
 });

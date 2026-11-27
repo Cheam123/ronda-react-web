@@ -1024,7 +1024,6 @@ class FormsController extends Controller
       'acted_by_name'    => optional($row->actedBy)->name,
       'acted_at'         => optional($row->acted_at)->toDateTimeString(),
       'remark'           => $row->remark,
-      'assigned_by'      => $row->assigned_by,
     ])->values()->all();
   }
 

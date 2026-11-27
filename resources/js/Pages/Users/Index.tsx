@@ -31,7 +31,6 @@ export default function UsersIndex({ users, counts, filters, userTypes }: UsersI
         active: filters.active ?? '1',
         user_type: filters.user_type ?? '',
         search: filters.search ?? '',
-        telegram: filters.telegram ?? '',
     });
 
     const choose = (key: keyof typeof values, value: string) => {
@@ -63,7 +62,7 @@ export default function UsersIndex({ users, counts, filters, userTypes }: UsersI
         }
     };
 
-    const filtered = Boolean(filters.search || filters.user_type || filters.telegram);
+    const filtered = Boolean(filters.search || filters.user_type);
 
     return (
         <AppLayout title="Users">
@@ -80,17 +79,6 @@ export default function UsersIndex({ users, counts, filters, userTypes }: UsersI
                                 All users
                             </h2>
                             <span className="rd-count rd-count--label">{pluralize(users.length, 'user')}</span>
-                            {values.telegram === 'none' && (
-                                <button
-                                    type="button"
-                                    className="task-list__chip"
-                                    aria-label="Remove the filter Telegram not linked"
-                                    onClick={() => choose('telegram', '')}
-                                >
-                                    Telegram not linked
-                                    <i className="mdi mdi-close" aria-hidden="true" />
-                                </button>
-                            )}
                         </div>
                         <div className="rd-list__actions">
                             <Segmented<Status>

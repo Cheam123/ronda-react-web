@@ -1,7 +1,5 @@
-import { usePage } from '@inertiajs/react';
 import type { ReactNode } from 'react';
 import { formatPhone, phoneHref } from '@/lib/phone';
-import type { PageProps } from '@/types';
 import type { User } from '../types';
 
 function Fact({ label, children }: { label: string; children: ReactNode }) {
@@ -16,7 +14,6 @@ function Fact({ label, children }: { label: string; children: ReactNode }) {
 /** A user's contact and settings as label / value rows (their page and their profile). */
 export default function UserDetails({ user, settings = true }: { user: User; settings?: boolean }) {
     const phone = phoneHref(user.mobile);
-    const { telegram } = usePage<PageProps>().props.app;
 
     return (
         <dl className="rd-facts">
@@ -35,16 +32,7 @@ export default function UserDetails({ user, settings = true }: { user: User; set
             <Fact label="User type">{user.type_label}</Fact>
             <Fact label="Team">{user.team_label}</Fact>
             <Fact label="Gender">{user.gender_label}</Fact>
-            {settings && (
-                <>
-                    {telegram && (
-                        <Fact label="Telegram chat">
-                            {user.telegram_chat_id && <span className="rd-mono">{user.telegram_chat_id}</span>}
-                        </Fact>
-                    )}
-                    <Fact label="Task alerts">{user.enable_notification === 1 ? 'On' : 'Off'}</Fact>
-                </>
-            )}
+            {settings && <Fact label="Task alerts">{user.enable_notification === 1 ? 'On' : 'Off'}</Fact>}
         </dl>
     );
 }

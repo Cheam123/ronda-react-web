@@ -12,8 +12,8 @@ use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 /**
- * The top bar's quick find, the Due today task filter, the admin to-dos'
- * filtered lists, and who may open the Telegram chat ID page.
+ * The top bar's quick find, the Due today task filter and the admin to-dos'
+ * filtered lists.
  *
  * Runs inside a transaction that is rolled back. Every outlet and task carries
  * a marker only this test uses, and every request searches for it.
@@ -95,31 +95,6 @@ class WebFindAndFiltersTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->where('leads.data', fn ($rows) => collect($rows)->pluck('id')->all() === ($with->ife_area_id ? [$without->id] : collect([$without->id, $with->id])->sortDesc()->values()->all())));
-    }
-
-    public function test_the_user_list_can_show_people_without_telegram(): void
-    {
-        $linked = $this->makeUser(User::TYPE_USER, $this->marker . ' Linked');
-        $linked->telegram_chat_id = '123456';
-        $linked->save();
-        $unlinked = $this->makeUser(User::TYPE_USER, $this->marker . ' Unlinked');
-
-        $this->actingAs($this->admin)
-            ->get(route('users.index', ['telegram' => 'none', 'search' => $this->marker]))
-            ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page
-                ->where('users', fn ($rows) => collect($rows)->pluck('id')->all() === [$unlinked->id]));
-    }
-
-    public function test_only_people_who_manage_users_see_telegram_chat_ids(): void
-    {
-        // The page exists only while the Telegram bot is switched on.
-        config(['telegram.enabled' => true]);
-
-        $this->actingAs($this->rep)
-            ->get(route('setting.telegram_message'))
-            ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page->component('Errors/CustomError'));
     }
 
     private function makeUser(int $type, string $name): User

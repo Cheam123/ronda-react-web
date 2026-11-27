@@ -50,7 +50,6 @@ class Recipe extends Model
         'price_tier',
         'is_active',
         'everyday',
-        'created_by',
     ];
 
     protected $casts = [

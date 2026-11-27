@@ -26,8 +26,6 @@ class HandleInertiaRequests extends Middleware
             'app'        => [
                 'name'     => config('app.name'),
                 'currency' => config('ife.currency', 'RM'),
-                // Whether the Telegram bot is switched on (config telegram.enabled).
-                'telegram' => (bool) config('telegram.enabled'),
             ],
             // Sent back as X-CSRF-TOKEN on every request (see bootstrap.ts).
             // The XSRF-TOKEN cookie cannot be used: EncryptCookies runs twice

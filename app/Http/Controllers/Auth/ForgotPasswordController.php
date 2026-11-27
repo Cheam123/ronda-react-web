@@ -66,10 +66,6 @@ class ForgotPasswordController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return void
      */
-    // protected function validateMobile(Request $request)
-    // {
-    //     $request->validate(['mobile' => 'required']);
-    // }
     protected function validateEmail(Request $request)
     {
         $request->validate(['email' => 'required']);

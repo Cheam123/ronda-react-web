@@ -13,9 +13,6 @@ class OutletBrief extends Model
         'lead_id',
         'content',
         'source',
-        'model',
-        'input_tokens',
-        'output_tokens',
         'error',
         'data_hash',
         'generated_by',
@@ -23,9 +20,7 @@ class OutletBrief extends Model
     ];
 
     protected $casts = [
-        'input_tokens'  => 'integer',
-        'output_tokens' => 'integer',
-        'generated_at'  => 'datetime',
+        'generated_at' => 'datetime',
     ];
 
     public function lead()

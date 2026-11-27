@@ -14,7 +14,6 @@ class IFEReport extends Model
     protected $fillable = [
         'task_id',
         'lead_id',
-        'freeze',
         'created_by',
         'company_name',
         'nature_of_business',

@@ -143,29 +143,18 @@ class AdminDashboardService
         ];
     }
 
-    /**
-     * Active users by role, and the ones Telegram can't reach (admins first).
-     * With the Telegram bot switched off nobody counts as unlinked.
-     */
+    /** Active users by role. */
     private function users(): array
     {
-        $users = User::where('status', 1)
-            ->orderBy('type')
-            ->orderBy('name')
-            ->get(['id', 'name', 'type', 'telegram_chat_id']);
+        $users = User::where('status', 1)->get(['id', 'type']);
 
-        $ofType   = fn (int $type) => $users->filter(fn (User $user) => (int) $user->type === $type)->count();
-        $unlinked = config('telegram.enabled')
-            ? $users->filter(fn (User $user) => blank($user->telegram_chat_id))
-            : collect();
+        $ofType = fn (int $type) => $users->filter(fn (User $user) => (int) $user->type === $type)->count();
 
         return [
-            'active'         => $users->count(),
-            'admins'         => $ofType(User::TYPE_ADMIN),
-            'managers'       => $ofType(User::TYPE_MANAGER),
-            'reps'           => $ofType(User::TYPE_USER),
-            'unlinked'       => $unlinked->count(),
-            'unlinked_names' => $unlinked->take(2)->pluck('name')->values()->all(),
+            'active'   => $users->count(),
+            'admins'   => $ofType(User::TYPE_ADMIN),
+            'managers' => $ofType(User::TYPE_MANAGER),
+            'reps'     => $ofType(User::TYPE_USER),
         ];
     }
 

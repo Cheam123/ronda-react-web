@@ -5,7 +5,6 @@ export interface User {
     username: string | null;
     email: string;
     mobile: string;
-    telegram_chat_id: string | null;
     gender: 'M' | 'F' | null;
     gender_label: string | null;
     team: number | null;

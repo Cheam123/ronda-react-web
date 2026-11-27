@@ -6,10 +6,8 @@ use App\Helpers\Helper;
 use App\Http\Controllers\Controller;
 
 use App\Models\IfeArea;
-use App\Models\IFENatureOfBusiness;
 use App\Models\IFEReport;
 use App\Models\IfeReportDocumentUpload;
-use App\Models\IFEStatus;
 use App\Models\TaskComment;
 use App\Models\User;
 use App\Models\Leads;
@@ -90,15 +88,8 @@ class IFEController extends Controller
         $keyword = $request->input('keyword', '');
 
         try {
-            $areas              = Helper::formatForDropdown(IfeArea::all(), 'id', 'area');
-            $natureOfBusinesses = Helper::formatForDropdown(IFENatureOfBusiness::all(), 'value', 'name');
-            $statuses           = Helper::formatForDropdown(IFEStatus::all(), 'value', 'name');
-            
-
-            $data                           = [];
-            $data['areas']                  = $areas;
-            $data['nature_of_businesses']   = $natureOfBusinesses;
-            $data['statuses']               = $statuses;
+            $data          = [];
+            $data['areas'] = Helper::formatForDropdown(IfeArea::all(), 'id', 'area');
 
             if($requireLeadLists === true || $requireLeadLists === 'true' || $requireLeadLists === 1 || $requireLeadLists === '1') {
                 $leadsQuery = Leads::select('id', 'name')->orderBy('name', 'asc');

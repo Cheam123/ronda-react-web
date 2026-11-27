@@ -265,7 +265,6 @@ class IFEReportController extends Controller
                 $lead->receiving_date    = $ifeReport->created_at;
                 $lead->belong_to         = $manager->id;
                 $lead->assign_to         = $ifeReport->created_by;
-                $lead->hq_checker        = $manager->id;
                 $lead->name              = $ifeReport->company_name;
                 $lead->business_category = null;
                 $lead->source            = null;
@@ -389,44 +388,6 @@ class IFEReportController extends Controller
         TaskComment::where('ife_report_id',$id)->delete();
         IfeReportDocumentUpload::where('ife_report_id',$id)->delete();
         IFEReport::where('id',$id)->delete();
-        DB::commit();
-
-        return redirect()->route('ifereport.index')->with('success', trans('translation.delete_success'));
-
-    }
-
-    public function freeze(Request $request)
-    {
-        if (!Auth::guard('web')->user()->can('manage_ife_report')) { 
-            $response['title']      = trans('translation.access_error');
-            $response['message'][0] = trans('translation.access_error_msg');
-            $response['message'][1] = trans('translation.check_with_ur_superior');
-            return Inertia::render('Errors/CustomError', compact('response'));
-        }
-
-        $id = $request->id;
-        $report = IFEReport::where('id',$id)->first();
-        $report->freeze = 'Y';
-        $report->save();
-        DB::commit();
-
-        return redirect()->route('ifereport.index')->with('success', trans('translation.delete_success'));
-
-    }
-
-    public function unfreeze(Request $request)
-    {
-        if (!Auth::guard('web')->user()->can('manage_ife_report')) { 
-            $response['title']      = trans('translation.access_error');
-            $response['message'][0] = trans('translation.access_error_msg');
-            $response['message'][1] = trans('translation.check_with_ur_superior');
-            return Inertia::render('Errors/CustomError', compact('response'));
-        }
-
-        $id = $request->id;
-        $report = IFEReport::where('id',$id)->first();
-        $report->freeze = 'N';
-        $report->save();
         DB::commit();
 
         return redirect()->route('ifereport.index')->with('success', trans('translation.delete_success'));

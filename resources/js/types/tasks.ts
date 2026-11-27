@@ -46,7 +46,6 @@ export interface TaskListItem {
     /** Overdue: past due while the task is still New or In Progress (TaskRisk). */
     due: { date: string; time: string | null; overdue: boolean } | null;
     appointment: string | null;
-    reminder: string | null;
     created_at: string | null;
     last_updated: string | null;
     aging: { tone: AgingTone; label: string };
@@ -64,7 +63,6 @@ export interface TaskListItem {
         id: number;
         name: string | null;
         initials: string;
-        rate: number | null;
         /** [date, outlet] of each open appointment. */
         appointments: [string, string][];
     } | null;

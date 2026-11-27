@@ -124,7 +124,7 @@ class RecipeController extends Controller
             return $this->accessError();
         }
 
-        $recipe = $this->save(new Recipe(['created_by' => Auth::guard('web')->id()]), $this->validated($request));
+        $recipe = $this->save(new Recipe(), $this->validated($request));
 
         alert()->success(trans('translation.success'), $recipe->name . ' added.')->showConfirmButton()->focusConfirm(true);
 

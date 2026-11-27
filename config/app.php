@@ -196,8 +196,6 @@ return [
 
         Kyslik\ColumnSortable\ColumnSortableServiceProvider::class,
         RealRashid\SweetAlert\SweetAlertServiceProvider::class,
-        TelegramNotifications\TelegramServiceProvider::class,
-        Ixudra\Curl\CurlServiceProvider::class,
         Maatwebsite\Excel\ExcelServiceProvider::class,
     ],
 
@@ -251,7 +249,6 @@ return [
         'Validator' => Illuminate\Support\Facades\Validator::class,
         'View' => Illuminate\Support\Facades\View::class,
         'Alert' => RealRashid\SweetAlert\Facades\Alert::class,
-        'Curl' => Ixudra\Curl\Facades\Curl::class,
         'Excel' => Maatwebsite\Excel\Facades\Excel::class,
     ],
 ];

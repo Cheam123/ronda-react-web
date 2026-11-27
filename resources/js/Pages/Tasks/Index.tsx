@@ -28,7 +28,6 @@ import {
 
 const SORT_BY = [
     { value: 'last_follow_up', label: 'Last updated' },
-    { value: 'reminder_date', label: 'Reminder date' },
     { value: 'due_date', label: 'Due date' },
     { value: 'created_at', label: 'Created date' },
     { value: 'inprogress_date', label: 'In progress date' },
@@ -38,7 +37,7 @@ const SORT_BY = [
 ];
 
 /** Dates that are still to come read soonest first; the rest newest first. */
-const AHEAD = ['due_date', 'reminder_date'];
+const AHEAD = ['due_date'];
 
 interface TasksIndexProps extends TaskFilterOptions {
     tasks: Paginated<TaskListItem>;

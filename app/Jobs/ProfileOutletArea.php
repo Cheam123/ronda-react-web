@@ -12,7 +12,7 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Re-profiles an outlet's area after its location or address changes. It is
+ * Re-profiles an outlet's area after its location changes. It is
  * dispatched after the response, so saving an outlet doesn't wait for the
  * live place lookup. Never throws: this must not break saving an outlet.
  */
@@ -39,7 +39,6 @@ class ProfileOutletArea implements ShouldQueue
             $profile = $profiler->profile([
                 'latitude'  => $lead->latitude,
                 'longitude' => $lead->longitude,
-                'address'   => $lead->address,
             ]);
 
             Leads::withoutTimestamps(fn () => Leads::whereKey($lead->id)->update(Leads::areaColumns($profile)));

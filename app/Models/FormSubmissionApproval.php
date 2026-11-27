@@ -19,7 +19,6 @@ class FormSubmissionApproval extends Model
         'name',
         'approval_mode',
         'approver_ids',
-        'assigned_by',
         'field_permissions',
         'status',
         'actions',
@@ -43,12 +42,6 @@ class FormSubmissionApproval extends Model
     public function actedBy()
     {
         return $this->belongsTo(User::class, 'acted_by');
-    }
-
-    /** Who picked the handler on a runtime-assigned step. */
-    public function assignedBy()
-    {
-        return $this->belongsTo(User::class, 'assigned_by');
     }
 
     public function isApprovalNode(): bool

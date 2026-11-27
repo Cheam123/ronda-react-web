@@ -181,7 +181,6 @@ class MenuScanService
                     'price'        => $item['price'],
                     'kind'         => $item['kind'],
                     'recipe_id'    => $item['recipe_id'],
-                    'match_share'  => $item['share'],
                 ]);
             }
 
@@ -235,9 +234,8 @@ class MenuScanService
             $this->price($scan);
 
             $scan->update([
-                'status'       => MenuScan::STATUS_CONFIRMED,
-                'confirmed_at' => Carbon::now(),
-                'ideas'        => $this->ideas($scan),
+                'status' => MenuScan::STATUS_CONFIRMED,
+                'ideas'  => $this->ideas($scan),
             ]);
 
             return $scan->load('items.recipe', 'photos');

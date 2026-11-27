@@ -92,7 +92,6 @@ class AreaRuleController extends Controller
                     'categories'  => array_values(array_unique($rule['categories'] ?? [])),
                     'price_tiers' => array_values(array_unique($rule['price_tiers'] ?? [])),
                     'note'        => trim((string) ($rule['note'] ?? '')) ?: null,
-                    'updated_by'  => Auth::id(),
                 ]);
             }
         });

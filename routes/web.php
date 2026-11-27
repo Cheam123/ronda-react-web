@@ -42,9 +42,6 @@ Route::group(['prefix' => 'v1'], function () {
     # User Group
     Route::prefix('users')->group(__DIR__ . '/api/users.php');
 
-    # Telegram Setting Group
-    Route::prefix('setting')->group(__DIR__ . '/api/setting.php');
-
     # Task Group
     Route::prefix('task')->group(__DIR__ . '/api/task.php');
 
@@ -53,12 +50,6 @@ Route::group(['prefix' => 'v1'], function () {
 
     # IFE Report Group
     Route::prefix('ifereport')->group(__DIR__ . '/api/ifereport.php');
-
-    # Task Reminder Group
-    Route::prefix('reminder')->group(__DIR__ . '/api/reminder.php');
-
-    # Task Rating Group
-    Route::prefix('rating')->group(__DIR__ . '/api/rating.php');
 
     # Form Group
     Route::prefix('form')->group(__DIR__ . '/api/form.php');

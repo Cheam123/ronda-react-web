@@ -141,11 +141,11 @@ class RecommendationFeedbackTest extends TestCase
 
     public function test_area_profile_and_halal_reach_the_app(): void
     {
-        $this->lead->update(['is_halal' => true, 'district' => 'Petaling', 'income_group' => 'M40', 'area_source' => 'seeded', 'area_profiled_at' => now()]);
+        $this->lead->update(['is_halal' => true, 'nearby_counts' => ['office_building' => 5], 'area_source' => 'seeded', 'area_profiled_at' => now()]);
 
         $area = $this->lead->fresh()->areaProfile();
 
-        $this->assertSame('Petaling', $area['district']);
+        $this->assertSame(5, $area['nearby_total']);
         $this->assertSame(['office'], $area['area_types']);
         $this->assertSame('seeded', $area['source']);
     }
@@ -174,14 +174,14 @@ class RecommendationFeedbackTest extends TestCase
     {
         $manager = User::withoutEvents(fn () => User::factory()->create(['type' => User::TYPE_MANAGER, 'status' => 1]));
 
-        $this->lead->update(['is_halal' => true, 'district' => 'Petaling', 'income_group' => 'M40', 'area_source' => 'seeded', 'area_profiled_at' => now()]);
+        $this->lead->update(['is_halal' => true, 'nearby_counts' => ['office_building' => 5], 'area_source' => 'seeded', 'area_profiled_at' => now()]);
 
         $this->withoutVite()->actingAs($manager)->get(route('lead.view', $this->lead->id))
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('Leads/Show')
                 ->where('lead.is_halal', true)
-                ->where('lead.area.district', 'Petaling'));
+                ->where('lead.area.nearby_total', 5));
     }
 
     public function test_the_web_feedback_route_answers_only_for_visible_outlets(): void

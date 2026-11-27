@@ -35,10 +35,6 @@ class UsersController extends Controller
         if ($request->get('user_type') !== NULL) {
             $users = $users->where('type', $request->get('user_type'));
         }
-        // "none": people who get no task alerts on Telegram (the admin dashboard's to-do links here).
-        if ($request->get('telegram') === 'none') {
-            $users = $users->where(fn ($q) => $q->whereNull('telegram_chat_id')->orWhere('telegram_chat_id', ''));
-        }
         // One box for the name, username, email or mobile.
         if ($request->filled('search')) {
             $keyword = '%'.$request->get('search').'%';
@@ -85,7 +81,7 @@ class UsersController extends Controller
         return Inertia::render('Users/Index', [
             'users'     => UserResource::collection($users)->resolve(),
             'counts'    => $counts,
-            'filters'   => $request->only(['active', 'user_type', 'search', 'telegram', 'name', 'mobile', 'email']),
+            'filters'   => $request->only(['active', 'user_type', 'search', 'name', 'mobile', 'email']),
             'userTypes' => Options::fromMap(User::getUserTypeListing()),
         ]);
     }
@@ -139,7 +135,6 @@ class UsersController extends Controller
 
             $user = User::create([
                 'name'                => $validatedData['name'],
-                'telegram_chat_id'    => $validatedData['telegram_chat_id'] ?? NULL,
                 'email'               => $validatedData['email'],
                 'team'                => $validatedData['team'],
                 'gender'              => $validatedData['gender'],
@@ -201,7 +196,6 @@ class UsersController extends Controller
         $user = User::findOrFail($request->id);
         $user->update([
             'name'                => $validatedData['name'],
-            'telegram_chat_id'    => $validatedData['telegram_chat_id'] ?? NULL,
             'email'               => $validatedData['email'],
             'team'                => $validatedData['team'],
             'gender'              => $validatedData['gender'],

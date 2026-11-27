@@ -15,8 +15,6 @@ class Notification extends Model
         'notifiable_type',
         'notifiable_id',
         'data',
-        'telegram_send_sticker_id',
-        'telegram_send_message_id',
         'read_at',
         'content_id',
         'content_type'

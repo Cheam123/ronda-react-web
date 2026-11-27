@@ -347,7 +347,6 @@ class LeadController extends Controller
                 'mobile'            => $validatedData['mobile'],
                 'belong_to'         => $user->id,
                 'assign_to'         => null,
-                'hq_checker'        => $user->seesAllRecords() ? $user->id : null,
                 'business_name'     => $validatedData['business_name'] ?? null,
                 'customer_id'       => $validatedData['customer_id'] ?? null,
                 'source'            => $validatedData['leadsource'] ?? null,
@@ -474,7 +473,7 @@ class LeadController extends Controller
             DB::commit();
 
             // A moved outlet gets its area worked out again.
-            if ($lead->wasChanged(['latitude', 'longitude', 'address', 'postcode', 'city_id', 'state_id'])) {
+            if ($lead->wasChanged(['latitude', 'longitude'])) {
                 ProfileOutletArea::dispatchAfterResponse($lead->id);
             }
 

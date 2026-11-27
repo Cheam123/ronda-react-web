@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "4a4291fe9fd3d5a9a284594343b83159",
+    "content-hash": "8334d835e13030111deaad3e77a4335c",
     "packages": [
         {
             "name": "anthropic-ai/sdk",
@@ -219,61 +219,6 @@
                 "source": "https://github.com/aws/aws-sdk-php/tree/3.402.5"
             },
             "time": "2026-10-30T18:04:02+00:00"
-        },
-        {
-            "name": "babenkoivan/telegram-notifications",
-            "version": "v1.1.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/babenkoivan/telegram-notifications.git",
-                "reference": "12651f821a723e53b137b44179e793efa62074e9"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/babenkoivan/telegram-notifications/zipball/12651f821a723e53b137b44179e793efa62074e9",
-                "reference": "12651f821a723e53b137b44179e793efa62074e9",
-                "shasum": ""
-            },
-            "require": {
-                "guzzlehttp/guzzle": "^7.0",
-                "php": "^7.3 || ^8.0"
-            },
-            "type": "library",
-            "extra": {
-                "laravel": {
-                    "providers": [
-                        "TelegramNotifications\\TelegramServiceProvider"
-                    ]
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "TelegramNotifications\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Babenko Ivan",
-                    "email": "babenko.i.a@gmail.com",
-                    "role": "Developer"
-                }
-            ],
-            "description": "Telegram notifications for Laravel",
-            "homepage": "https://github.com/babenkoivan/telegram-notifications",
-            "keywords": [
-                "laravel",
-                "notification",
-                "telegram"
-            ],
-            "support": {
-                "issues": "https://github.com/babenkoivan/telegram-notifications/issues",
-                "source": "https://github.com/babenkoivan/telegram-notifications/tree/v1.1.0"
-            },
-            "time": "2021-11-10T08:29:42+00:00"
         },
         {
             "name": "brick/math",
@@ -1828,64 +1773,6 @@
                 "source": "https://github.com/inertiajs/inertia-laravel/tree/v2.0.28"
             },
             "time": "2026-09-25T09:18:50+00:00"
-        },
-        {
-            "name": "ixudra/curl",
-            "version": "6.23.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/ixudra/curl.git",
-                "reference": "050b9967610f9c6202ee210aea9e940f812e85bb"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/ixudra/curl/zipball/050b9967610f9c6202ee210aea9e940f812e85bb",
-                "reference": "050b9967610f9c6202ee210aea9e940f812e85bb",
-                "shasum": ""
-            },
-            "require": {
-                "ext-curl": "*",
-                "illuminate/support": ">=4.0",
-                "php": ">=5.4.0"
-            },
-            "type": "library",
-            "extra": {
-                "laravel": {
-                    "aliases": {
-                        "Curl": "Ixudra\\Curl\\Facades\\Curl"
-                    },
-                    "providers": [
-                        "Ixudra\\Curl\\CurlServiceProvider"
-                    ]
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Ixudra\\Curl\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Jan Oris",
-                    "email": "jan.oris@ixudra.be"
-                }
-            ],
-            "description": "Custom PHP Curl library for the Laravel framework - developed by Ixudra",
-            "homepage": "http://ixudra.be",
-            "keywords": [
-                "Ixudra",
-                "curl",
-                "laravel"
-            ],
-            "support": {
-                "issues": "https://github.com/ixudra/curl/issues",
-                "source": "https://github.com/ixudra/curl/tree/6.23.0"
-            },
-            "time": "2025-11-04T08:50:29+00:00"
         },
         {
             "name": "kyslik/column-sortable",

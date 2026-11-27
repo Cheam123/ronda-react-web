@@ -385,10 +385,6 @@ class TaskController extends Controller
             if (null == $request->get('sortMode')) {
                 $request->merge(['sortMode' => 'desc']);
             }
-        } else if ($request->get('sortBy') == 'reminder_date') {
-            if (null == $request->get('sortMode')) {
-                $request->merge(['sortMode' => 'desc']);
-            }
         } else if ($request->get('sortBy') == 'due_date') {
             if (null == $request->get('sortMode')) {
                 $request->merge(['sortMode' => 'asc']);
@@ -423,8 +419,6 @@ class TaskController extends Controller
                 $tasks = $tasks->get()
                     ->sortBy(function ($t) use ($sortBy) {
                         switch ($sortBy) {
-                            case 'reminder_date':
-                                return [$t->reminder_date_time, $t->last_follow_up];
                             case 'last_follow_up':
                                 return [$t->last_follow_up, $t->created_at];
                             case 'last_updated_date':
@@ -448,8 +442,6 @@ class TaskController extends Controller
                 $tasks = $tasks->get()
                     ->sortByDesc(function ($t) use ($sortBy) {
                         switch ($sortBy) {
-                            case 'reminder_date':
-                                return [$t->reminder_date_time, $t->last_follow_up];
                             case 'last_updated_date':
                                 return [$t->updated_at];
                             case 'last_follow_up':
@@ -605,7 +597,6 @@ class TaskController extends Controller
             $data = [
                 'id'                    => $task->id,
                 ...$this->mobileTaskExtras($task, TaskRisk::fromConfig(), now()),
-                'reminder_at'           => $task->reminder_date_time,
                 'done_remark'           => optional($doneNote)->remark,
                 'done_by'               => optional(optional($doneNote)->updatedBy)->name,
                 // Photos added with Mark as done: the task's own files from then on.
@@ -769,10 +760,6 @@ class TaskController extends Controller
 
             $lead = Leads::where('id', $validatedData['lead_id'])->lockForUpdate()->firstOrFail();
             $lead->assign_to = $subscriber->id;
-            // hq_checker is the overseeing manager; a rep's own task keeps it.
-            if ($assigns) {
-                $lead->hq_checker = $user->id;
-            }
             $lead->save();
 
             $task = new Tasks();

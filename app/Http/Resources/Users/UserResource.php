@@ -22,7 +22,6 @@ class UserResource extends JsonResource
             'username'            => $this->username,
             'email'               => $this->email,
             'mobile'              => $this->mobile,
-            'telegram_chat_id'    => $this->telegram_chat_id,
             'gender'              => $this->gender,
             'gender_label'        => Helper::getGender($this->gender),
             'team'                => $this->team,

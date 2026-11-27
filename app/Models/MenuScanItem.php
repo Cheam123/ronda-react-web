@@ -11,12 +11,11 @@ class MenuScanItem extends Model
     public const KIND_UNRECOGNISED = 'unrecognised';
 
     protected $fillable = [
-        'menu_scan_id', 'row_text', 'page', 'position', 'price', 'kind', 'recipe_id', 'match_share', 'kept', 'changed_by_rep',
+        'menu_scan_id', 'row_text', 'page', 'position', 'price', 'kind', 'recipe_id', 'kept', 'changed_by_rep',
     ];
 
     protected $casts = [
         'price'          => 'float',
-        'match_share'    => 'float',
         'kept'           => 'boolean',
         'changed_by_rep' => 'boolean',
     ];

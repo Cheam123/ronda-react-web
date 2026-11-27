@@ -18,7 +18,6 @@ use App\Models\TaskComment;
 use App\Models\TaskUsers;
 use App\Models\DocumentUpload;
 use App\Models\GeneralSetting;
-use App\Models\Rating;
 use App\Models\Notification as NotificationModel;
 use App\Helpers\Helper;
 use App\Services\AlertInbox;
@@ -188,13 +187,7 @@ class FirebaseNotification implements ShouldQueue
                             } elseif ($this->messageType == '5' || $this->messageType == '6' || $this->messageType == '7') {
                                 $shouldSend = true;
                             } elseif ($this->messageType == '10') {
-                                $shouldSend = true; // Logic in original was just checking isset($u->telegram_chat_id) inside loop, no role check? Wait.
-                                // Original code for case 10:
-                                // foreach($users as $u) {
-                                //     $r = TaskUsers::where...->first();
-                                //     if (isset($u->telegram_chat_id)) { ... }
-                                // }
-                                // It fetches $r but doesn't use it. So it sends to everyone in $users.
+                                $shouldSend = true; // Everyone on the task, whatever their role.
                             }
 
                             if ($shouldSend) {
@@ -203,29 +196,6 @@ class FirebaseNotification implements ShouldQueue
 
                             if ($shouldSend && isset($u->fcm_token)) {
                                 $firebaseService->sendToDevice($u->fcm_token, $title, $body, $data);
-                            }
-                        }
-
-                        // Special case for Rating in case 5
-                        if ($this->messageType == '5') {
-                            foreach($this->task->users->whereIn('role',[2,6]) as $item) {
-                                $rating = Rating::where('task_id',$this->task->id)->where('user_id',$item->user_id)->first();
-
-                                if ($rating && $item->user) {
-                                    $ratingTitle = "Task rated";
-                                    $ratingBody  = "Role :\n" . ($item->role == 2 ? "Subscriber" : "Sub-Subscriber") . "\n" .
-                                                   "Reference :\n" .$this->task->task_reference . "\n" .
-                                                   "Title :\n" .$this->task->title . "\n\n" .
-                                                   "Rate :\n" . $rating->rate . "\n" .
-                                                   "Comment :\n" . $rating->comment;
-
-                                    $data = ['type' => 'task', 'id' => (string)$this->task->id];
-                                    AlertInbox::record($item->user, $ratingTitle, $this->task->title . ': ' . $rating->rate . ($rating->comment ? '. ' . $rating->comment : ''), $data);
-
-                                    if (isset($item->user->fcm_token)) {
-                                        $firebaseService->sendToDevice($item->user->fcm_token, $ratingTitle, $ratingBody, $data);
-                                    }
-                                }
                             }
                         }
                     }
@@ -287,8 +257,8 @@ class FirebaseNotification implements ShouldQueue
 
                                             /* Send message */
                                             $data = ['type' => 'chat', 'id' => (string)$this->chat->task_id];
-                                            $response = $firebaseService->sendToDevice($s->fcm_token, $title, $body, $data);
-            
+                                            $firebaseService->sendToDevice($s->fcm_token, $title, $body, $data);
+
                                             $notification = new NotificationModel();
                                             $notification->id               = $s->id .'-'. uniqid();
                                             $notification->data             = json_encode([]);
@@ -298,14 +268,6 @@ class FirebaseNotification implements ShouldQueue
                                             $notification->content_type     = get_class($this->chat);
                                             $notification->content_id       = $this->chat->id;
                                             $notification->read_at          = null;
-                                            
-                                            // Store Firebase message ID if available, though we can't delete it later easily.
-                                            if (isset($response['name'])) {
-                                                // $response['name'] is like "projects/project-id/messages/0:123..."
-                                                // We can store it in telegram_send_message_id or a new column if we wanted to track it.
-                                                // For now, reusing the column to avoid schema changes, although it's not a telegram ID.
-                                                $notification->telegram_send_message_id = $response['name'];
-                                            }
                                             $notification->save();
                                         }
                                     }
@@ -314,8 +276,7 @@ class FirebaseNotification implements ShouldQueue
                             break;
 
                         case '2': // delete chat message
-                            // Firebase Cloud Messaging does not support deleting delivered notifications programmatically
-                            // in the same way Telegram does. We will just delete the notification record from DB.
+                            // A delivered push can't be taken back, so only the unread badge row is deleted.
                             
                             $member = TaskUsers::where('task_id', $this->chat->task_id)->get();
 

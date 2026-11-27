@@ -19,14 +19,13 @@ class MenuScan extends Model
     public const STATUS_CONFIRMED = 'confirmed';
 
     protected $fillable = [
-        'lead_id', 'user_id', 'source', 'status', 'fragments', 'median_price', 'price_level', 'ideas', 'confirmed_at',
+        'lead_id', 'user_id', 'source', 'status', 'fragments', 'median_price', 'price_level', 'ideas',
     ];
 
     protected $casts = [
         'fragments'    => 'array',
         'ideas'        => 'array',
         'median_price' => 'float',
-        'confirmed_at' => 'datetime',
     ];
 
     public function lead()

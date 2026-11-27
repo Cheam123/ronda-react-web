@@ -1,4 +1,4 @@
-import { Link, useForm, usePage } from '@inertiajs/react';
+import { useForm } from '@inertiajs/react';
 import type { FormEvent } from 'react';
 import Field from '@/Components/form/Field';
 import SearchSelect from '@/Components/form/SearchSelect';
@@ -12,7 +12,7 @@ import ErrorSummary from '@/Components/ui/ErrorSummary';
 import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
 import { formatPhone } from '@/lib/phone';
 import { tagClass, teamHue } from '@/lib/tags';
-import type { PageProps, SelectOption } from '@/types';
+import type { SelectOption } from '@/types';
 import type { User } from '../types';
 
 const GENDERS: SelectOption[] = [
@@ -35,13 +35,11 @@ interface UserFormProps {
 
 /** Create or edit a user. Posts to users.store / users.update. */
 export default function UserForm({ user, teams, userTypes }: UserFormProps) {
-    const { telegram } = usePage<PageProps>().props.app;
     const { data, setData, post, processing, errors, isDirty } = useForm({
         id: user?.id ?? '',
         name: user?.name ?? '',
         team: String(user?.team ?? ''),
         type: String(user?.type ?? ''),
-        telegram_chat_id: user?.telegram_chat_id ?? '',
         gender: user?.gender ?? '',
         email: user?.email ?? '',
         mobile: user?.mobile ?? '',
@@ -130,34 +128,11 @@ export default function UserForm({ user, teams, userTypes }: UserFormProps) {
                             </Field>
                         </FormRow>
                         <FormRow>
-                            {telegram && (
-                                <Field
-                                    label="Telegram chat ID"
-                                    htmlFor="telegram_chat_id"
-                                    error={errors.telegram_chat_id}
-                                    hint={
-                                        <>
-                                            Task alerts go to this chat.{' '}
-                                            <Link href={route('setting.telegram_message')}>Find someone’s chat ID</Link>
-                                        </>
-                                    }
-                                >
-                                    <TextInput
-                                        id="telegram_chat_id"
-                                        large
-                                        className="rd-input--mono"
-                                        inputMode="numeric"
-                                        maxLength={50}
-                                        value={data.telegram_chat_id}
-                                        onChange={(event) => setData('telegram_chat_id', event.target.value)}
-                                    />
-                                </Field>
-                            )}
                             <div className="user-form__switch">
                                 <Switch
                                     id="enable_notification"
                                     label="Send task alerts"
-                                    description={telegram ? 'In the app and on Telegram.' : 'In the app.'}
+                                    description="In the app."
                                     checked={data.enable_notification === '1'}
                                     onChange={(checked) => setData('enable_notification', checked ? '1' : '0')}
                                 />

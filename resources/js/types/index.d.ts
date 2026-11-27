@@ -60,8 +60,6 @@ export interface SharedProps {
     app: {
         name: string;
         currency: string;
-        /** Whether the Telegram bot is switched on; off hides its fields and links. */
-        telegram: boolean;
     };
     csrfToken: string;
     auth: {

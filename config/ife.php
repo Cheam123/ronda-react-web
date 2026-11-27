@@ -92,41 +92,6 @@ return [
             'decay_metres'  => 500,
             // How many of the nearest places are kept to show on the outlet.
             'places_kept'   => 30,
-            'income_year'   => 2022,
-
-            // DOSM HIES 2022 national household income groups, RM a month.
-            'income_thresholds' => ['b40_below' => 5250, 't20_from' => 11820],
-
-            // Place names people write => the district DOSM reports it under.
-            'district_aliases' => [
-                'Kuala Lumpur'  => 'W.P. Kuala Lumpur',
-                'KL'            => 'W.P. Kuala Lumpur',
-                'Bangsar'       => 'W.P. Kuala Lumpur',
-                'Cheras'        => 'W.P. Kuala Lumpur',
-                'Setapak'       => 'W.P. Kuala Lumpur',
-                'Mont Kiara'    => 'W.P. Kuala Lumpur',
-                'Putrajaya'     => 'W.P. Putrajaya',
-                'Petaling Jaya' => 'Petaling',
-                'PJ'            => 'Petaling',
-                'Damansara'     => 'Petaling',
-                'Subang Jaya'   => 'Petaling',
-                'Subang'        => 'Petaling',
-                'Puchong'       => 'Petaling',
-                'Shah Alam'     => 'Petaling',
-                'Sunway'        => 'Petaling',
-                'Klang'         => 'Klang',
-                'Hulu Langat'   => 'Ulu Langat',
-                'Kajang'        => 'Ulu Langat',
-                'Bangi'         => 'Ulu Langat',
-                'Ampang'        => 'Ulu Langat',
-                'Selayang'      => 'Gombak',
-                'Batu Caves'    => 'Gombak',
-                'Gombak'        => 'Gombak',
-                'Cyberjaya'     => 'Sepang',
-                'Sepang'        => 'Sepang',
-                'Banting'       => 'Kuala Langat',
-                'Kuala Langat'  => 'Kuala Langat',
-            ],
 
             // Live nearby places within `radius` metres from Amazon Location
             // Service, the only live source. On once AREA_AMAZON_KEY is set;

@@ -50,25 +50,18 @@ TXT;
         $facts = $this->facts($stats);
 
         $content = null;
-        $row     = [
-            'source'        => 'template',
-            'model'         => null,
-            'input_tokens'  => null,
-            'output_tokens' => null,
-            'error'         => null,
-        ];
+        $row     = ['source' => 'template', 'error' => null];
 
         if ($this->claude->isConfigured()) {
             try {
                 $result  = $this->claude->complete(self::SYSTEM, $this->prompt($facts, $now));
                 $content = $result['text'];
-                $row     = [
-                    'source'        => 'claude',
+                $row     = ['source' => 'claude', 'error' => null];
+                Log::info('Daily digest written', [
                     'model'         => $result['model'],
                     'input_tokens'  => $result['input_tokens'],
                     'output_tokens' => $result['output_tokens'],
-                    'error'         => null,
-                ];
+                ]);
             } catch (\Throwable $e) {
                 Log::warning('Daily digest: Claude failed, using the template', ['error' => $e->getMessage()]);
                 $row['error'] = mb_substr($e->getMessage(), 0, 1000);
@@ -82,7 +75,6 @@ TXT;
 
         $digest->fill($row + [
             'content' => $content ?? $this->template($facts),
-            'stats'   => $facts,
         ])->save();
 
         return $digest;

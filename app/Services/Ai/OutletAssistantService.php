@@ -81,19 +81,19 @@ TXT . "\n\n" . self::GROUND_RULES;
         $now     = $now ? $now->copy() : Carbon::now();
         $facts   = $this->context->facts($lead, $now);
         $content = null;
-        $row     = ['source' => 'template', 'model' => null, 'input_tokens' => null, 'output_tokens' => null, 'error' => null];
+        $row     = ['source' => 'template', 'error' => null];
 
         if ($this->claude->isConfigured()) {
             try {
                 $result  = $this->claude->complete(self::BRIEF_SYSTEM, $this->withFacts($facts, 'Write the visit brief.'), $this->effort());
                 $content = $result['text'];
-                $row     = [
-                    'source'        => 'claude',
+                $row     = ['source' => 'claude', 'error' => null];
+                Log::info('Visit brief written', [
+                    'lead_id'       => $lead->id,
                     'model'         => $result['model'],
                     'input_tokens'  => $result['input_tokens'],
                     'output_tokens' => $result['output_tokens'],
-                    'error'         => null,
-                ];
+                ]);
             } catch (\Throwable $e) {
                 Log::warning('Visit brief: Claude failed, using the template', ['lead_id' => $lead->id, 'error' => $e->getMessage()]);
                 $row['error'] = mb_substr($e->getMessage(), 0, 1000);

@@ -6,7 +6,6 @@ use App\Models\Leads;
 use App\Services\Recommendation\Area\AmazonPlaceLookup;
 use App\Services\Recommendation\Area\AreaProfiler;
 use App\Services\Recommendation\Area\FallbackPlaceLookup;
-use App\Services\Recommendation\Area\IncomeTable;
 use App\Services\Recommendation\Area\SeededPlaceLookup;
 use Illuminate\Console\Command;
 
@@ -17,7 +16,7 @@ class ProfileOutletAreas extends Command
         {--live : Look up places again on Amazon Location Service, within the configured radius, falling back to the seeded list}
         {--stale= : Only outlets never profiled, or profiled more than this many days ago}';
 
-    protected $description = 'Work out each outlet\'s district, income group, area scores and area types';
+    protected $description = 'Work out each outlet\'s nearby places, area scores and area types';
 
     /** Seconds between outlets in a live run, to stay under Amazon's request rate. */
     private const LIVE_PAUSE = 1;
@@ -40,22 +39,21 @@ class ProfileOutletAreas extends Command
             $this->warn('Live lookup: outlet coordinates are sent to ' . AmazonPlaceLookup::destination() . '.');
             $profiler = new AreaProfiler(
                 new FallbackPlaceLookup(AmazonPlaceLookup::fromConfig(), new SeededPlaceLookup()),
-                IncomeTable::groups(),
                 config('ife.recommendation.area'),
             );
         }
 
-        $counts = ['seeded' => 0, 'amazon' => 0, 'district_only' => 0, 'none' => 0];
+        $counts = ['seeded' => 0, 'amazon' => 0, 'none' => 0];
 
         Leads::query()
             ->when($ids, fn ($query) => $query->whereIn('id', $ids))
             ->when($stale !== null, fn ($query) => $query->where(fn ($inner) => $inner
                 ->whereNull('area_profiled_at')
                 ->orWhere('area_profiled_at', '<', now()->subDays($stale))))
-            ->select(['id', 'latitude', 'longitude', 'address', 'district', 'nearby_counts', 'area_details', 'area_source'])
+            ->select(['id', 'latitude', 'longitude', 'nearby_counts', 'area_details', 'area_source'])
             ->chunkById(200, function ($leads) use ($profiler, $live, &$counts) {
                 foreach ($leads as $lead) {
-                    $input = $lead->only(['latitude', 'longitude', 'address', 'district', 'nearby_counts', 'area_details', 'area_source']);
+                    $input = $lead->only(['latitude', 'longitude', 'nearby_counts', 'area_details', 'area_source']);
 
                     // A live run fetches places again; otherwise the places already found are kept.
                     $fetch = $live && $lead->latitude !== null && $lead->longitude !== null;
@@ -78,11 +76,10 @@ class ProfileOutletAreas extends Command
             });
 
         $this->info(sprintf(
-            'Profiled %d outlet(s): %d with Amazon Location places, %d with seeded places, %d with a district only, %d with neither.',
+            'Profiled %d outlet(s): %d with Amazon Location places, %d with seeded places, %d with none.',
             array_sum($counts),
             $counts['amazon'],
             $counts['seeded'],
-            $counts['district_only'],
             $counts['none']
         ));
 

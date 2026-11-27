@@ -4,8 +4,7 @@ namespace App\Services\Recommendation\Area;
 
 /**
  * Works out what is known about where an outlet trades:
- * pin -> nearby places -> weighted area scores -> area types,
- * and district -> income group.
+ * pin -> nearby places -> weighted area scores -> area types.
  *
  * Each nearby place counts e^(-distance / decay_metres), so a university
  * 200 m away weighs more than one at the edge of the radius. Seeded places
@@ -14,37 +13,33 @@ namespace App\Services\Recommendation\Area;
  * some_share Some presence. Food and drink places are competition: counted,
  * but left out of the shares.
  *
- * Each step degrades on its own. A pin with no places found can still get a
- * district from its address; with neither, the outlet simply has no area
- * profile and the ranking leaves the area out.
+ * A pin with no places found, or no pin at all, simply has no area profile,
+ * and the ranking leaves the area out.
  *
- * Pure PHP: the income table and the place lookup are passed in, so the rules
- * can be tested without a database or a network.
+ * Pure PHP: the place lookup is passed in, so the rules can be tested without
+ * a database or a network.
  */
 final class AreaProfiler
 {
     /**
-     * @param array<string, string> $incomeGroups normalised district name => income group
-     * @param array{present_share: float, some_share: float, decay_metres: int|float, places_kept?: int, district_aliases: array<string, string>, place_categories: array<string, string>, competitor_categories?: string[]} $config
+     * @param array{present_share: float, some_share: float, decay_metres: int|float, places_kept?: int, place_categories: array<string, string>, competitor_categories?: string[]} $config
      */
     public function __construct(
         private PlaceLookup $places,
-        private array $incomeGroups,
         private array $config,
     ) {
     }
 
     /**
-     * @param array{latitude?: mixed, longitude?: mixed, district?: ?string, address?: ?string, nearby_counts?: ?array, area_source?: ?string, area_details?: ?array} $outlet
+     * @param array{latitude?: mixed, longitude?: mixed, nearby_counts?: ?array, area_source?: ?string, area_details?: ?array} $outlet
      *        nearby_counts already on the outlet (an earlier lookup's) are kept, with their area_source and area_details
-     * @return array{district: ?string, income_group: ?string, area_types: ?array, nearby_counts: ?array, area_source: string, area_details: ?array}
+     * @return array{area_types: ?array, nearby_counts: ?array, area_source: string, area_details: ?array}
      */
     public function profile(array $outlet): array
     {
-        $nearby   = $outlet['nearby_counts'] ?? null;
-        $source   = !empty($nearby) && ($outlet['area_source'] ?? null) === 'amazon' ? 'amazon' : 'seeded';
-        $district = $this->canonicalDistrict($outlet['district'] ?? null);
-        $details  = null;
+        $nearby  = $outlet['nearby_counts'] ?? null;
+        $source  = !empty($nearby) && ($outlet['area_source'] ?? null) === 'amazon' ? 'amazon' : 'seeded';
+        $details = null;
 
         if (!empty($nearby)) {
             // Kept counts keep their scores: the full list of places behind them isn't stored.
@@ -53,22 +48,18 @@ final class AreaProfiler
         } elseif (is_numeric($outlet['latitude'] ?? null) && is_numeric($outlet['longitude'] ?? null)) {
             $place = $this->places->near((float) $outlet['latitude'], (float) $outlet['longitude']);
             if ($place !== null) {
-                $nearby   = $place['nearby'];
-                $source   = $place['source'] ?? 'seeded';
-                $district = $district ?? $this->canonicalDistrict($place['district'] ?? null);
-                $details  = $this->details($place['nearby'], $place['places'] ?? null, $place['radius'] ?? null);
+                $nearby  = $place['nearby'];
+                $source  = $place['source'] ?? 'seeded';
+                $details = $this->details($place['nearby'], $place['places'] ?? null, $place['radius'] ?? null);
             }
         }
 
-        $district = $district ?? $this->districtFromAddress($outlet['address'] ?? null);
-        $types    = $details === null ? [] : $this->presentTypes($details['scores']);
+        $types = $details === null ? [] : $this->presentTypes($details['scores']);
 
         return [
-            'district'      => $district,
-            'income_group'  => $this->incomeGroup($district),
             'area_types'    => $types ?: null,
             'nearby_counts' => $nearby ?: null,
-            'area_source'   => !empty($nearby) ? $source : ($district !== null ? 'district_only' : 'none'),
+            'area_source'   => !empty($nearby) ? $source : 'none',
             'area_details'  => $details,
         ];
     }
@@ -180,55 +171,5 @@ final class AreaProfiler
             $share >= (float) ($config['some_share'] ?? 0.10)    => 'some',
             default                                              => null,
         };
-    }
-
-    public function incomeGroup(?string $district): ?string
-    {
-        return $district === null ? null : ($this->incomeGroups[self::normalise($district)] ?? null);
-    }
-
-    /** The district's DOSM name, through the alias map. Unknown names come back null. */
-    public function canonicalDistrict(?string $name): ?string
-    {
-        if ($name === null || trim($name) === '') {
-            return null;
-        }
-
-        $key = self::normalise($name);
-        foreach ($this->config['district_aliases'] as $alias => $district) {
-            if (self::normalise($alias) === $key) {
-                return $district;
-            }
-        }
-
-        foreach ($this->config['district_aliases'] as $district) {
-            if (self::normalise($district) === $key) {
-                return $district;
-            }
-        }
-
-        return isset($this->incomeGroups[$key]) ? $name : null;
-    }
-
-    /** Looks for a known place name inside a free-text address. */
-    private function districtFromAddress(?string $address): ?string
-    {
-        if ($address === null || trim($address) === '') {
-            return null;
-        }
-
-        $haystack = ' ' . self::normalise($address) . ' ';
-        foreach ($this->config['district_aliases'] as $alias => $district) {
-            if (str_contains($haystack, ' ' . self::normalise($alias) . ' ')) {
-                return $district;
-            }
-        }
-
-        return null;
-    }
-
-    private static function normalise(string $name): string
-    {
-        return trim((string) preg_replace('/[^a-z0-9]+/', ' ', strtolower($name)));
     }
 }

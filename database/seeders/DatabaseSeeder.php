@@ -18,8 +18,6 @@ class DatabaseSeeder extends Seeder
             StatesSeeder::class,
             CitiesSeeder::class,
             UserSeeder::class,
-            NatureOfBusinessSeeder::class,
-            IFEStatusSeeder::class,
             IfeAreaSeeder::class,
         ]);
     }

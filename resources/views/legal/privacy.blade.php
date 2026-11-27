@@ -54,16 +54,6 @@
                 <td>Account security and support</td>
                 <td>Recorded automatically</td>
             </tr>
-            <tr>
-                <td>Error diagnostics — the screen name, error message and the input involved when something goes wrong</td>
-                <td>To find and fix crashes and bugs</td>
-                <td>Sent automatically by the app when an error occurs</td>
-            </tr>
-            <tr>
-                <td>Telegram chat ID, where your employer has enabled Telegram notifications</td>
-                <td>To deliver notifications via Telegram</td>
-                <td>Configured by your employer</td>
-            </tr>
         </tbody>
     </table>
 
@@ -102,7 +92,6 @@
         <li><strong>Google (Firebase Cloud Messaging)</strong> — to deliver push notifications.</li>
         <li><strong>Amazon Web Services</strong> — photos and documents are stored in Amazon S3 in the Asia Pacific (Singapore) region.</li>
         <li><strong>Amazon Web Services (Amazon Bedrock)</strong> — only if your employer has turned on Ronda's AI features. To write the Morning Round-Up for managers, Ronda sends a summary of the team's work: staff names, task titles, outlet names, and counts of tasks, visits, forms and orders. AWS states that Amazon Bedrock does not use this data to train AI models.</li>
-        <li><strong>Telegram</strong> — only if your employer has enabled Telegram notifications for your account.</li>
         <li><strong>Authorities</strong> — where we are legally required to disclose data.</li>
     </ul>
 

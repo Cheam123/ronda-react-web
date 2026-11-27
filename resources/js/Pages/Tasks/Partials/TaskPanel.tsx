@@ -159,7 +159,7 @@ function split(when: string | null): [string, string] | null {
     return [date, time];
 }
 
-/** The appointment, the user's own reminder and the due date, side by side. */
+/** The appointment and the due date, side by side. */
 function Upcoming({ task }: { task: TaskListItem }) {
     const due = task.due
         ? ([
@@ -170,7 +170,6 @@ function Upcoming({ task }: { task: TaskListItem }) {
 
     const cells: { label: string; when: [string, string] | null; overdue?: boolean }[] = [
         { label: 'Appointment', when: split(task.appointment) },
-        { label: 'Your reminder', when: split(task.reminder) },
         { label: 'Due', when: due, overdue: task.due?.overdue },
     ];
 
@@ -252,7 +251,6 @@ function Details({ task }: { task: TaskListItem }) {
                     <Fact label="Last updated">{task.last_updated}</Fact>
                     <Fact label="Due">{task.due && [task.due.date, task.due.time].filter(Boolean).join(', ')}</Fact>
                     <Fact label="Appointment">{task.appointment}</Fact>
-                    <Fact label="Your reminder">{task.reminder}</Fact>
                 </dl>
             </section>
 
@@ -261,10 +259,7 @@ function Details({ task }: { task: TaskListItem }) {
                     People
                 </h3>
                 <dl className="rd-facts task-panel__facts">
-                    <Fact label="Assigned to">
-                        {task.subscriber?.name &&
-                            `${task.subscriber.name}${task.subscriber.rate !== null ? ` (rated ${task.subscriber.rate})` : ''}`}
-                    </Fact>
+                    <Fact label="Assigned to">{task.subscriber?.name}</Fact>
                     <Fact label="Helping">{task.sub_subscribers.join(', ')}</Fact>
                     <Fact label="Owners">{task.owners.join(', ')}</Fact>
                 </dl>

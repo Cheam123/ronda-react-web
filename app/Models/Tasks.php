@@ -6,7 +6,6 @@ use App\Traits\Paginatable;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Carbon\Carbon;
 
 class Tasks extends Model
 {
@@ -56,33 +55,7 @@ class Tasks extends Model
         'onhold_date' => 'datetime',
     ];
 
-    protected $appends = ['reminder_date_time','last_follow_up','has_unread_notification'];
-
-    public function getReminderDateTimeAttribute()
-    {
-        // 1. Check if a user is authenticated via ANY guard (web or sanctum).
-        //    If not, we cannot proceed, so we return null.
-        if (!Auth::check()) {
-            return null;
-        }
-
-        // 2. If a user is authenticated, Auth::user() will return the correct
-        //    user instance, whether from the session or the Sanctum token.
-        $user = Auth::user();
-
-        // 3. The rest of your logic remains the same, using the retrieved user's ID.
-        $record = $this->reminder() // Use the relationship method `reminder()` for querying
-            ->where('user_id', $user->id)
-            ->latest() // Cleaner way to do ->sortByDesc('created_at')->first()
-            ->first();
-
-        if ($record) {
-            $d = Carbon::parse($record->reminder_date . ' ' . $record->reminder_time)->format('Y-m-d H:i:s');
-            return $d;
-        }
-
-        return null;
-    }
+    protected $appends = ['last_follow_up','has_unread_notification'];
 
     public function getLastFollowUpAttribute()
     {
@@ -166,16 +139,6 @@ class Tasks extends Model
         return $this->hasMany(TaskUsers::class, 'task_id', 'id');
     }
 
-    public function rating()
-    {
-        return $this->hasMany(Rating::class, 'task_id', 'id');
-    }
-
-    public function reminder()
-    {
-        return $this->hasMany(Reminders::class, 'task_id', 'id');
-    }
-
     public function comments()
     {
         return $this->hasMany(TaskComment::class, 'task_id', 'id');
@@ -243,7 +206,7 @@ class Tasks extends Model
 
     public function getUserUnreadNotification($uid)
     {
-        return $this->hasOne(Notification::class, 'content_id', 'id')->select('content_type','content_id','telegram_send_message_id','telegram_send_sticker_id','created_at')
+        return $this->hasOne(Notification::class, 'content_id', 'id')->select('content_type','content_id','created_at')
                                                                      ->whereNull('read_at')
                                                                      ->where('content_type', 'App\Models\Tasks')
                                                                      ->where('notifiable_id', $uid)

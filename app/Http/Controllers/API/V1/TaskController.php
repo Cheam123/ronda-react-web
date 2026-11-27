@@ -26,7 +26,6 @@ use App\Models\IfeArea;
 use App\Models\IFEReport;
 use App\Models\IfeReportDocumentUpload;
 
-use App\Jobs\TelegramNotification;
 use App\Jobs\FirebaseNotification;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\TaskSaveRequest;
@@ -407,10 +406,6 @@ class TaskController extends Controller
             if (null == $request->get('sortmode')) {
                 $request->merge(['sortmode'=>'desc']);
             }
-        } else if ($request->get('sortby') == 'reminder_date') {
-            if (null == $request->get('sortmode')) {
-                $request->merge(['sortmode'=>'desc']);
-            }
         } else if ($request->get('sortby') == 'due_date') {
             if (null == $request->get('sortmode')) {
                 $request->merge(['sortmode'=>'asc']);
@@ -443,8 +438,6 @@ class TaskController extends Controller
                 $tasks = $byRisk($tasks->get())
                                 ->sortBy(function($t) use($sortBy){
                                     switch($sortBy) {
-                                        case 'reminder_date':
-                                            return [$t->reminder_date_time, $t->last_follow_up];
                                         case 'last_follow_up':
                                             return [$t->last_follow_up, $t->created_at];
                                         case 'due_date':
@@ -467,8 +460,6 @@ class TaskController extends Controller
                 $tasks = $byRisk($tasks->get())
                                 ->sortByDesc(function($t) use($sortBy){
                                     switch($sortBy) {
-                                        case 'reminder_date':
-                                            return [$t->reminder_date_time, $t->last_follow_up];
                                         case 'last_follow_up':
                                             return [$t->last_follow_up, $t->created_at];
                                         case 'due_date':
@@ -503,7 +494,7 @@ class TaskController extends Controller
         // needs a plain list, with what every row and its dialogs show.
         $tasks->withQueryString();
         $tasks->setCollection($tasks->getCollection()->values()->loadMissing([
-            'reminder', 'rating', 'lead.ifearea', 'comments.submitBy', 'comments.documentUploads', 'comments.ifeReport.documentUploads',
+            'lead.ifearea', 'comments.submitBy', 'comments.documentUploads', 'comments.ifeReport.documentUploads',
         ]));
 
         return Inertia::render('Tasks/Index', [
@@ -605,10 +596,6 @@ class TaskController extends Controller
 
                 $lead            = Leads::where('id',$validatedData['lead_id'])->lockForUpdate()->first();
                 $lead->assign_to = $subscriber->id;
-                // hq_checker is the overseeing manager; a rep's own task keeps it.
-                if ($assigns) {
-                    $lead->hq_checker = $user->id;
-                }
                 $lead->save();
 
                 $task = new Tasks();
@@ -716,9 +703,6 @@ class TaskController extends Controller
                 $history->content_after     = serialize($data['after']);
                 $history->remark            = NULL;
                 $history->save();
-
-                // $runJob = (new TelegramNotification($task->id, 'task', '1'));
-                // dispatch($runJob);
 
                 $runJobFirebase = (new FirebaseNotification($task->id, 'task', '1'));
                 dispatch($runJobFirebase);
@@ -872,7 +856,6 @@ class TaskController extends Controller
 
                 // subscriber
                 $keep = [];
-                $changerUser = false;
                 $find = TaskUsers::where('task_id',$task->id)
                                 ->where('user_id',$subscriber->id)
                                 ->where('role',2)
@@ -880,7 +863,6 @@ class TaskController extends Controller
                 array_push($keep, $subscriber->id);
                 if (!isset($find)) {
                     // this is the scenario where subscriber has been changed
-                    $changerUser = true;
                     TaskUsers::where('task_id',$task->id)
                             ->where('role',2)
                             ->whereNotIn('user_id',$keep)
@@ -905,8 +887,6 @@ class TaskController extends Controller
                         array_push($keep, $o);
                         if (!isset($find)) {
                             // this is the scenario where this sub-subscriber newly added
-                            $changerUser = true;
-
                             $taskUser = new TaskUsers();
                             $taskUser->task_id  = $task->id;
                             $taskUser->user_id  = $o;
@@ -921,7 +901,6 @@ class TaskController extends Controller
                                     ->count();
                     if ($cnt > 0) {
                         // this is the scenario where this some sub-subscriber has been removed
-                        $changerUser = true;
                         TaskUsers::where('task_id',$task->id)
                                 ->where('role',6)
                                 ->whereNotIn('user_id',$keep)
@@ -935,7 +914,6 @@ class TaskController extends Controller
                     
                     if (isset($find)) {
                         // this is the scenario where sub-subscriber being removed all
-                        $changerUser = true;
                         TaskUsers::where('task_id',$task->id)
                                 ->where('role',6)
                                 ->delete();
@@ -954,8 +932,6 @@ class TaskController extends Controller
                         array_push($keep, $o);
                         if (!isset($find)) {
                             // this is the scenario where this owner newly added
-                            $changerUser = true;
-
                             $taskUser = new TaskUsers();
                             $taskUser->task_id  = $task->id;
                             $taskUser->user_id  = $o;
@@ -970,7 +946,6 @@ class TaskController extends Controller
                                             ->count();
                     if ($cnt > 0) {
                         // this is the scenario where this some owner has been removed
-                        $changerUser = true;
                         TaskUsers::where('task_id',$task->id)
                                 ->where('role',4)
                                 ->whereNotIn('user_id',$keep)
@@ -984,7 +959,6 @@ class TaskController extends Controller
                     
                     if (isset($find)) {
                         // this is the scenario where owner being removed all
-                        $changerUser = true;
                         TaskUsers::where('task_id',$task->id)
                                 ->where('role',4)
                                 ->delete();
@@ -1003,8 +977,6 @@ class TaskController extends Controller
                         array_push($keep, $o);
                         if (!isset($find)) {
                             // this is the scenario where this viewer newly added
-                            $changerUser = true;
-
                             $taskUser = new TaskUsers();
                             $taskUser->task_id  = $task->id;
                             $taskUser->user_id  = $o;
@@ -1019,7 +991,6 @@ class TaskController extends Controller
                                             ->count();
                     if ($cnt > 0) {
                         // this is the scenario where this some viewer has been removed
-                        $changerUser = true;
                         TaskUsers::where('task_id',$task->id)
                                 ->where('role',5)
                                 ->whereNotIn('user_id',$keep)
@@ -1033,7 +1004,6 @@ class TaskController extends Controller
                     
                     if (isset($find)) {
                         // this is the scenario where viewer being removed all
-                        $changerUser = true;
                         TaskUsers::where('task_id',$task->id)
                                         ->where('role',5)
                                         ->delete();
@@ -1054,14 +1024,8 @@ class TaskController extends Controller
                 $history->save();
 
                 if ($isRecycle == true) {
-                    // $runJob = (new TelegramNotification($task->id, 'task', '1'));
-                    // dispatch($runJob);
-
                     $runJobFirebase = (new FirebaseNotification($task->id, 'task', '1'));
                     dispatch($runJobFirebase);
-                } else {
-                    // $runJob = (new TelegramNotification($task->id, 'task', '9', $history->remark, $changerUser));
-                    // dispatch($runJob);
                 }
 
                 DB::commit();
@@ -1109,9 +1073,6 @@ class TaskController extends Controller
 
             if ($task->status == 1 || $task->status == 2) {
 
-                // $runJob = (new TelegramNotification($id, 'task', '10', '', false));
-                // dispatch($runJob);
-
                 $runJobFirebase = (new FirebaseNotification($id, 'task', '10', '', false));
                 dispatch($runJobFirebase);
 
@@ -1134,9 +1095,6 @@ class TaskController extends Controller
             } else {
 
                 $param_b = Tasks::with('users.user')->findOrFail($task->id);
-
-                // $runJob = (new TelegramNotification($id, 'task', '10', '', false));
-                // dispatch($runJob);
 
                 $runJobFirebase = (new FirebaseNotification($id, 'task', '10', '', false));
                 dispatch($runJobFirebase);
@@ -1222,9 +1180,6 @@ class TaskController extends Controller
                 $history->content_after     = serialize($data['after']);
                 $history->remark            = NULL;
                 $history->save();
-
-                // $runJob = (new TelegramNotification($task->id, 'task', '2'));
-                // dispatch($runJob);
 
                 $runJobFirebase = (new FirebaseNotification($task->id, 'task', '2'));
                 dispatch($runJobFirebase);
@@ -1315,9 +1270,6 @@ class TaskController extends Controller
                 $history->remark            = $validatedData['special_remark'];
                 $history->save();
 
-                // $runJob = (new TelegramNotification($task->id, 'task', '3'));
-                // dispatch($runJob);
-
                 $runJobFirebase = (new FirebaseNotification($task->id, 'task', '3'));
                 dispatch($runJobFirebase);
 
@@ -1398,9 +1350,6 @@ class TaskController extends Controller
                 $history->content_after     = serialize($data['after']);
                 $history->remark            = $validatedData['special_remark'];
                 $history->save();
-
-                // $runJob = (new TelegramNotification($task->id, 'task', '8'));
-                // dispatch($runJob);
 
                 $runJobFirebase = (new FirebaseNotification($task->id, 'task', '8'));
                 dispatch($runJobFirebase);
@@ -1535,9 +1484,6 @@ class TaskController extends Controller
                 $history->remark            = $validatedData['special_remark'];
                 $history->save();
 
-                // $runJob = (new TelegramNotification($task->id, 'task', '4'));
-                // dispatch($runJob);
-
                 $runJobFirebase = (new FirebaseNotification($task->id, 'task', '4'));
                 dispatch($runJobFirebase);
 
@@ -1617,9 +1563,6 @@ class TaskController extends Controller
                 $history->content_after     = serialize($data['after']);
                 $history->remark            = $validatedData['special_remark'];
                 $history->save();
-
-                // $runJob = (new TelegramNotification($task->id, 'task', '5'));
-                // dispatch($runJob);
 
                 $runJobFirebase = (new FirebaseNotification($task->id, 'task', '5'));
                 dispatch($runJobFirebase);
@@ -1701,9 +1644,6 @@ class TaskController extends Controller
                 $history->remark            = $validatedData['special_remark'];
                 $history->save();
 
-                // $runJob = (new TelegramNotification($task->id, 'task', '6'));
-                // dispatch($runJob);
-
                 $runJobFirebase = (new FirebaseNotification($task->id, 'task', '6'));
                 dispatch($runJobFirebase);
 
@@ -1784,9 +1724,6 @@ class TaskController extends Controller
                 $history->remark            = $validatedData['special_remark'];
                 $history->save();
 
-                // $runJob = (new TelegramNotification($task->id, 'task', '6'));
-                // dispatch($runJob);
-
                 $runJobFirebase = (new FirebaseNotification($task->id, 'task', '6'));
                 dispatch($runJobFirebase);
 
@@ -1866,9 +1803,6 @@ class TaskController extends Controller
                 $history->content_after     = serialize($data['after']);
                 $history->remark            = $validatedData['special_remark'];
                 $history->save();
-
-                // $runJob = (new TelegramNotification($task->id, 'task', '7'));
-                // dispatch($runJob);
 
                 $runJobFirebase = (new FirebaseNotification($task->id, 'task', '7'));
                 dispatch($runJobFirebase);
@@ -2007,9 +1941,6 @@ class TaskController extends Controller
                 }
             }
 
-            // $runJob = (new TelegramNotification($new->id, 'chatroom', '1'));
-            // dispatch($runJob);
-
             $runJobFirebase = (new FirebaseNotification($new->id, 'chatroom', '1'));
             dispatch($runJobFirebase);
 
@@ -2077,9 +2008,6 @@ class TaskController extends Controller
                         S3ClientRepo::Delete($documentUpload->file_path, $documentUpload->filename);
                     }
                     
-                    // $runJob = (new TelegramNotification($chat->id, 'chatroom', '2'));
-                    // dispatch($runJob);
-
                     $runJobFirebase = (new FirebaseNotification($chat->id, 'chatroom', '2'));
                     dispatch($runJobFirebase);
 
@@ -2088,9 +2016,6 @@ class TaskController extends Controller
 
             } else {
             
-                // $runJob = (new TelegramNotification($chat->id, 'chatroom', '2'));
-                // dispatch($runJob);
-
                 $runJobFirebase = (new FirebaseNotification($chat->id, 'chatroom', '2'));
                 dispatch($runJobFirebase);
 

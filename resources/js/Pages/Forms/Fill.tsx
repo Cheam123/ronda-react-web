@@ -47,7 +47,7 @@ export default function FillForm({ form, parentOptions, parentId, process, proce
                     parentOptions={parentOptions}
                     parentId={parentId}
                     submitLabel="Submit"
-                    // Back to the list of forms, not back in history: a link from Telegram has no history here.
+                    // Back to the list of forms, not back in history: a link from a notification has no history here.
                     onCancel={() => router.visit(route('form.entry'))}
                     draftKey={user ? draftKey(user.id, form.id) : undefined}
                     aside={<AfterSubmit process={process} names={processNames} schema={props.schema} />}

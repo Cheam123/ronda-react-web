@@ -122,9 +122,6 @@ export interface AdminSummary {
         admins: number;
         managers: number;
         reps: number;
-        /** Without Telegram linked. */
-        unlinked: number;
-        unlinked_names: string[];
     };
     approvals: {
         pending: number;

@@ -13,7 +13,6 @@ class States extends Model
 
     protected $fillable = [
         'name',
-        'code',
     ];
 
     public function cities()

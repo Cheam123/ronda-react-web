@@ -223,11 +223,9 @@ export interface DrinkIdeas {
 
 /** What is known about where an outlet trades (Leads::areaProfile()). */
 export interface AreaProfile {
-    district: string | null;
-    income_group: string | null;
     area_types: string[];
     nearby_total: number;
-    source: 'seeded' | 'amazon' | 'district_only' | 'none';
+    source: 'seeded' | 'amazon' | 'none';
     profiled_at: string;
     /** Where the customer groups come from: the rep's answer, or what is around the outlet. */
     customers_from?: 'rep' | 'area' | null;

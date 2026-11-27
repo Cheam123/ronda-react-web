@@ -25,7 +25,6 @@ class TaskListItemResource extends JsonResource
         /** @var User $user */
         $user       = $request->user();
         $subscriber = $this->users->firstWhere('role', 2);
-        $reminder   = $this->reminder->where('user_id', $user->id)->first();
         $comments   = $this->comments->sortByDesc('created_at')->values();
         $namesFor   = fn (int $role) => $this->users->where('role', $role)
             ->map(fn ($taskUser) => optional($taskUser->user)->name)
@@ -42,7 +41,6 @@ class TaskListItemResource extends JsonResource
             'status_label' => Tasks::getTaskStatus($this->status),
             'due'          => $this->due(),
             'appointment'  => $this->format($this->appointment_date),
-            'reminder'     => $reminder ? $this->format($reminder->reminder_date . ' ' . $reminder->reminder_time) : null,
             'created_at'   => $this->format($this->created_at),
             'last_updated' => $this->format($this->last_follow_up),
             'aging'        => $this->aging(),
@@ -60,7 +58,6 @@ class TaskListItemResource extends JsonResource
                 'id'           => $subscriber->user_id,
                 'name'         => optional($subscriber->user)->name,
                 'initials'     => $this->initials(optional($subscriber->user)->name),
-                'rate'         => optional($this->rating->where('user_id', $subscriber->user_id)->first())->rate,
                 // [date, outlet] of each open appointment the subscriber has.
                 'appointments' => optional($subscriber->user)->active_appointment ?? [],
             ] : null,

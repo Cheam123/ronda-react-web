@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Services\Recommendation\Area\AmazonPlaceLookup;
 use App\Services\Recommendation\Area\AreaProfiler;
 use App\Services\Recommendation\Area\FallbackPlaceLookup;
-use App\Services\Recommendation\Area\IncomeTable;
 use App\Services\Recommendation\Area\PlaceLookup;
 use App\Services\Recommendation\Area\SeededPlaceLookup;
 use Illuminate\Http\Client\ConnectionException;
@@ -169,7 +168,7 @@ class AmazonPlaceLookupTest extends TestCase
             'coffee_shop'      => [self::item('p3', 'Kopi Corner', 60, ['coffee_shop'])],
         ]);
 
-        $profiler = new AreaProfiler($this->lookup(), IncomeTable::groups(), config('ife.recommendation.area'));
+        $profiler = new AreaProfiler($this->lookup(), config('ife.recommendation.area'));
         $profile  = $profiler->profile(['latitude' => 3.0, 'longitude' => 101.7]);
 
         $this->assertSame('amazon', $profile['area_source']);
@@ -178,7 +177,7 @@ class AmazonPlaceLookupTest extends TestCase
         $this->assertSame(['count' => 1, 'nearest' => 60], $profile['area_details']['competitors']);
 
         // Profiled again offline, the saved places keep saying where they came from.
-        $again = (new AreaProfiler(new SeededPlaceLookup(), IncomeTable::groups(), config('ife.recommendation.area')))
+        $again = (new AreaProfiler(new SeededPlaceLookup(), config('ife.recommendation.area')))
             ->profile(['nearby_counts' => $profile['nearby_counts'], 'area_source' => 'amazon', 'area_details' => $profile['area_details']]);
         $this->assertSame('amazon', $again['area_source']);
     }
@@ -200,7 +199,7 @@ class AmazonPlaceLookupTest extends TestCase
 
     public function test_a_saved_source_other_than_amazon_counts_as_seeded(): void
     {
-        $profile = (new AreaProfiler(new SeededPlaceLookup(), IncomeTable::groups(), config('ife.recommendation.area')))
+        $profile = (new AreaProfiler(new SeededPlaceLookup(), config('ife.recommendation.area')))
             ->profile(['nearby_counts' => ['office_building' => 3], 'area_source' => 'osm']);
 
         $this->assertSame('seeded', $profile['area_source']);

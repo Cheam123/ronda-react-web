@@ -31,7 +31,6 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->bind(\App\Services\Recommendation\Area\AreaProfiler::class, fn ($app) => new \App\Services\Recommendation\Area\AreaProfiler(
             $app->make(\App\Services\Recommendation\Area\PlaceLookup::class),
-            \App\Services\Recommendation\Area\IncomeTable::groups(),
             config('ife.recommendation.area'),
         ));
     }

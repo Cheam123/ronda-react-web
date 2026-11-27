@@ -27,8 +27,6 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // $schedule->command('telegram:reset-telegram-pending-update-count')->dailyAt('00:35');
-        // $schedule->command('user:reset-telegram-chat-id')->dailyAt('01:00');
         $schedule->command('zip:clear')->dailyAt('01:30');
         // Attachments upload before a form is submitted, so abandoning a
         // half-filled form leaves the bytes behind with nothing pointing at them.

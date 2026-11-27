@@ -33,7 +33,6 @@ class UserRequest extends FormRequest
             'statuss'           => ['required','integer'],
             'type'              => ['required','integer', Rule::in(array_keys(User::getUserTypeListing()))],
             'gender'            => ['required','string'],
-            'telegram_chat_id'  => 'nullable|string',
             'team'              => 'required'
         ];
 
@@ -64,7 +63,6 @@ class UserRequest extends FormRequest
             'mobile'           => 'mobile number',
             'statuss'          => 'status',
             'type'             => 'user type',
-            'telegram_chat_id' => 'Telegram chat ID',
         ];
     }
 }

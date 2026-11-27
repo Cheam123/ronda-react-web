@@ -16,7 +16,6 @@ class AreaRule extends Model
         'categories',
         'price_tiers',
         'note',
-        'updated_by',
     ];
 
     protected $casts = [

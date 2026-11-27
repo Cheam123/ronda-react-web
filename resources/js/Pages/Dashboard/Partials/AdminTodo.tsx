@@ -27,7 +27,7 @@ function listNames(names: string[], total: number): string {
 
 function todoItems(summary: AdminSummary, can: (...abilities: Ability[]) => boolean): TodoItem[] {
     const items: TodoItem[] = [];
-    const { approvals, outlets, stale_products: stale, users } = summary;
+    const { approvals, outlets, stale_products: stale } = summary;
 
     // A missed job means something has stopped, so these come first.
     for (const job of summary.missed_jobs) {
@@ -75,17 +75,6 @@ function todoItems(summary: AdminSummary, can: (...abilities: Ability[]) => bool
             title: `${pluralize(stale.length, 'product')} not ordered in 90 days`,
             detail: `${listNames(stale.slice(0, 2), stale.length)}. Still offered to reps.`,
             action: { label: 'Review', href: route('product.index', { stale: 1, active: 'all' }) },
-        });
-    }
-
-    if (users.unlinked > 0 && can('manage_user')) {
-        items.push({
-            key: 'telegram',
-            icon: 'mdi-telegram',
-            tone: 'neutral',
-            title: `${pluralize(users.unlinked, 'user hasn’t', 'users haven’t')} linked Telegram`,
-            detail: `${listNames(users.unlinked_names, users.unlinked)} won't get task alerts outside the app.`,
-            action: { label: 'View', href: route('users.index', { telegram: 'none' }) },
         });
     }
 

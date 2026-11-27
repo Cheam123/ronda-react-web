@@ -175,7 +175,6 @@ class DemoDataSeeder extends Seeder
                 'receiving_date'    => Carbon::today()->subMonths(8)->toDateString(),
                 'belong_to'         => $rep->id,
                 'assign_to'         => $rep->id,
-                'hq_checker'        => $manager->id,
                 'business_category' => $category,
                 'source'            => 99,
                 'mobile'            => sprintf('6011%07d', 2000000 + $i),

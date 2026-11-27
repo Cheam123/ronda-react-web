@@ -72,7 +72,6 @@ class Leads extends Model
         'receiving_date',
         'belong_to',
         'assign_to',
-        'hq_checker',
         'name',
         'business_category',
         'source',
@@ -91,8 +90,6 @@ class Leads extends Model
         'seats',
         'segment',
         'is_halal',
-        'district',
-        'income_group',
         'area_types',
         'main_customers',
         'best_selling_kinds',
@@ -143,8 +140,6 @@ class Leads extends Model
         }
 
         return [
-            'district'        => $this->district,
-            'income_group'    => $this->income_group,
             'area_types'      => $this->area_types ?? [],
             'nearby_total'    => array_sum($this->nearby_counts ?? []),
             'source'          => $this->area_source,
@@ -197,8 +192,6 @@ class Leads extends Model
         $json = fn (?array $value) => $value !== null ? json_encode($value) : null;
 
         return [
-            'district'         => $profile['district'],
-            'income_group'     => $profile['income_group'],
             'area_types'       => $json($profile['area_types']),
             'nearby_counts'    => $json($profile['nearby_counts']),
             'area_details'     => $json($profile['area_details'] ?? null),
@@ -264,11 +257,6 @@ class Leads extends Model
     public function assignee()
     {
         return $this->belongsTo(User::class, 'assign_to', 'id')->withTrashed();
-    }
-
-    public function hqChecker()
-    {
-        return $this->belongsTo(User::class, 'hq_checker', 'id')->withTrashed();
     }
 
     public function tasks()
